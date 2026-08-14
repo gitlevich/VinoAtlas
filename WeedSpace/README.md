@@ -14,21 +14,33 @@ its bearing is its **magnitude**: a vague word is a faint star, not a distant
 one. Nothing in the sky ever shifts, and that is what makes it usable as a
 frame.
 
-The weeds are a **field you move through**. A weed has a direction *and* a
-radius — the radius says how far its strongest effect stands above its own
-floor, so a weed near the middle commits to nothing and is within reach of every
-feeling. Two fingers walk you through it; a pinch narrows the view.
+The weeds are a **field you stand in**. A weed has a direction *and* a radius —
+the radius says how far its strongest effect stands above its own floor, so a
+weed near the middle commits to nothing. Two fingers look around; a pinch moves
+you through it.
 
-The pair is the instrument. From a fixed point a ball and a shell look
-identical — rotation gives no depth at any radius. It is the **parallax**, a
-weed sliding against a sky that does not, that says how near it is and what
-stands behind what. Measured: walking 1.2 units moves the stars 0.000px while
-near weeds sweep 45px and far ones 26px.
+The pair is the instrument, and it only works because **your eye is not on the
+pivot**. A camera turning about its own optical centre gives no depth at any
+radius — every point sweeps by the same angle, which is why a panorama stitches
+from one. A head is not that camera: the eye rides forward of the neck, so
+turning is a rotation *and* a small translation. Turning 2.3°, the near third of
+the field slides 19.0px against the far third's 14.4 and the sky's 10.7.
 
-You cannot walk out. Past a radius of 3 the field stops surrounding you and
-becomes a clump you are looking at — the emptiest direction holds 123 weeds at
-radius 2, 86 at 3, and 11 at 6.4, by which point 536 of 563 are behind you. The
-rim is where first person ends.
+`NECK` is that offset. It has a hard ceiling — it must stay shorter than the
+nearest weed, or turning would swing your eye through your own data. The field
+starts at 2.59, so 2.2 is as long as a neck can honestly be.
+
+You cannot walk out, and what is bounded is the **eye**, which swings to
+`STAND + NECK`. The emptiest direction holds 97 weeds with the eye at 2.2, 81 at
+3.0, 65 at 3.8, and 27 at 5.2 — where 536 of 563 are behind you. Past about 3.8
+the field has stopped surrounding you and become a clump you are looking at,
+which is where first person ends.
+
+**A gesture that does not paint did not happen.** The first version of this
+deferred drawing to the animation loop, which only runs while something glides
+or coasts — so two fingers changed the state perfectly and the screen never
+moved. Every handler paints directly now, and `acceptance_tests.js` has a
+`settle()` that refuses to draw for the page, so a dead gesture fails loudly.
 
 ## Build
 
@@ -54,7 +66,7 @@ parquet — which words are admitted, where each one sits, what each strain does
 survives the move into the world, that colour follows direction, that a weed
 wears the colour of the ground it stands on.
 
-The other 23 are in `acceptance_tests.js` and need the page running, because
+The other 26 are in `acceptance_tests.js` and need the page running, because
 they are about moving through it:
 
 ```bash

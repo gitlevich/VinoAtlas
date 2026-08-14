@@ -1,13 +1,21 @@
-"""Emit the view from the middle, as an environment rather than a projection.
+"""Emit the view from inside, as an environment rather than a projection.
 
-Every word is placed at a real position: its direction is where it lies, and
-its distance is how weakly it marks that direction. A word that strongly picks
-out its direction stands close and large. A word that distinguishes almost
-nothing stands far off, small and dim, near the horizon.
+A SKY and a FIELD, and they are different kinds of thing.
 
-Apparent size and brightness therefore come from distance alone and do not
-change when the reader turns -- which is the whole difference between looking
-around a place and watching a chart deform.
+A word is a bearing and nothing else, so it goes to the sky: fixed, at an
+unreachable remove, unmoved by anything the reader does. How sharply it marks
+its bearing is its magnitude -- a vague word is a faint star, not a far one.
+
+A weed is a thing at a place. Its direction is where it leans and its radius is
+how far its strongest effect stands above its own floor, so a weed near the
+middle commits to nothing. The reader stands among them and can walk.
+
+The pair is the instrument. A camera pivoting on its own optical centre yields
+no depth at all: every point sweeps by the same angle whatever its distance,
+which is why a panorama can be stitched from one. A head is not that camera --
+the eye rides forward of the neck, so turning is also a small translation, and
+near things slide past far ones against a sky that does not move. That sliding
+is the only thing in the view that can say what is near and what is behind.
 """
 import json
 import math
@@ -301,24 +309,60 @@ function place(P, F) {
    weed is projected from the eye, so it slides against that fixed sky by an
    amount that says how near it is. That sliding is the only depth cue rotation
    can never give you: from a point, a ball and a shell look the same. */
-let EYE = [0, 0, 0];
-/* How far you may walk is not a matter of taste: it is the radius past which
-   the field stops surrounding you. Measured, looking every thirty degrees, the
-   emptiest direction holds 123 weeds at 2.0, 86 at 3.0, 45 at 4.0, and 11 at
-   6.4 -- by which point 536 of 563 are behind you and you are outside your own
-   field looking in. Three is the last radius that is still a place to stand. */
-const REACH = 3.0;
+/* Anything that changes what you would see paints, here and now.
+
+   The first attempt set a flag for the animation loop to notice. That is the
+   tidier design and it is wrong: the loop only runs while something is gliding
+   or coasting, and where it is throttled or stopped -- a background tab, an
+   embedded pane -- the flag is set, the state is perfect, and the screen never
+   changes. That is precisely the bug that shipped. A gesture that does not
+   paint did not happen. */
+const nudge = () => { draw(); readout(); drawMini(); };
+
+/* YOUR EYE IS NOT ON THE PIVOT. A camera turning about its own optical centre
+   gives no parallax at all: every point sweeps by the same angle whatever its
+   distance, which is precisely why a panorama can be stitched from one. A head
+   does not work that way. The eye sits forward of the axis the neck turns
+   about, so turning your head is a rotation AND a small translation, and near
+   things really do slide past far ones. That is the depth cue you get for free
+   in a room, and it is what standing at a bare origin threw away.
+
+   NECK is that offset, and it has a real ceiling: it must stay shorter than the
+   nearest weed, or turning would swing your eye through your own data. The
+   field starts at 2.59, so 2.2 is as long as a neck can honestly be. It is also
+   where the sweep becomes legible -- turning 2.3 degrees, the near third of the
+   field slides 19.0px against the far third's 14.4 and the sky's 10.7. At the
+   0.9 a real head would scale to, those numbers are 13.4 and 12.3: present in
+   the arithmetic, invisible on the screen. */
+const NECK = 2.2;
+let STAND = [0, 0, 0];              // where you are standing
+let EYE = [0, 0, 0];                // where you are looking FROM, a neck ahead of it
+
+function eyeAt(F) {
+  EYE = [STAND[0] + F.f[0]*NECK, STAND[1] + F.f[1]*NECK, STAND[2] + F.f[2]*NECK];
+}
 const here = P => [P[0] - EYE[0], P[1] - EYE[1], P[2] - EYE[2]];
+
+/* How far you may go is not a matter of taste: it is the radius past which the
+   field stops surrounding you and becomes a clump you are looking at. What has
+   to be bounded is the EYE, which swings out to STAND + NECK as you turn.
+   Measured, looking every thirty degrees, the emptiest direction holds 97 weeds
+   with the eye at 2.2, 81 at 3.0, 65 at 3.8, 49 at 4.2 and 27 at 5.2. Past
+   about 3.8 there is no longer a field around you in every direction, so that
+   is the rim -- and it leaves 1.6 to walk, since the neck spends the rest. */
+const REACH = 3.8;
+const ROAM = REACH - NECK;
 
 function walk(step) {
   const F = frame();
-  const p = [EYE[0] + F.f[0]*step, EYE[1] + F.f[1]*step, EYE[2] + F.f[2]*step];
+  const p = [STAND[0] + F.f[0]*step, STAND[1] + F.f[1]*step, STAND[2] + F.f[2]*step];
   const n = len(p);
   /* the field closes around you rather than ending: press on at the rim and you
      slide along it instead of stepping outside and looking in */
-  if (n > REACH) for (let i = 0; i < 3; i++) p[i] *= REACH / n;
-  EYE = p;
-  document.getElementById('bHome').style.display = len(EYE) > 0.15 ? '' : 'none';
+  if (n > ROAM) for (let i = 0; i < 3; i++) p[i] *= ROAM / n;
+  STAND = p;
+  document.getElementById('bHome').style.display = len(STAND) > 0.15 ? '' : 'none';
+  nudge();
 }
 
 function ground(F) {
@@ -360,6 +404,7 @@ function ground(F) {
 
 function draw() {
   const F = frame();
+  eyeAt(F);                    // the eye rides a neck ahead of where you stand
   g.clearRect(0, 0, W, H);
   ground(F);
 
@@ -672,27 +717,33 @@ view.addEventListener('dblclick', e => {
   const r = c.getBoundingClientRect();
   lean(e.shiftKey ? 1 / 0.62 : 0.62, e.clientX - r.left, e.clientY - r.top);
 });
-/* Two fingers WALK you through the field; a pinch narrows the view. Both arrive
-   as wheel events -- a trackpad pinch is a wheel with ctrlKey set -- and the
-   split matters because they are different acts: walking changes where you are
-   and everything shifts against the fixed sky, squinting changes only how much
-   of the sky you can take in at once. */
+/* Two fingers LOOK AROUND -- the same act as dragging, at the same sense and
+   scale, because scrolling is how a trackpad turns a view. A pinch MOVES YOU
+   through the field: in a space with depth, going in is what zooming is, and
+   it is what makes the sky hold still while the weeds stream past.
+
+   Both arrive as wheel events; a trackpad pinch is a wheel with ctrlKey set. */
 view.addEventListener('wheel', e => {
   e.preventDefault();
-  if (e.ctrlKey || e.metaKey || e.shiftKey) { lean(e.deltaY > 0 ? 1.07 : 0.935); return; }
-  walk(e.deltaY > 0 ? -0.14 : 0.14);
+  if (e.ctrlKey || e.metaKey) { walk(e.deltaY > 0 ? -0.16 : 0.16); }
+  else if (e.shiftKey) { lean(e.deltaY > 0 ? 1.07 : 0.935); }
+  else {
+    target = null; vYaw = vPitch = 0;
+    yaw -= e.deltaX * 0.0032;
+    pitch = Math.max(-1.1, Math.min(1.1, pitch - e.deltaY * 0.0032));
+  }
+  nudge();
 }, { passive: false });
 document.getElementById('bWide').onclick = () => lean(WIDE / fovWant);
 document.getElementById('bHome').onclick = () => {
-  EYE = [0, 0, 0];
+  STAND = [0, 0, 0];
   document.getElementById('bHome').style.display = 'none';
-  draw(); readout();
+  nudge();
 };
 addEventListener('keydown', e => {
   if (e.key === 'w' || e.key === 'ArrowUp') walk(0.3);
   else if (e.key === 's' || e.key === 'ArrowDown') walk(-0.3);
   else return;
-  draw(); readout();
 });
 
 document.getElementById('bClear').onclick = () => {
@@ -901,8 +952,7 @@ new ResizeObserver(refit).observe(view);
     yaw += vYaw; pitch = Math.max(-1.1, Math.min(1.1, pitch + vPitch));
     vYaw *= 0.92; vPitch *= 0.92; moving = true;
   }
-  if (moving) { draw(); readout(); }
-  if (moving) drawMini();
+  if (moving) { draw(); readout(); drawMini(); }
   requestAnimationFrame(loop);
 })();
 refit();

@@ -174,9 +174,11 @@ def test_the_sky_does_not_move_when_you_walk(page):
 def test_you_cannot_walk_out_of_your_own_field(page, strains):
     """Step outside and you would be looking at a clump from the outside, which
     is the third-person view this whole space exists to refuse."""
-    assert "const REACH = 3.0" in page
-    assert "p[i] *= REACH / n" in page, "the rim no longer holds you"
-    inside = sum(1 for t in strains if t["dist"] > 3.0)
+    assert "const REACH = 3.8" in page
+    assert "const NECK = 2.2" in page
+    assert "const ROAM = REACH - NECK" in page
+    assert "p[i] *= ROAM / n" in page, "the rim no longer holds you"
+    inside = sum(1 for t in strains if t["dist"] > 3.8)
     assert inside > 200, "the rim is beyond most of the field; walking would empty it"
 
 
