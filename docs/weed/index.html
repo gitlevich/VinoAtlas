@@ -22,9 +22,9 @@ h1{margin:0;padding:14px 14px 3px;font-size:13.5px;font-weight:600}
 .s{display:flex;align-items:center;gap:8px;padding:3px 14px;cursor:pointer;
   color:var(--ink-2);font-size:12.5px}
 .s:hover{background:#171717;color:var(--ink)}
-.s i{width:11px;height:11px;border-radius:3px;border:1.5px solid #4a4a4a;flex:none}
+.s i{width:11px;height:11px;border-radius:3px;border:1.5px solid;flex:none;opacity:.85}
 .s[aria-checked=yes]{color:var(--ink);font-weight:600}
-.s[aria-checked=yes] i{background:var(--smell);border-color:var(--smell)}
+/* the fill is the word's own colour, set where the row is built */
 button{background:var(--panel);color:var(--ink-2);border:1px solid var(--line);
   border-radius:6px;padding:5px 10px;font:inherit;font-size:11.5px;cursor:pointer}
 button:hover{color:var(--ink);border-color:#414141}
@@ -504,10 +504,18 @@ const list = document.getElementById('list');
 for (const s of SMELLS) {
   const row = document.createElement('div');
   row.className = 's'; row.setAttribute('aria-checked', 'off');
-  row.innerHTML = `<i></i><span>${s.w}</span>`;
+  /* The list wears the sky's colours. A smell here and the same smell out there
+     are one thing, so it is recognised rather than read -- and because colour
+     means direction, the list also shows at a glance which smells lie together
+     and which lie apart. */
+  const col = `hsl(${s.hue},${s.sat}%,${s.lit}%)`;
+  row.innerHTML = `<i style="border-color:${col}"></i>`
+    + `<span style="color:${col}">${s.w}</span>`;
+  const chip = row.querySelector('i');
   row.onclick = () => {
     if (state.has(s.w)) { state.delete(s.w); row.setAttribute('aria-checked', 'off'); }
     else { state.add(s.w); row.setAttribute('aria-checked', 'yes'); }
+    chip.style.background = state.has(s.w) ? col : '';
     if (state.size) {
       const v = [0, 0, 0];
       for (const w of state) {
@@ -617,7 +625,10 @@ addEventListener('keydown', e => {
 
 document.getElementById('bClear').onclick = () => {
   state.clear();
-  [...list.children].forEach(r => r.setAttribute('aria-checked', 'off'));
+  [...list.children].forEach(r => {
+    r.setAttribute('aria-checked', 'off');
+    r.querySelector('i').style.background = '';
+  });
   draw(); readout();
 };
 /* ---- the globe -----------------------------------------------------------

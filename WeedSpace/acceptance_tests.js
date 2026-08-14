@@ -364,6 +364,44 @@
     for (const e of EFFECT_ORDER) ok(D.chance[e] > 0, e + ' has no base rate');
   });
 
+  await T('a smell in the list wears the colour it has in the sky', async () => {
+    /* so it is recognised rather than read, and so the list also shows which
+       smells lie together and which lie apart */
+    const rows = [...document.querySelectorAll('#list .s')];
+    ok(rows.length === SMELLS.length, 'the list is not the vocabulary');
+    const probe = document.createElement('span');
+    document.body.appendChild(probe);
+    const asRGB = css => { probe.style.color = css; return getComputedStyle(probe).color; };
+    let dimmest = 1;
+    for (const r of rows) {
+      const w = r.textContent.trim();
+      const it = SMELLS.find(s => s.w === w);
+      ok(it, w + ' is in the list but not in the sky');
+      const got = getComputedStyle(r.querySelector('span')).color;
+      ok(got === asRGB(`hsl(${it.hue},${it.sat}%,${it.lit}%)`), w + ' is the wrong colour');
+      ok(getComputedStyle(r.querySelector('i')).borderTopColor === got, w + ': chip and name disagree');
+      const m = got.match(/[\d.]+/g).map(Number);
+      dimmest = Math.min(dimmest, (0.2126*m[0] + 0.7152*m[1] + 0.0722*m[2]) / 255);
+    }
+    probe.remove();
+    ok(dimmest > 0.55, 'the dimmest name in the list is at ' + dimmest.toFixed(2)
+       + ' -- too dark to read against the panel');
+  });
+
+  await T('picking a smell fills its chip and clearing empties it', async () => {
+    document.getElementById('bClear').click(); await frame();
+    const row = [...document.querySelectorAll('#list .s')]
+      .find(r => r.textContent.trim() === 'citrus');
+    const chip = row.querySelector('i');
+    ok(!chip.style.background, 'the chip started filled');
+    row.click(); await frame();
+    ok(chip.style.background, 'picking did not fill the chip');
+    ok(getComputedStyle(chip).backgroundColor
+       === getComputedStyle(row.querySelector('span')).color, 'filled with the wrong colour');
+    document.getElementById('bClear').click(); await frame();
+    ok(!chip.style.background, 'clear left the chip filled');
+  });
+
   await T('picking a smell turns you to face it', async () => {
     document.getElementById('bClear').click();
     const row = [...document.querySelectorAll('#list .s')]

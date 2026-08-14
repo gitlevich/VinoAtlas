@@ -36,6 +36,10 @@ You cannot walk out, and what is bounded is the **eye**, which swings to
 the field has stopped surrounding you and become a clump you are looking at,
 which is where first person ends.
 
+The list on the left wears the sky's colours — a smell there and the same smell
+out in the field are one thing, so it is recognised rather than read, and the
+list also shows at a glance which smells lie together and which lie apart.
+
 **A gesture that does not paint did not happen.** The first version of this
 deferred drawing to the animation loop, which only runs while something glides
 or coasts — so two fingers changed the state perfectly and the screen never
@@ -66,7 +70,7 @@ parquet — which words are admitted, where each one sits, what each strain does
 survives the move into the world, that colour follows direction, that a weed
 wears the colour of the ground it stands on.
 
-The other 26 are in `acceptance_tests.js` and need the page running, because
+The other 28 are in `acceptance_tests.js` and need the page running, because
 they are about moving through it:
 
 ```bash
