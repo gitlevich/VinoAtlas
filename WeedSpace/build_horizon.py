@@ -346,11 +346,12 @@ const here = P => [P[0] - EYE[0], P[1] - EYE[1], P[2] - EYE[2]];
 /* How far you may go is not a matter of taste: it is the radius past which the
    field stops surrounding you and becomes a clump you are looking at. What has
    to be bounded is the EYE, which swings out to STAND + NECK as you turn.
-   Measured, looking every thirty degrees, the emptiest direction holds 97 weeds
-   with the eye at 2.2, 81 at 3.0, 65 at 3.8, 49 at 4.2 and 27 at 5.2. Past
-   about 3.8 there is no longer a field around you in every direction, so that
-   is the rim -- and it leaves 1.6 to walk, since the neck spends the rest. */
-const REACH = 3.8;
+   Re-measured after the weeds moved to the effect view, looking every thirty
+   degrees: the emptiest direction holds 83 weeds with the eye at 2.2, 73 at
+   3.0, 60 at 3.4 and 49 at 3.8. Past about 3.4 there is no longer a field
+   around you in every direction, so that is the rim -- and it leaves 1.2 to
+   walk, since the neck spends the rest. */
+const REACH = 3.4;
 const ROAM = REACH - NECK;
 
 function walk(step) {
@@ -489,12 +490,17 @@ function draw() {
   for (const { it, p } of seen) {
     const feel = it.kind === 'feel';
     const said = state.has(it.w);
-    /* Magnitude, not distance: a word that marks its bearing sharply is a bright
-       star, one that marks almost nothing is a faint one. Both hang at the same
-       unreachable remove, so neither moves when you walk. */
-    const mag = 0.40 + 1.70 * it.str;
-    const sz = (feel ? 1.0 : 0.92) * mag * p.ppr * 0.0165 + 7;
-    const a = Math.max(0.42, Math.min(1, 0.22 + 0.78 * it.str) * p.edge);
+    /* Magnitude, not distance and not size: a word that marks its bearing
+       sharply is a BRIGHT star, one that marks almost nothing is a faint one.
+
+       A star holds a fixed size on the screen. It is infinitely far, so nothing
+       you do resolves it into a disc -- narrowing the view gathers the field and
+       leaves the sky exactly as it was. Scaling these with pixels-per-radian was
+       wrong twice over: it made distant things swell as you squinted, and it
+       put letters two hundred pixels tall on objects that are meant to read as
+       unreachable. */
+    const sz = (feel ? 10.5 : 9.5) + (feel ? 6.5 : 5.0) * it.str;
+    const a = Math.max(0.34, Math.min(1, 0.14 + 0.86 * it.str) * p.edge);
 
     const label = feel ? it.w.toUpperCase() : it.w;
     g.font = `${said ? '600 ' : feel ? '500 ' : ''}${sz.toFixed(1)}px ui-sans-serif,sans-serif`;

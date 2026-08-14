@@ -70,7 +70,7 @@ parquet — which words are admitted, where each one sits, what each strain does
 survives the move into the world, that colour follows direction, that a weed
 wears the colour of the ground it stands on.
 
-The other 28 are in `acceptance_tests.js` and need the page running, because
+The other 30 are in `acceptance_tests.js` and need the page running, because
 they are about moving through it:
 
 ```bash
@@ -86,16 +86,30 @@ Every test is named for the criterion it holds. The data is fixed, so a test
 that passes today passes forever, and a change in the corpus is the only thing
 that should ever break one.
 
-## Two tests that hold a defect rather than a promise
+## Where a weed stands is where its effects are
 
-`test_position_is_a_compromise_not_a_statement_of_effect` locks the agreement
-between where a weed stands and what it does at 31%. A weed sits at the average
-of the smell view and the effect view, and those two disagree by a median 41
-degrees. The number is well above the 8% you would get by chance and nowhere
-near a claim, so it is pinned: if it moves, someone changed what the page says
-about place, and they meant to.
+A weed used to sit at the *average* of the smell view and the effect view, and
+that average was a lie the page told every time you looked at it: standing in
+the middle, a weed between you and CREATIVE reads as a weed that makes you
+creative. Under the average, `rainbow` sat at cos 0.99 to focused and creative
+while being the most aroused strain in the corpus — its smells (apricot,
+tropical, citrus) dragged it into green country its effects have nothing to do
+with. The two views genuinely disagree, by a median 41°, so the average could be
+read as neither.
 
-`test_a_weed_standing_nowhere_has_no_colour_to_be_given` names the 67 weeds that
+Placed by the **effect view alone**:
+
+| positioned by | top effect | top 3 | top 5 | smell→feeling hue gap |
+|---|---|---|---|---|
+| the average, as shipped | 31% | 61% | 74% | 5° |
+| **the effect view** | **38%** | **67%** | **81%** | **3°** |
+| chance | 8% | 23% | 38% | — |
+
+Nothing is given up. This is the effect side of a *joint* fit, so it is already
+the part of effect space the smells can reach — smell navigation gets tighter,
+not looser. `rainbow` now stands on `aroused` at 0.99.
+
+`test_a_weed_standing_nowhere_has_no_colour_to_be_given` names the 44 weeds that
 sit square-on to every feeling. The blend that colours a weed weighs feelings by
 how close they are; with nothing close, it returns the average of the whole
 colour wheel — a fixed colour that says nothing about that weed. It is the

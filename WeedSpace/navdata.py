@@ -44,7 +44,28 @@ xs, ys = m.transform(X, Y)
 xs = (xs - xs.mean(0)) / xs.std(0); ys = (ys - ys.mean(0)) / ys.std(0)
 for k in range(K):
     if spearmanr(xs[:, k], ys[:, k]).statistic < 0: ys[:, k] = -ys[:, k]
-P = (xs + ys) / 2
+
+# THE EFFECT VIEW DECIDES WHERE A STRAIN STANDS.
+#
+# It used to be the average of the two views, and that average was a lie the
+# page told every time you looked at it: standing in the middle, a weed between
+# you and CREATIVE reads as a weed that makes you creative. Under the average,
+# `rainbow` sat at cos 0.99 to focused and creative while being the most aroused
+# strain in the corpus -- its smells (apricot, tropical, citrus) dragged it into
+# the green country its effects have nothing to do with.
+#
+# The two views genuinely disagree, by a median 41 degrees and more than 90 for
+# 12% of strains, so the average could be read as neither. Placed by the effect
+# view alone, the nearest feeling names a strain's strongest effect 38% of the
+# time against 31%, is in its top three 67% against 61%, and its top five 81%
+# against 74%. rainbow lands on aroused at 0.99.
+#
+# Nothing is given up by dropping the flavour variate. This is the effect side
+# of a JOINT fit, so it is already the part of effect space the smells can
+# reach: a smell word, placed at the middle of the strains it names, points at
+# the feeling it leads to a median 3 degrees away -- tighter than the 5 the
+# average managed. Smell navigation gets better, not worse.
+P = ys
 P = P / np.abs(P).max()
 log.info("agreement out of fold: %s", agree)
 

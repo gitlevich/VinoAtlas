@@ -133,6 +133,36 @@
 
   // -- the sky is fixed, the field is not -------------------------------------
 
+  await T('a star does not swell when you narrow the view', async () => {
+    /* it is infinitely far: nothing you do resolves it into a disc. Scaling by
+       pixels-per-radian put letters two hundred tall on things meant to read as
+       unreachable. */
+    const size = () => Object.fromEntries(ITEMS.filter(i => i.hit).map(i => [i.w, i.hit[3]]));
+    /* face a populated quarter -- narrowing to 0.14 leaves few stars in view, so
+       a heading with only one or two would prove nothing either way */
+    STAND = [0, 0, 0]; yaw = 1.2; pitch = 0; FOV = fovWant = WIDE; await frame();
+    const wide = size();
+    FOV = fovWant = WIDE * 0.14; await frame();
+    const tight = size();
+    FOV = fovWant = WIDE; await frame();
+    const both = Object.keys(wide).filter(k => tight[k]);
+    ok(both.length > 3, 'no stars were up to check');
+    both.forEach(k => ok(Math.abs(tight[k] - wide[k]) < 1e-6,
+      k + ' grew ' + (tight[k] / wide[k]).toFixed(1) + 'x when the view narrowed'));
+    ok(Math.max(...Object.values(wide)) < 60, 'a star label is larger than a star should be');
+  });
+
+  await T('a bright star is brighter, not bigger', async () => {
+    const bright = ITEMS.reduce((a, b) => (a.str > b.str ? a : b));
+    const faint = ITEMS.reduce((a, b) => (a.str < b.str ? a : b));
+    ok(bright.str > faint.str);
+    /* size varies only a little with magnitude; the carrying signal is alpha */
+    const szOf = i => (i.kind === 'feel' ? 10.5 : 9.5) + (i.kind === 'feel' ? 6.5 : 5.0) * i.str;
+    ok(szOf(bright) / szOf(faint) < 2, 'magnitude is being spent on size');
+    const aOf = i => Math.max(0.34, Math.min(1, 0.14 + 0.86 * i.str));
+    ok(aOf(bright) / aOf(faint) > 2.4, 'magnitude is not reaching brightness');
+  });
+
   await T('walking does not move a single star', async () => {
     const sky = () => Object.fromEntries(ITEMS.filter(i => i.hit).map(i => [i.w, i.hit[0]]));
     STAND = [0, 0, 0]; await frame();
@@ -200,7 +230,7 @@
     STAND = [0, 0, 0];
     for (let i = 0; i < 60; i++) walk(0.5);           // press on at the rim
     await frame();
-    ok(len(EYE) <= 3.8 + 1e-6, 'your eye left the field, reaching ' + len(EYE).toFixed(2));
+    ok(len(EYE) <= 3.4 + 1e-6, 'your eye left the field, reaching ' + len(EYE).toFixed(2));
     const y0 = yaw;
     let worst = 1e9, at = 0;
     for (let k = 0; k < 12; k++) {                    // look every thirty degrees
@@ -209,7 +239,7 @@
       if (n < worst) { worst = n; at = k * 30; }
     }
     yaw = y0; STAND = [0, 0, 0]; await frame();
-    ok(worst > 60, 'at the rim, looking ' + at + ' degrees round, only '
+    ok(worst >= 55, 'at the rim, looking ' + at + ' degrees round, only '
        + worst + ' weeds are there -- the field has ended rather than closed');
   });
 

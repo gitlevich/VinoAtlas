@@ -36,8 +36,7 @@ def space(tables):
     for k in range(K):
         if spearmanr(xs[:, k], ys[:, k]).statistic < 0:
             ys[:, k] = -ys[:, k]
-    P = (xs + ys) / 2
-    P = P / np.abs(P).max()
+    P = ys / np.abs(ys).max()          # the effect view decides where a strain stands
 
     def place(scores):
         return P[region(scores, fl.index)].mean(0)
@@ -224,15 +223,15 @@ def test_the_two_views_agree_out_of_fold(nav):
     assert agree[2] < agree[1] / 2, "the third axis is no longer the weak one"
 
 
-def test_position_is_a_compromise_not_a_statement_of_effect(space):
-    """THE OPEN DEFECT, held at its measured size so it cannot quietly drift.
+def test_where_a_weed_stands_is_where_its_effects_are(space):
+    """Standing in the middle, a weed between you and CREATIVE reads as a weed
+    that makes you creative. That has to be true, and under the old average of
+    the two views it was not: `rainbow` sat at cos 0.99 to focused and creative
+    while being the most aroused strain in the corpus.
 
-    A strain sits at the average of the smell view and the effect view. Those
-    two disagree by a median 41 degrees, so the nearest feeling to where a
-    strain stands names its strongest effect only about a third of the time --
-    well above the 8% you would get by chance, and nowhere near a claim. If this
-    number moves, the page has started saying something different about place
-    and someone chose to make it do that.
+    Placed by the effect view, the nearest feeling names a strain's strongest
+    effect 38% of the time, is in its top three 67%, its top five 81% -- against
+    a chance rate of 8%, 23% and 38%. Held here so it cannot quietly drift back.
     """
     fl, ef, P, k = space["fl"], space["ef"], space["P"], space["k"]
     feel = np.array([space["place"](ef[e]) / k for e in ef.columns])
@@ -243,7 +242,12 @@ def test_position_is_a_compromise_not_a_statement_of_effect(space):
         nearest = int(np.argmax(feel @ unit(P[i] / k)))
         hit += nearest == top[i]
     rate = hit / len(fl)
-    assert 0.28 <= rate <= 0.34, f"agreement moved to {rate:.0%}"
+    assert 0.35 <= rate <= 0.42, f"agreement moved to {rate:.0%}"
+
+    # and the one that started it: rainbow must stand where its bars say
+    ri = fl.index.get_loc("rainbow")
+    nearest = ef.columns[int(np.argmax(feel @ unit(P[ri] / k)))]
+    assert nearest == "aroused", f"rainbow now stands nearest {nearest}"
 
 
 def test_the_smell_view_and_the_effect_view_genuinely_disagree(space):

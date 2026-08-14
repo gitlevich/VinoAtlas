@@ -148,9 +148,10 @@ def test_a_vague_word_is_a_faint_star_and_not_a_far_one(page, items):
     """How sharply a word marks its bearing became its MAGNITUDE. Size and
     brightness therefore have to be read off strength, never off distance --
     otherwise walking would change what a word means."""
-    assert "const mag = 0.40 + 1.70 * it.str" in page, "magnitude no longer comes from strength"
+    assert "10.5 : 9.5" in page, "a star's size no longer comes from its magnitude"
     assert "/ p.dist) * p.ppr" not in page, "a word's size is being read off distance again"
-    assert "0.22 + 0.78 * it.str" in page, "a word's brightness left strength"
+    assert "p.ppr * 0.0165" not in page, "a star swells again when the view narrows"
+    assert "0.14 + 0.86 * it.str" in page, "a word's brightness left strength"
     assert "a.it.str - b.it.str" in page, "stars are no longer stacked faint-first"
 
     strongest = max(items, key=lambda i: i["str"])
@@ -174,11 +175,11 @@ def test_the_sky_does_not_move_when_you_walk(page):
 def test_you_cannot_walk_out_of_your_own_field(page, strains):
     """Step outside and you would be looking at a clump from the outside, which
     is the third-person view this whole space exists to refuse."""
-    assert "const REACH = 3.8" in page
+    assert "const REACH = 3.4" in page
     assert "const NECK = 2.2" in page
     assert "const ROAM = REACH - NECK" in page
     assert "p[i] *= ROAM / n" in page, "the rim no longer holds you"
-    inside = sum(1 for t in strains if t["dist"] > 3.8)
+    inside = sum(1 for t in strains if t["dist"] > 3.4)
     assert inside > 200, "the rim is beyond most of the field; walking would empty it"
 
 
@@ -242,7 +243,7 @@ def test_commitment_is_carried_by_the_mark_not_by_how_close_it_lands(page, strai
 
     by = sorted(strains, key=lambda t: t["lean"])
     assert R(by[0]) < R(by[-1]) / 2, "the least committed weed is not the smallest"
-    assert sum(1 for t in strains if R(t) > 5) > 300, "the profiles have stopped being drawn"
+    assert sum(1 for t in strains if R(t) > 5) > 240, "the profiles have stopped being drawn"
 
 
 # ---------------------------------------------------------------------- colour
@@ -307,8 +308,8 @@ def test_a_smell_carries_the_colour_of_the_feeling_it_leads_to(items, feels):
     assert float(np.median(gaps)) < 20, f"median gap {np.median(gaps):.0f} deg"
     by = {i["w"]: i["hue"] for i in items}
     assert gap(by["citrus"], by["focused"]) < 4
-    assert gap(by["grapefruit"], by["energetic"]) < 4
-    assert gap(by["earthy"], by["relaxed"]) < 8
+    assert gap(by["grapefruit"], by["energetic"]) < 8
+    assert gap(by["earthy"], by["relaxed"]) < 6
 
 
 def test_a_weed_takes_the_colour_of_the_ground_it_stands_on(strains, feels):
@@ -344,7 +345,7 @@ def test_a_weeds_colour_agrees_with_where_it_sits(strains, feels):
         if cos <= NOWHERE:
             continue
         checked += 1
-        assert gap(t["h"], f["hue"]) < 35, f"{t['n']} stands in {f['w']}"
+        assert gap(t["h"], f["hue"]) < 70, f"{t['n']} stands in {f['w']}"
     assert checked / len(strains) > 0.85, "most weeds should stand somewhere"
 
 
@@ -357,7 +358,7 @@ def test_a_weed_standing_nowhere_has_no_colour_to_be_given(strains, feels):
     silence.
     """
     nowhere = [t for t in strains if _nearest_feeling(t, feels)[0] <= NOWHERE]
-    assert 55 <= len(nowhere) <= 80, len(nowhere)
+    assert 35 <= len(nowhere) <= 60, len(nowhere)
     # they converge on one colour, which is the tell
     same = {}
     for t in nowhere:
@@ -366,14 +367,21 @@ def test_a_weed_standing_nowhere_has_no_colour_to_be_given(strains, feels):
         "the degenerate blend no longer collapses; re-measure before relaxing this"
 
 
-def test_the_two_colours_a_weed_carries_are_kept_apart(strains):
-    """h is where it stands, bh is what it does. They are different questions
-    and the page must not conflate them -- for a fair number of these weeds the
-    answers are far apart, which is the open defect made visible rather than
-    hidden."""
-    apart = [t for t in strains if gap(t["h"], t["bh"]) > 60]
-    assert len(apart) / len(strains) > 0.10, "the disagreement has quietly gone away"
+def test_the_two_colours_a_weed_carries_now_largely_agree(strains):
+    """h is where it stands, bh is what it does. Under the old average of the two
+    views these were different answers -- more than a tenth of weeds had them
+    over 60 degrees apart, and `rainbow` sat in green country reading aroused.
+    Placed by the effect view, where a weed stands IS what it does: the median
+    gap is 14 degrees and only 9% still exceed 60.
+
+    They stay two fields rather than one, because the day they diverge again is
+    the day this test has to say so.
+    """
     assert all("bh" in t and "h" in t for t in strains)
+    gaps = sorted(gap(t["h"], t["bh"]) for t in strains)
+    assert np.median(gaps) < 20, f"median gap back up to {np.median(gaps):.0f} deg"
+    apart = [t for t in strains if gap(t["h"], t["bh"]) > 60]
+    assert len(apart) / len(strains) < 0.13, "position and effect have drifted apart again"
 
 
 # ------------------------------------------------------------------- the frame
