@@ -4,3 +4,5 @@ data/
 __pycache__/
 cellar_compass*.html
 .DS_Store
+WeedSpace/horizon.html
+.pytest_cache/

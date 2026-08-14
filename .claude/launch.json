@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8479"],
       "port": 8479
+    },
+    {
+      "name": "weedspace",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8787", "--directory", "WeedSpace"],
+      "port": 8787
     }
   ]
 }
