@@ -1,9 +1,4 @@
 <script>
-/* the pristine page, captured before any code touches the DOM; currentScript
-   is only non-null synchronously, so this must stay at the top */
-const PAGE_HTML='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cellar Compass</title>'
-  +document.getElementById('cc-css').outerHTML+'</head><body>'
-  +document.querySelector('.wrap').outerHTML+document.currentScript.outerHTML+'</body></html>';
 const S=__DATA__, A=S.axes, C=S.calibration, OWNED=new Set(C.owned);
 const el=id=>document.getElementById(id);
 let point={...C.centroid}, hideOwned=true, hideVoted=false, picked=[], hold={};
@@ -286,18 +281,13 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
 const BUILD='__BUILD__';
-const HOSTED=/claude(usercontent)?\.(ai|com)$/.test(location.hostname);
-if(HOSTED){el('askOn').hidden=true;el('askOff').hidden=false;}
-el('dlApp').hidden=!HOSTED; // download exists only on the shared page
-el('copyBadge').className='copy-badge '+(HOSTED?'web':'local');
-el('copyBadge').innerHTML=HOSTED
-  ?'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>shared page'
-  :'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h6l-2 2v1h8v-1l-2-2h6c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 13H4V5h16v11z"/></svg>local';
-el('copyBadge').dataset.build=BUILD;
-el('copyBadge').title=(HOSTED
-  ?'You are on the shared page. Asking is switched off here — download the file to use it.'
-  :'This copy runs from your own computer. Everything works, including the sommelier.')
-  +'  ·  build '+BUILD;
+/* not shown: the page that works says nothing about itself. Kept where a loaded
+   page can still be asked which build it is holding. */
+document.documentElement.dataset.build=BUILD;
+/* The preview inside the artifact viewer is a frame that may not reach Anthropic
+   or OpenAI, so the sommelier cannot run there. Everywhere else it can. */
+const VIEWER=/claude(usercontent)?\.(ai|com)$/.test(location.hostname);
+if(VIEWER){el('askOn').hidden=true;el('askOff').hidden=false;}
 let agent=JSON.parse(localStorage.getItem('cc_agent')||'{}');
 let refs={}, msel=0, mlist=[];
 const askEl=el('ask'), menEl=el('mention'), hlEl=el('hl');
@@ -820,7 +810,7 @@ function commitPrompt(){
 el('prompt').addEventListener('input',()=>{clearTimeout(promptDebounce);promptDebounce=setTimeout(commitPrompt,400);});
 el('prompt').addEventListener('blur',()=>{commitPrompt(); if(!agent.prompt) el('prompt').value=BUILT_FRAMING;});
 el('model').onchange=()=>{agent.model=el('model').value; saveAgent();};
-if(HOSTED) el('setupBtn').hidden=true; // no key can be used here, so no setup
+if(VIEWER) el('setupBtn').hidden=true; // a preview cannot reach them, so no key can be used
 reflectSetup();
 drawChat();
 drawSpend();
@@ -836,22 +826,6 @@ const rememberSize=()=>{
 new ResizeObserver(rememberSize).observe(el('msgs'));
 new ResizeObserver(rememberSize).observe(askEl);
 
-el('dlApp').onclick=async()=>{
-  const blob=new Blob([PAGE_HTML],{type:'text/html'});
-  if(globalThis.showSaveFilePicker){
-    try{
-      const h=await showSaveFilePicker({suggestedName:'cellar_compass.html',
-        types:[{description:'HTML page',accept:{'text/html':['.html']}}]});
-      const w=await h.createWritable(); await w.write(blob); await w.close();
-    }catch(e){if(e.name!=='AbortError')throw e;}
-    return;
-  }
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download='cellar_compass.html';
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(a.href);
-};
-
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape'||!pinned) return;
   if(e.target instanceof Element&&e.target.closest('textarea,input')) return;
@@ -863,23 +837,30 @@ function openOnLargestKind(){
   const k=KINDS.slice().sort((a,b)=>b.wines.length-a.wines.length)[0];
   pickKind(k.i);
 }
-el('resetApp').onclick=()=>{
+/* Three possessions, three resets: the marks you made, what was said, and the
+   taste you are asking with. Each is undone where it lives, and undoing one
+   never touches the other two. The key and its setup are not a possession of
+   any panel -- nothing here erases them. */
+el('resetMarks').onclick=()=>{
   const n=Object.keys(votes).length;
-  const msg=n ? `Reset the app? This erases the ${n} mark${n>1?'s':''} saved in this browser and returns every control to its starting state.`
-              : 'Reset the app? Every control returns to its starting state. Nothing is saved yet, so nothing is lost.';
-  if(!confirm(msg)) return;
+  if(!n) return; // nothing to lose, so nothing to ask
+  if(!confirm(`Erase the ${n} mark${n>1?'s':''} you have made? They are saved in this browser only.`)) return;
   votes={}; localStorage.removeItem('cc_votes');
-  refs={}; setBands({}); // the key and its setup are not a choice -- they stay
-  askEl.value=''; hlEl.innerHTML=''; el('diag').textContent=''; el('gloss').textContent='';
+  hideVoted=false; el('hv').checked=false; // a filter over marks that no longer exist
+  render();
+};
+el('resetChat').onclick=()=>{
+  if(chat.length&&!confirm('Discard this conversation and start again? Your key and its setup stay.')) return;
   chat=[]; localStorage.removeItem('cc_chat'); drawChat();
   spend={usd:0,tin:0,tout:0,unpriced:false}; localStorage.removeItem('cc_spend'); drawSpend();
-  el('askNote').textContent=''; el('setup').hidden=true;
-  el('setupBtn').classList.remove('on'); el('setupBtn').setAttribute('aria-expanded','false');
-  reflectSetup();
-  picked=[]; hideOwned=true; hideVoted=false; pinned=null; radarWine(null);
-  el('ho').checked=true; el('hv').checked=false; el('q').value=''; el('matches').innerHTML='';
-  drawPicked(); openOnLargestKind();
-  TABS.forEach(x=>{el('t-'+x).setAttribute('aria-selected',x==='find'); el('s-'+x).hidden=x!=='find';});
+  refs={}; askEl.value=''; hlEl.innerHTML='';
+  el('diag').textContent=''; el('gloss').textContent=''; el('askNote').textContent='';
+};
+el('resetTaste').onclick=()=>{
+  // back to the span of his own bottles in this kind -- the taste his orders state
+  picked=[]; pinned=null; radarWine(null);
+  el('q').value=''; el('matches').innerHTML='';
+  if(chosenKind===null) openOnLargestKind(); else pickKind(chosenKind);
 };
 el('export').onclick=()=>{
   const rows=[['item_id','name','variety','verdict',...A].join(',')];

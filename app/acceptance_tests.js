@@ -87,7 +87,7 @@
     near(point.fruit, 0.8);
   });
   await T('a pointed wine sets the point to its coordinates', () => {
-    el('resetApp').click();
+    el('resetTaste').click();
     const name = Object.keys(refs)[0] || (() => { type('like @ech'); pickMention(0); return Object.keys(refs)[0]; })();
     const w = S.wines.find(x => x.id === refs[name]);
     type('@' + name); el('askGo').click();
@@ -96,7 +96,7 @@
 
   // -- the wish under the point (band push must be reversible) --
   await T('a band pushing the point is undone by releasing the band', () => {
-    el('resetApp').click();
+    el('resetTaste').click();
     const stood = point.oak;
     setPoint({ ...point });                     // wish = current point
     setBands({ oak: [Math.min(0.9, stood + 0.3), 1] });   // band starts past the point
@@ -212,15 +212,47 @@
     ok(getComputedStyle(el('modelRow')).display === 'none');
   });
 
-  // -- copies --
-  await T('on this copy: no download button, green badge; the page can save itself', () => {
-    ok(el('dlApp').hidden === true, 'download hidden locally');
-    eq(el('copyBadge').textContent.trim(), 'local', 'badge names where you are');
+  // -- where the page is --
+  await T('the page says nothing about itself, and withholds only what a preview cannot do', () => {
+    ok(!el('copyBadge') && !el('dlApp'), 'no badge and no download: the page that works needs neither');
+    ok(document.documentElement.dataset.build === BUILD && /^[0-9a-f]{8}$/.test(BUILD),
+      'a loaded page can still be asked which build it is holding');
+    // only a preview is barred from reaching Anthropic or OpenAI, so only it loses the key and the asking
+    ok(el('setupBtn').hidden === VIEWER, 'the gear is withheld only from a preview');
+    ok(el('askOn').hidden === VIEWER && el('askOff').hidden === !VIEWER,
+      'the sommelier is switched off only in a preview');
+  });
+  await T('the transcript carries a grip', () => {
     ok(el('msgs').nextElementSibling.classList.contains('grip'), 'the transcript has a grip');
     ok(!chat.length || getComputedStyle(el('msgs').nextElementSibling).display !== 'none',
       'the grip shows only with the transcript');
-    ok(PAGE_HTML.includes('id="cc-css"') && PAGE_HTML.includes('class="wrap"'), 'style and body captured');
-    ok(PAGE_HTML.endsWith('</body></html>'), 'complete document');
+  });
+  await T('reset belongs to each panel, and no reset reaches into another', () => {
+    ok(!el('resetApp'), 'no single reset stands for all three');
+    ['resetMarks','resetChat','resetTaste'].forEach(id =>
+      ok(el(id) && el(id).closest('.card'), id + ' sits inside the panel it resets'));
+    ok(el('resetMarks').closest('.card').contains(el('out')), 'marks reset beside the wine list');
+    ok(el('resetChat').closest('.card').contains(el('msgs')), 'chat reset beside the conversation');
+    ok(el('resetTaste').closest('.card').contains(el('axes')), 'taste reset beside the ranges');
+  });
+  await T('resetting the chat keeps the marks, and resetting the marks keeps the chat', () => {
+    const w = el('out').querySelector('.row').dataset.w;
+    votes[w] = 'yes'; chat = [{ role: 'user', text: 'kept' }]; drawChat();
+    el('resetChat').click();
+    eq(chat.length, 0, 'the conversation is discarded');
+    eq(votes[w], 'yes', 'and the mark it never owned is untouched');
+    chat = [{ role: 'user', text: 'kept' }]; drawChat();
+    el('resetMarks').click();                       // confirm is stubbed true for this run
+    eq(Object.keys(votes).length, 0, 'the marks are erased');
+    eq(chat.length, 1, 'and the conversation it never owned is untouched');
+    chat = []; drawChat();
+  });
+  await T('resetting taste returns the ranges to the span of his own bottles', () => {
+    setBands({ oak: [0.9, 1] });
+    el('resetTaste').click();
+    const want = kindSpread(KINDS[chosenKind]);
+    A.forEach(a => { near(band[a][0], want[a][0], a + ' low'); near(band[a][1], want[a][1], a + ' high'); });
+    eq(picked, [], 'and forgets any wine you were pointing at');
   });
 
   // -- pin --
@@ -315,7 +347,8 @@
     eq(verbs, ['heading','hideOwned','hideVoted','kind','like','pin','show','tab','writeTaste'],
       'the agent has exactly the user-facing verbs');
     ok(!verbs.includes('mark') && !verbs.includes('vote'), 'marks stay his');
-    ok(!applyAct.toString().includes('resetApp'), 'reset stays his');
+    ['resetMarks','resetChat','resetTaste'].forEach(id =>
+      ok(!applyAct.toString().includes(id), id + ' stays his'));
   });
 
   await T('each measure wears its own colour wherever it is named', () => {
@@ -397,7 +430,11 @@
     eq(document.querySelector('.chathead h2').textContent, 'Sommelier', 'the panel is named for what it is');
     ok(/disabled/.test(n), 'says its state plainly');
     ok(el('askOff').querySelectorAll('li').length === 3, 'three numbered steps to enable');
-    ok(/Download/.test(n) && /gear/.test(n) && /key/.test(n), 'the steps are complete: file, gear, key');
+    ok(/gear/.test(n) && /key/.test(n), 'the steps are complete: page, gear, key');
+    const where = el('askOff').querySelector('li a');
+    ok(where && /^https:\/\//.test(where.getAttribute('href')),
+      'the first step goes somewhere real, not to a control this page does not have');
+    ok(n.includes(where.textContent), 'and the reader can read where, not just click it');
     ok(/Anthropic/.test(n) && /OpenAI/.test(n), 'names who the words go to');
     el('askOff').hidden = true;
   });
@@ -468,10 +505,11 @@
 
   await T('reset returns every control but keeps the key and its setup', () => {
     agent.key = 'kept-key'; agent.vendor = 'anthropic';
-    el('resetApp').click();
+    const biggest = KINDS.slice().sort((a, b) => b.wines.length - a.wines.length)[0];
+    pickKind(biggest.i);                        // the precondition: the largest type is the one open
+    el('resetChat').click(); el('resetTaste').click();
     ok(agent.key === 'kept-key', 'key survives reset');
     ok(chat.length === 0, 'chat cleared');
-    const biggest = KINDS.slice().sort((a, b) => b.wines.length - a.wines.length)[0];
     const span = kindSpread(biggest);
     A.forEach(a => eq(band[a], span[a], 'opens on the largest type\'s own span, not an average'));
     A.forEach(a => eq(band[a], [0, 1], a));

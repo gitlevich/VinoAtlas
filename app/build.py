@@ -42,9 +42,12 @@ def build(src=pathlib.Path(__file__).parent, out=None):
     page = page.replace('__BUILD__', hashlib.sha256(page.encode()).hexdigest()[:8])
 
     (out / 'cellar_compass.html').write_text(page)
+    # the copy that stands on its own: opened from disk, and served from the web.
+    # It carries one reader's buying, so it is kept out of search engines.
     (out / 'cellar_compass_standalone.html').write_text(
         '<!doctype html><html><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<meta name="robots" content="noindex,nofollow,noarchive">'
         '<title>Cellar Compass</title></head><body>' + page + '</body></html>')
     return len(page)
 
