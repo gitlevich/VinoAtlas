@@ -1,0 +1,5 @@
+data/
+*.xlsx
+.venv/
+__pycache__/
+cellar_compass*.html

@@ -1,0 +1,270 @@
+<title>Cellar Compass — Mark's palate, mapped</title>
+<style id="cc-css">
+:root{
+  color-scheme:light;
+  --ground:#f6f6f7; --panel:#fff; --raise:#fafafb;
+  --ink:#151517; --ink-rgb:21,21,23; --ink-2:#4a4a50; --ink-3:#82828a;
+  --rule:#e3e3e5; --track:#e8e8ea; --grid:#dcdcdf;
+  --mark:#6b4bc0; --mark-rgb:107,75,192; --me:#0a7d8f; --me-rgb:10,125,143; --mark-2:#8c6fe0; --rise:#a8641f; --rise-rgb:168,100,31; --good:#1d7a52; --bad:#a33b3b;
+ 
+  --shadow:0 1px 2px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --ground:#000; --panel:#0d0d0d; --raise:#161616;
+  --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#808080;
+  --rule:#242424; --track:#282828; --grid:#2e2e2e;
+  --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a;
+ 
+  --shadow:none;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#000; --panel:#0d0d0d; --raise:#161616;
+  --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#808080;
+  --rule:#242424; --track:#282828; --grid:#2e2e2e;
+  --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a;
+ 
+  --shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1400px;margin:0 auto;padding:34px 20px 60px;display:flex;flex-direction:column;gap:22px}
+h1{margin:0;font-size:clamp(23px,3vw,31px);font-weight:600;letter-spacing:-.024em;line-height:1.15}
+.lede{margin:0;font-size:15.5px;line-height:1.6;color:var(--ink-2);max-width:66ch}
+.head{display:flex;align-items:baseline;gap:12px 40px}
+.head h1{flex:none}
+.head .lede{flex:1;min-width:0}
+@media(max-width:880px){.head{flex-direction:column;align-items:flex-start;gap:10px}}
+nav{display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--rule);padding-bottom:0}
+nav .reset-app,nav .dl-app{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-3);
+  background:none;border:0;border-bottom:2px solid transparent;padding:9px 10px;cursor:pointer;transition:.13s}
+nav .dl-app[hidden]{display:none}
+nav .copy-badge{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;
+  color:var(--ink-3);padding:9px 4px 9px 10px;cursor:default}
+nav .copy-badge svg{width:15px;height:15px;display:block}
+nav .copy-badge.local{color:var(--good)}
+nav .copy-badge.web{color:#5e93c9}
+nav .reset-app:hover{color:var(--bad)}
+nav .dl-app:hover{color:var(--ink)}
+nav .reset-app svg,nav .dl-app svg{width:15px;height:15px;display:block}
+nav button{font:inherit;font-size:13.5px;font-weight:500;padding:9px 15px;border:0;border-bottom:2px solid transparent;
+  background:none;color:var(--ink-3);cursor:pointer;transition:.13s}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--mark)}
+nav button:focus-visible{outline:2px solid var(--mark);outline-offset:-2px}
+section[hidden]{display:none}
+section{display:flex;flex-direction:column;gap:16px}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:13px;padding:18px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 14px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.two{display:grid;grid-template-columns:330px 1fr;gap:18px;align-items:start}
+@media(max-width:880px){.two{grid-template-columns:1fr}}
+.three{display:grid;grid-template-columns:280px minmax(0,1fr) 330px;gap:14px;align-items:start}
+/* the list scrolls inside itself, so your taste never leaves the screen */
+#out{max-height:calc(100vh - 300px);min-height:260px;overflow-y:auto;overscroll-behavior:contain}
+@media(min-width:1251px){.three>div:first-child{position:sticky;top:14px}}
+@media(max-width:1250px){.three{grid-template-columns:280px minmax(0,1fr)}.three .chat{grid-column:1/-1}}
+@media(max-width:880px){.three{grid-template-columns:1fr}.three .chat{grid-column:auto}}
+.chat{display:flex;flex-direction:column}
+/* what the agent touches says so: a ring that fades where it acted */
+@keyframes touched{from{box-shadow:0 0 0 3px rgba(var(--mark-rgb),.6)}
+  to{box-shadow:0 0 0 3px transparent}}
+.touched{animation:touched 1.6s ease-out;border-radius:10px}
+@media(prefers-reduced-motion:reduce){.touched{animation:none;outline:2px solid var(--mark);outline-offset:2px}}
+#radar svg{width:100%;display:block;margin:0 auto}
+#radar .rg{stroke:var(--grid);fill:none}
+#radar .rgi{stroke:var(--grid);stroke-opacity:.45;fill:none}
+/* INSIDE your taste is a colour; OUTSIDE it is neutral. That distinction is the
+   point of this chart. A wine you point at lays over it, to try it on. */
+#radar .rout{fill:var(--ink-3);fill-opacity:.08}
+#radar .rpt{fill:var(--me);fill-opacity:.45;stroke:var(--ink);stroke-opacity:.8}
+#radar .rw{fill:var(--rise);fill-opacity:.2;stroke:var(--rise)}
+#radar .rwd{fill:var(--rise)}
+.rleg{display:flex;justify-content:center;flex-wrap:wrap;gap:7px 16px;font-size:11px;
+  line-height:1.5;color:var(--ink-3);margin-top:14px}
+.rleg i{display:inline-block;width:13px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+.rleg i.fill{height:9px;border:1px dashed var(--ink);border-radius:2px;background:rgba(var(--me-rgb),.5)}
+.rleg span[hidden]{display:none}
+/* fixed height: the caption fills reserved space, so nothing below it ever
+   jumps as wine names come and go */
+/* the wine name is a popover over the legend: it takes no layout space at all,
+   so it can never be cut and never pushes anything down */
+.capwrap{position:relative;margin-bottom:14px}
+#radarName{position:absolute;left:0;right:0;top:-6px;min-height:calc(100% + 12px);
+  display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;
+  background:var(--raise);border:1px solid var(--rule);border-radius:9px;padding:8px 10px;color:var(--ink-2)}
+#radarName:empty{display:none}
+.chathead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.chathead h2{margin:0}
+#askGo{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;
+  border:1px solid transparent;border-radius:7px;background:transparent;color:var(--ink-3);cursor:pointer;transition:.12s}
+#askGo:hover{color:var(--mark);background:rgba(var(--mark-rgb),.12)}
+#askGo svg{width:18px;height:18px}
+.gear{display:flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;
+  border:0;border-radius:7px;background:none;color:var(--ink-3);cursor:pointer}
+/* static copy, not a message: it must not keep the source's line breaks */
+#askOff{white-space:normal;max-width:none}
+.gear[hidden]{display:none}
+.gear:hover{color:var(--ink);background:var(--raise)}
+.gear.on{color:var(--mark);background:rgba(var(--mark-rgb),.14)}
+.gear svg{width:16px;height:16px}
+#setup{margin-bottom:12px;padding:11px 12px;background:var(--raise);border:1px solid var(--rule);border-radius:10px}
+.setrow{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.setrow[hidden]{display:none}
+.setrow:last-of-type{margin-bottom:0}
+.setlbl{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);width:64px;flex:none}
+.setrow select,.setrow input{font:inherit;font-size:12.5px;padding:6px 9px;border-radius:7px;
+  border:1px solid var(--rule);background:var(--panel);color:var(--ink);flex:1;min-width:0}
+.setcol{margin:10px 0 8px}
+.setcol .setlbl{display:block;margin-bottom:5px}
+.setcol textarea{width:100%;box-sizing:border-box;font:inherit;font-size:12.5px;line-height:1.5;padding:7px 9px;
+  border-radius:7px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);resize:vertical}
+.keywrap{position:relative;display:flex;flex:1;min-width:0}
+.keywrap input{width:100%;padding-right:28px}
+.keyclear{position:absolute;right:3px;top:50%;transform:translateY(-50%);width:22px;height:22px;
+  border:0;border-radius:6px;background:none;color:var(--ink-3);font-size:15px;line-height:1;cursor:pointer}
+.keyclear:hover{color:var(--bad);background:var(--rule)}
+#msgs{display:flex;flex-direction:column;gap:8px;overflow-y:auto;height:300px;min-height:90px;
+  resize:vertical;margin-bottom:10px}
+#msgs:empty{display:none}
+#msgs:empty + .grip{display:none}
+/* both boxes carry a visible grip, so it is plain they can be dragged taller */
+#msgs::-webkit-resizer,#ask::-webkit-resizer{background:transparent}
+.grip{position:absolute;right:2px;bottom:2px;width:11px;height:11px;pointer-events:none;color:var(--ink-3);opacity:.45}
+.grip svg{width:11px;height:11px;display:block}
+.mu,.ma,.mn{font-size:13px;line-height:1.5;padding:8px 11px;border-radius:11px;max-width:92%;overflow-wrap:break-word;white-space:pre-wrap}
+.mu{align-self:flex-end;background:rgba(var(--mark-rgb),.16);
+  border:1px solid rgba(var(--mark-rgb),.3)}
+.ma{align-self:flex-start;background:var(--raise);border:1px solid var(--rule);color:var(--ink-2)}
+.mn{align-self:flex-start;background:rgba(var(--rise-rgb),.07);border:1px dashed var(--rise);color:var(--ink-2)}
+.mu,.ma,.mn{position:relative}
+.mcopy,.mx{position:absolute;top:3px;right:3px;width:20px;height:20px;padding:0;border:0;border-radius:5px;
+  background:transparent;color:var(--ink-3);opacity:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .12s}
+.mu:hover .mcopy,.ma:hover .mcopy,.mn:hover .mx{opacity:1}
+.mcopy:hover,.mx:hover{background:var(--rule);color:var(--ink)}
+.mcopy svg{width:12px;height:12px}
+.mx{font-size:13px;line-height:1}
+.ax{margin-bottom:19px}
+.ax:last-child{margin-bottom:0}
+.axtop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.axname{font-size:14px;font-weight:550}
+.axval{font-size:11.5px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace}
+/* two-headed slider, ported from SigilAtlas band-widget: the band is the
+   invariant, the thin marker the point ranking centres on */
+.band-track{position:relative;height:26px;cursor:pointer;user-select:none;touch-action:none}
+.band-bg{position:absolute;top:50%;left:0;right:0;height:6px;margin-top:-3px;border-radius:3px;background:var(--track)}
+/* physical color anchors: same in both themes, they depict the thing itself */
+.bg-weight{background:linear-gradient(90deg,#ecc9cd,#5a0f1e)}
+.bg-grip{background:linear-gradient(90deg,#e3d3b4,#5e3a1c)}
+.bg-oak{background:linear-gradient(90deg,#ded6c8,#8a5a24)}
+.bg-fruit{background:linear-gradient(90deg,#9ebf3b,#6d1f4e)}
+.bg-maturity{background:linear-gradient(90deg,#87a733,#c08a3e,#96502a)}
+.band{position:absolute;top:3px;height:20px;border-radius:6px;cursor:grab;min-width:8px;
+  background:rgba(var(--mark-rgb),.13);
+  border:1px solid rgba(var(--mark-rgb),.5)}
+.band:hover{background:rgba(var(--mark-rgb),.2)}
+.band.dragging{cursor:grabbing;background:rgba(var(--mark-rgb),.26)}
+.bh{position:absolute;top:-2px;width:16px;height:24px;cursor:ew-resize;z-index:1}
+.bh.left{left:-8px}
+.bh.right{right:-8px}
+.bh::after{content:'';position:absolute;top:5px;bottom:5px;left:50%;width:4px;margin-left:-2px;
+  border-radius:2px;background:var(--mark);border:1px solid var(--panel);box-sizing:border-box}
+.bmark{position:absolute;top:1px;width:2.5px;height:24px;margin-left:-1.25px;border-radius:1px;
+  background:var(--ink);box-shadow:0 0 0 1px var(--panel);pointer-events:none}
+.ends{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-3);margin-top:1px}
+.help{font-size:12.5px;color:var(--ink-3);line-height:1.55;margin:16px 0 8px;
+  padding-top:13px;border-top:1px solid var(--rule)}
+.btn{font:inherit;font-size:12.5px;padding:7px 12px;border-radius:8px;border:1px solid var(--rule);
+  background:var(--raise);color:var(--ink-2);cursor:pointer;transition:.13s}
+.btn:hover{color:var(--ink);border-color:var(--mark)}
+.btn.on{background:var(--mark);border-color:var(--mark);color:#fff}
+.btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
+/* each kind drawn from its own wines -- one faint outline per bottle, no mean */
+.pick{margin:0 0 8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-3)}
+#modeBtns{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:0}
+.kindcard{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 3px 6px;text-align:center}
+.kindcard svg{width:100%;max-width:46px;display:block}
+.kindcard .kn{font-size:9.5px;font-weight:600;color:var(--ink);line-height:1.2}
+.kindcard .kc{font-size:9px;color:var(--ink-3)}
+.kindcard.on{border-color:var(--mark);background:rgba(var(--mark-rgb),.12)}
+.kindcard.on .kn{color:var(--ink)}
+.howto{margin-top:14px;padding-top:13px;border-top:1px solid var(--rule)}
+.howto summary{cursor:pointer;list-style:none}
+.howto summary::-webkit-details-marker{display:none}
+.howto summary::before{content:'? ';font-weight:600}
+.row{display:grid;grid-template-columns:1fr auto auto;gap:13px;align-items:center;
+  border-bottom:1px solid var(--rule);padding:12px 8px;cursor:pointer;border-radius:9px;transition:background .1s}
+.row:hover{background:rgba(var(--mark-rgb),.06)}
+.row.sel{background:rgba(var(--mark-rgb),.12)}
+.row:last-child{border-bottom:0}
+.nm{font-size:14px;font-weight:550;line-height:1.3}
+.meta{font-size:12px;color:var(--ink-3);margin-top:2px}
+.why{font-size:12px;color:var(--ink-2);margin-top:4px}
+.bars{display:flex;gap:3px;align-items:flex-end;height:26px;cursor:help}
+.barkey{display:flex;gap:3px;align-items:flex-end;height:18px;margin-left:auto}
+.barkey i{width:6px;border-radius:2px;background:var(--ink-3);opacity:.45;display:block}
+.bar{width:6px;border-radius:2px;opacity:.9;pointer-events:none}
+.vote{display:flex;flex-direction:row;gap:6px;align-items:center}
+.vote button{display:flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;
+  border:1px solid var(--rule);border-radius:50%;background:none;color:var(--ink-3);cursor:pointer;transition:.12s}
+.vote button svg{width:14px;height:14px}
+.vote button.yes:hover{border-color:var(--good);color:var(--good)}
+.vote button.no:hover{border-color:var(--bad);color:var(--bad)}
+.vote button.yes.on{border-color:var(--good);background:var(--good);color:#fff}
+.vote button.no.on{border-color:var(--bad);background:var(--bad);color:#fff}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px}
+.stat{background:var(--panel);border:1px solid var(--rule);border-radius:11px;padding:13px 14px}
+.stat .n{font-size:22px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .k{font-size:12px;color:var(--ink-3);margin-top:4px;line-height:1.45}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.note{font-size:12.5px;color:var(--ink-3);line-height:1.6;margin:0}
+input[type=search]{width:100%;font:inherit;font-size:13px;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--rule);background:var(--raise);color:var(--ink)}
+.spellbox{position:relative;background:var(--raise);border:1px solid var(--rule);border-radius:8px;padding:4px}
+.spellbox:focus-within{border-color:var(--mark)}
+/* the cost reads immediately left of the send it belongs to, both in the box's
+   bottom-right corner -- laid over it, never taking width from the writing */
+.askrow{position:relative}
+.askfield{position:relative}
+.askactions{position:absolute;right:4px;bottom:2px;display:inline-flex;align-items:center;gap:8px}
+#spend{font-variant-numeric:tabular-nums;white-space:nowrap}
+#hl,#ask{font-family:inherit;font-size:13.5px;line-height:1.5;padding:9px 11px 34px;
+  white-space:pre-wrap;word-wrap:break-word;box-sizing:border-box}
+#hl{position:absolute;inset:0;color:var(--ink);pointer-events:none;overflow:hidden}
+#ask{position:relative;display:block;width:100%;min-height:96px;background:transparent;border:0;outline:0;
+  color:transparent;caret-color:var(--ink);resize:vertical}
+.msgswrap{position:relative}
+#ask::placeholder{color:var(--ink-3)}
+.tk-ref{color:var(--mark)}
+.tk-inv{color:var(--rise)}
+.tk-aff{color:var(--good)}
+.tk-op{color:var(--ink-3)}
+.tk-quote{color:var(--ink-2)}
+.spellcard .tk-ref,.spellcard .tk-inv,.spellcard .tk-aff{font-weight:600}
+.tk-err{text-decoration:underline wavy var(--bad);text-decoration-thickness:1px;text-underline-offset:3px}
+.spellcard{margin-top:9px;display:grid;grid-template-columns:auto 1fr;gap:7px 13px;font-size:12.5px;align-items:baseline}
+.spellcard code{font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:nowrap}
+.spellcard span{color:var(--ink-3);line-height:1.55}
+.mention{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:6;background:var(--panel);
+  border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);max-height:250px;overflow:auto}
+.mention .m{padding:8px 11px;cursor:pointer;font-size:13px;line-height:1.35}
+.mention .m .mm{font-size:11.5px;color:var(--ink-3)}
+.mention .m.sel{background:var(--mark)}
+.mention .m.sel,.mention .m.sel .mm{color:#fff}
+#keyRow{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+#keyRow select,#keyRow input{font:inherit;font-size:12.5px;padding:7px 9px;border-radius:8px;
+  border:1px solid var(--rule);background:var(--raise);color:var(--ink)}
+#keyRow input{flex:1;min-width:170px}
+.chip{font-size:12px;padding:5px 9px;border-radius:14px;border:1px solid var(--rule);background:var(--raise);
+  color:var(--ink-2);cursor:pointer;display:inline-block;margin:3px 3px 0 0}
+.chip:hover{border-color:var(--mark);color:var(--ink)}
+.chip.on{background:var(--mark);border-color:var(--mark);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 8px 7px 0;border-bottom:1px solid var(--rule)}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:600}
+th.num{text-align:right}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+</style>

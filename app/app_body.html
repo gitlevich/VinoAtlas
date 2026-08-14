@@ -1,0 +1,219 @@
+<div class="wrap">
+<div class="head">
+  <h1>Cellar Compass</h1>
+  <p class="lede">This looks at the 232 wines on your account, works out what they have in common, and
+  finds others in the shop's 1,652-wine list that are like them. It also shows how your buying has changed
+  from your first order to your latest. You know wine and it does not — so where it is wrong, mark it wrong.</p>
+</div>
+
+<nav role="tablist">
+  <button role="tab" id="t-find" aria-selected="true">Find wines</button>
+  <button role="tab" id="t-palate" aria-selected="false">Your palate</button>
+  <button role="tab" id="t-move" aria-selected="false">How your buying changed</button>
+  <button role="tab" id="t-pop" aria-selected="false">What happens to everyone</button>
+  <button role="tab" id="t-how" aria-selected="false">What the words mean</button>
+  <span class="copy-badge" id="copyBadge"></span>
+  <button class="dl-app" id="dlApp" title="Save this app as one file on your computer. Opened from there, the sommelier works too.">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3v11"/><path d="M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>
+    Download</button>
+  <button class="reset-app" id="resetApp" title="Return every control to its start and erase your marks and chat. Your key and its setup stay.">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+    Reset</button>
+</nav>
+
+<section id="s-find">
+  <div class="three">
+    <div>
+      <div class="card">
+        <p class="pick">Which of your wines are we looking at?</p>
+        <div class="btns" id="modeBtns"></div>
+        <h2 id="tasteHead" style="margin-top:16px">Your taste</h2>
+        <div id="radar"></div>
+        <div class="capwrap">
+        <div class="rleg">
+          <span><i class="fill"></i>the wine you are looking for</span>
+          <span><i style="border-color:var(--rise)"></i>the wine you are pointing at</span>
+        </div>
+        <div id="radarName" class="note"></div>
+        </div>
+        <div id="axes"></div>
+        <details class="howto"><summary class="note">How this works</summary>
+        <p class="note" style="margin-top:8px">On each measure the shaded stretch is the range you accept.
+        Only wines inside every range are shown, and the list is ordered by nearness to the middle of your
+        ranges. Drag an end to narrow it, drag the middle to slide it, double-click to accept everything
+        again. Telling the sommelier the same thing moves these ranges; dragging them is the same statement
+        made by hand.</p></details>
+        <div class="btns">
+          <button class="btn" id="mySigil" title="Measure the ranges your buying stays inside and write them to the sommelier, for you to correct and send">Your taste, written out</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="btns" style="margin-top:0">
+          <button class="btn" id="toNext">Set to where my buying is heading</button>
+        </div>
+        <h2 style="margin-top:16px">Or a wine you like</h2>
+        <input type="search" id="q" placeholder="start typing a wine name…" autocomplete="off">
+        <div id="matches"></div><div id="picked"></div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2>Filters</h2>
+        <label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-2);cursor:pointer">
+          <input type="checkbox" id="ho" checked> hide wines you have already bought</label>
+        <label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-2);margin-top:8px;cursor:pointer">
+          <input type="checkbox" id="hv"> hide ones you have already marked</label>
+      </div>
+    </div>
+    <div class="card">
+      <h2>What the shop has that is closest</h2>
+      <div id="count" class="note" style="margin:-6px 0 8px"></div>
+      <div id="out"></div>
+      <div class="btns" style="margin-top:14px">
+        <button class="btn" id="export">Download your marks</button>
+        <span class="note" id="votecount"></span>
+      </div>
+    </div>
+    <div class="card chat">
+      <div class="chathead">
+        <h2 style="margin:0">Sommelier</h2>
+        <button id="setupBtn" class="gear" title="Choose who answers, and with which key and model" aria-label="Chat setup">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.07.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </button>
+      </div>
+      <div id="setup" hidden>
+        <div class="setrow"><span class="setlbl">Who answers</span>
+          <select id="vendor"><option value="anthropic">Anthropic</option><option value="openai">OpenAI</option></select></div>
+        <div class="setrow"><span class="setlbl">Key</span>
+          <span class="keywrap"><input type="password" id="key" autocomplete="off" spellcheck="false">
+          <button id="keyClear" class="keyclear" title="Forget the saved key" aria-label="Forget the saved key" hidden>×</button></span></div>
+        <div class="setrow" id="modelRow" hidden><span class="setlbl">Model</span>
+          <select id="model"></select></div>
+        <div class="setcol"><span class="setlbl">Prompt</span>
+          <textarea id="prompt" rows="4" spellcheck="false"></textarea></div>
+        <p class="note" id="setupStatus" style="margin-top:6px"></p>
+        <p class="help" style="margin:8px 0 0;padding-top:8px">The prompt is the framing the model is given,
+        shown as it really is — edit it to change its manner; clear it to return to the built-in. The five
+        measures, the ranges you accept, the wine you are asking for, anything you pointed at, and the required
+        answer shape are always appended after it. Plain words are sent, with those numbers, to whichever of
+        Anthropic or OpenAI you picked above — nothing else is sent. Your key is saved in this browser only,
+        stays across visits, and goes only to them.</p>
+      </div>
+      <div class="msgswrap"><div id="msgs"></div>
+        <span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M11 7 7 11h4zM11 2 2 11h2.5L11 4.5z"/></svg></span></div>
+      <div id="askOn">
+        <div class="spellbox">
+          <div class="askrow">
+            <div class="askfield">
+              <div id="hl" aria-hidden="true"></div>
+              <textarea id="ask" rows="3" spellcheck="false"
+placeholder="like @ but younger, no oak — @ picks a wine from the list, ! holds a range, # names a quality"></textarea>
+            </div>
+            <div class="askactions">
+              <span class="note" id="spend"
+                title="What this chat has cost with your key, at public model prices. A model with no known price counts tokens only."></span>
+              <button id="askGo" title="Send (or press Enter)" aria-label="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M10 8 6 12l4 4"/><path d="M6 12h10a4 4 0 0 0 4-4V5"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="mention" class="mention" hidden></div>
+          <span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M11 7 7 11h4zM11 2 2 11h2.5L11 4.5z"/></svg></span>
+        </div>
+        <div id="diag" class="note" style="margin-top:5px;color:var(--bad)"></div>
+        <div id="gloss" class="note" style="margin-top:4px"></div>
+        <div class="note" id="askNote" style="margin-top:6px"></div>
+        <details style="margin-top:12px">
+          <summary class="note" style="cursor:pointer">How to write it</summary>
+          <div class="spellcard">
+            <code class="tk-ref">@</code><span>a wine from the shop’s list. Type @ and pick — its name is never
+              spelled by hand.</span>
+            <code class="tk-aff">#oak</code><span>a named quality — one of the five this app measures:
+              #body&ensp;#grip (tannin grip)&ensp;#oak&ensp;#fruit (fruit character)&ensp;#age.
+              Ask for more or less of it in plain words.</span>
+            <code class="tk-inv">!oak 0.2..0.6</code><span>a requirement: the range a quality must stay
+              inside for a wine to fit your taste. ..0.3 and 0.7.. leave a side open; numbers run 0 to 1.
+              Sending one narrows that range on the left.</span>
+            <code>cherry, oaky…</code><span>words the lens has measured are read right here and colored by
+              the quality they move — the reading shows under the box as you type.</span>
+            <code>plain words</code><span>anything else is sent to Anthropic or OpenAI — whichever you set
+              up behind the gear — and their answer moves the wine you are asking for.</span>
+            <code class="tk-op">and or not</code><span>act only beside pointed things — in plain talk they
+              are just words.</span>
+            <code class="tk-op">"…"</code><span>quotes keep a phrase literal.</span>
+          </div>
+          <p class="note" style="margin-top:9px">A message of only picked wines, measured words and
+          requirements is carried out right here — no key needed. The button under the ranges writes out
+          the ranges your own buying stays inside, for you to correct and send. Wines inside all of them
+          are your kind of wine.</p>
+        </details>
+      </div>
+      <div class="mn" id="askOff" hidden>This is a sommelier you can talk to. It knows every wine on this
+      list and how you buy, and it moves the page as you speak. On this shared page it is disabled.
+      To enable it:
+      <ol style="margin:8px 0 0;padding-left:20px">
+        <li>Press Download above and open the saved file on your own computer.</li>
+        <li>There, press the gear at the top of this panel.</li>
+        <li>Paste your own Anthropic or OpenAI key.</li>
+      </ol>
+      Then say what you want.</div>
+    </div>
+  </div>
+</section>
+
+<section id="s-palate" hidden>
+  <div class="stats" id="palateStats"></div>
+  <div class="card">
+    <h2>The wines you buy, against the shop’s shelf</h2>
+    <div id="palateBars"></div>
+    <p class="note" style="margin-top:12px">Each bar is a count of wines the shop stocks: taller means more
+    of them sit at that point on the scale. The purple line is where the wines on your account average out.
+    Nothing here is a judgement — it only says where your buying sits relative to what is on the shelf.</p>
+  </div>
+</section>
+
+<section id="s-move" hidden>
+  <div class="card">
+    <h2>Your ten orders, oldest to newest <span id="pinHint" style="float:right;text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">Point at an order to preview it · click to pin it</span></h2>
+    <div id="moveChart"></div>
+    <p class="note" style="margin-top:12px">Each coloured line is the <b>average</b> of one order — useful for
+    direction, misleading about contents, since a single order mixes whites and big reds. Point at an order to
+    see its actual bottles below; click to pin it. The store's export has no dates, so the years come from
+    vintages: an order holding a 2023 wine cannot have been <b>placed</b> before 2023.</p>
+  </div>
+  <div class="card"><h2>What was actually in each order</h2><div id="moveTable"></div></div>
+</section>
+
+<section id="s-pop" hidden>
+  <div class="card">
+    <h2>Ten years of a wine drinker, left to right</h2>
+    <div id="popChart"></div>
+  </div>
+  <div class="stats" id="popStats"></div>
+  <p class="note">Each row is one thing, tracked left to right through a drinker's first decade, with its real
+  value printed at every step. Read any row on its own. The pattern: they stop praising and start naming
+  faults; they open older bottles; they drift from Cabernet toward Pinot and Riesling — while the score they
+  give never moves.</p>
+</section>
+
+<section id="s-how" hidden>
+  <div class="card"><h2>The five things it measures</h2><div id="howAxes"></div></div>
+  <div class="card"><h2>What it deliberately ignores</h2>
+    <table><thead><tr><th>Left out</th><th>Reason</th></tr></thead><tbody>
+      <tr><td>sourness, bitterness, greenness</td><td>put a wine in front of two halves of a trained panel and they rank it differently. Not usable.</td></tr>
+      <tr><td>acidity</td><td>same problem, less severe. Still below the line we drew.</td></tr>
+      <tr><td>minerality, and most aroma-wheel words</td><td>across 1.9 million tasting notes, these words do not reliably attach to any kind of wine.</td></tr>
+      <tr><td>price</td><td>the list we were given has none.</td></tr>
+    </tbody></table>
+  </div>
+  <div class="card"><h2>Where it is likely to be wrong</h2>
+    <p class="note">Nobody tasted any of this. The five numbers for each wine come from written descriptions
+    of it, so where a description is wrong the wine lands in the wrong place — Port and Madeira are both
+    filed wrongly, and there will be others. Oak is the shakiest of the five: no tasting panel ever tested
+    whether people agree about it, it is here because the shop's list records it. And the order the ten
+    orders appear in is inferred, not dated.</p>
+  </div>
+</section>
+</div>
