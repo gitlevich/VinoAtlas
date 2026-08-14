@@ -244,7 +244,8 @@ def test_commitment_is_carried_by_the_mark_not_by_how_close_it_lands(page, strai
     1/distance would make the blandest weed the biggest, brightest thing in the
     view. Size and brightness come from the weed, and distance then divides."""
     assert "70 * t.lean / q.dist" in page, "apparent size no longer tracks commitment"
-    assert "6.5 * t.lean / q.dist" in page, "brightness no longer tracks commitment"
+    assert "8.5 * t.lean / q.dist" in page, "brightness no longer tracks commitment"
+    assert "Math.max(0.46," in page, "the weed brightness floor was lowered again"
     assert "20 / q.dist" not in page, "the old proximity-is-importance rule is back"
 
     def R(t):

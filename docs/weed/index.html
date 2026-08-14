@@ -332,7 +332,12 @@ function draw() {
        view. Its own size carries its commitment, and distance then does what
        distance does. The two nearly cancel, which is correct: how much a weed
        commits is not a function of where you happen to be standing. */
-    const a = Math.max(0.30, Math.min(0.95, 6.5 * t.lean / q.dist) * q.edge * attend);
+    /* Measured against the words in the same view: the weeds were sitting at a
+       median 0.21 of screen luminance against the words' 0.38, and the darkest
+       fell to 0.179, below even the dimmest word. Most were pinned on the
+       floor. A weed must not outshine the sky -- the sky is the frame -- but it
+       has to be plainly there, so the floor rises and the gain with it. */
+    const a = Math.max(0.46, Math.min(0.95, 8.5 * t.lean / q.dist) * q.edge * attend);
     strains.push({ t, q, a,
                    R: Math.max(1.6, (70 * t.lean / q.dist) * (WIDE / FOV) ** 0.5) * q.edge });
   }
@@ -348,7 +353,7 @@ function draw() {
         k ? g.lineTo(x, y) : g.moveTo(x, y);
       }
       g.closePath();
-      g.fillStyle = `hsla(${t.h},62%,${t.l - 14}%,${a * 0.5})`; g.fill();
+      g.fillStyle = `hsla(${t.h},66%,${t.l - 6}%,${a * 0.72})`; g.fill();
       g.strokeStyle = `hsla(${t.h},75%,${t.l}%,${a})`; g.lineWidth = 1; g.stroke();
     } else {
       /* the profile itself: one spoke per feeling, so two strains that do the
@@ -367,7 +372,7 @@ function draw() {
       g.beginPath(); g.arc(q.x, q.y, Math.max(1, R * 0.1), 0, 6.284);
       g.fillStyle = `hsla(${t.h},75%,${t.l + 12}%,${a})`; g.fill();
     }
-    t.node = [q.x, q.y, R];
+    t.node = [q.x, q.y, R, a];
   }
 
   const seen = [];

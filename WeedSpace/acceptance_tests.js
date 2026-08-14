@@ -267,6 +267,47 @@
     ok(worst <= 24, 'a small turn changed the count by ' + worst);
   });
 
+  await T('a weed reads against the black without outshining the sky', async () => {
+    /* Measured as luminance actually put on screen -- the colour times the alpha
+       it is drawn at -- because a hue equalised at full strength still vanishes
+       once alpha halves it. The weeds once sat at a median 0.21 against the
+       words' 0.38, with the darkest at 0.179, under even the dimmest word.
+
+       Two bounds, and they pull opposite ways: every weed must clear the faintest
+       star, and the middle of the field must stay below the middle of the sky,
+       because the sky is the frame you read the field against. */
+    const lum = (h, s, l) => {
+      h = ((h % 360) + 360) % 360; s /= 100; l /= 100;
+      const c = (1 - Math.abs(2*l - 1)) * s, x = c * (1 - Math.abs((h/60) % 2 - 1)), m = l - c/2;
+      const [r, g, b] = [[c,x,0],[x,c,0],[0,c,x],[0,x,c],[x,0,c],[c,0,x]][Math.floor(h/60) % 6];
+      return 0.2126*(r+m) + 0.7152*(g+m) + 0.0722*(b+m);
+    };
+    const mid = xs => xs.sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+    STAND = [0, 0, 0];
+    let worstWeed = 1, worstWhere = '';
+    const weedMids = [], wordMids = [];
+    for (let a = 0; a < 6.2832; a += 0.7) {          // sample the whole sky
+      yaw = a; pitch = 0; await frame();
+      const ws = [], ds = [];
+      for (const t of ST) {
+        if (!t.node) continue;
+        /* the alpha the page actually drew it at, carried on the node -- not
+           recomputed here, which would only prove the formula equals itself */
+        const val = t.node[3] * lum(t.h, 75, t.l);
+        ws.push(val);
+        if (val < worstWeed) { worstWeed = val; worstWhere = t.n; }
+      }
+      for (const i of ITEMS) if (i.hit)
+        ds.push(Math.max(0.34, Math.min(1, 0.14 + 0.86 * i.str)) * lum(i.hue, i.sat, i.lit));
+      if (ws.length) weedMids.push(mid(ws));
+      if (ds.length) wordMids.push(mid(ds));
+    }
+    await look(home.yaw, home.pitch);
+    ok(worstWeed > 0.24, 'the darkest weed sits at ' + worstWeed.toFixed(3)
+       + ' (' + worstWhere + ') -- under the faintest star');
+    ok(mid(weedMids) < mid(wordMids), 'the field is outshining the sky it is read against');
+  });
+
   await T('no mark ever fades into the ground', async () => {
     /* marks dim with distance and with how far off-centre they are, but they
        never reach alpha 0 -- that is disappearing, not receding */
