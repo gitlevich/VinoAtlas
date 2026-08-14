@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>VinoAtlas</title>
+<style>
+:root{
+  color-scheme:light;
+  --ground:#f6f6f7; --panel:#fff; --raise:#fafafb;
+  --ink:#151517; --ink-2:#4a4a50; --ink-3:#82828a;
+  --rule:#e3e3e5;
+  --mark:#6b4bc0; --mark-rgb:107,75,192;
+  --wine:#a8641f; --weed:#1d7a52;
+  --shadow:0 1px 2px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --ground:#000; --panel:#0d0d0d; --raise:#161616;
+  --ink:#f2f2f2; --ink-2:#b5b5b5; --ink-3:#808080;
+  --rule:#242424;
+  --mark:#a48cff; --mark-rgb:164,140,255;
+  --wine:#e2a35a; --weed:#4dc08a;
+  --shadow:none;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#000; --panel:#0d0d0d; --raise:#161616;
+  --ink:#f2f2f2; --ink-2:#b5b5b5; --ink-3:#808080;
+  --rule:#242424;
+  --mark:#a48cff; --mark-rgb:164,140,255;
+  --wine:#e2a35a; --weed:#4dc08a;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:clamp(40px,9vh,96px) 20px 64px}
+h1{margin:0;font-size:clamp(30px,6vw,44px);font-weight:600;letter-spacing:-.028em;line-height:1.1}
+.lede{margin:14px 0 0;font-size:16px;line-height:1.6;color:var(--ink-2);max-width:56ch}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:38px}
+.tool{display:block;text-decoration:none;color:inherit;background:var(--panel);
+  border:1px solid var(--rule);border-radius:14px;padding:20px;box-shadow:var(--shadow);
+  transition:border-color .14s,transform .14s}
+a.tool:hover{border-color:var(--accent);transform:translateY(-2px)}
+a.tool:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.kicker{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+.tool h2{margin:11px 0 0;font-size:19px;font-weight:600;letter-spacing:-.015em}
+.tool p{margin:8px 0 0;font-size:13.5px;line-height:1.6;color:var(--ink-2)}
+.go{display:inline-flex;align-items:center;gap:6px;margin-top:15px;
+  font-size:13px;font-weight:550;color:var(--accent)}
+.go svg{width:14px;height:14px}
+.soon{margin-top:15px;font-size:12.5px;color:var(--ink-3)}
+.tool.wine{--accent:var(--wine)}
+.tool.weed{--accent:var(--weed)}
+.tool.pending{background:var(--raise);border-style:dashed}
+.tool.pending h2{color:var(--ink-2)}
+.foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--rule);
+  font-size:12.5px;line-height:1.65;color:var(--ink-3);max-width:60ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>VinoAtlas</h1>
+  <p class="lede">Two tools, each reading one domain through the handful of measures its
+  drinkers and growers actually agree on — and then finding what is near you in that space.</p>
+
+  <div class="tools">
+    <a class="tool wine" href="wine/">
+      <span class="kicker"><span class="dot"></span>Wine</span>
+      <h2>Cellar Compass</h2>
+      <p>One buyer's account, read as a range on five measures — body, tannin grip, oak,
+      fruit character, age — and the shop's 1,652 wines ranked by nearness to it. Talk to a
+      sommelier that moves the page as you speak.</p>
+      <span class="go">Open
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h13"/><path d="M12 5l7 7-7 7"/></svg>
+      </span>
+    </a>
+
+    <div class="tool weed pending">
+      <span class="kicker"><span class="dot"></span>Weed</span>
+      <h2>WeedAtlas</h2>
+      <p>The same reading applied to cannabis, where the chemistry is measured rather than
+      described — so what a name promises can be checked against what is in the jar.</p>
+      <p class="soon">Not built yet.</p>
+    </div>
+  </div>
+
+  <p class="foot">Nobody tasted any of this. Each tool places things by what has been written
+  about them, so where a description is wrong the thing lands in the wrong place. Every page
+  says where it is likely to be wrong.</p>
+</div>
+</body>
+</html>

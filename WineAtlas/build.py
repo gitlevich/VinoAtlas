@@ -2,9 +2,10 @@
 
 app_head.html (style) + app_body.html (markup) + app.js (all logic, with the
 catalogue substituted for __DATA__) -> cellar_compass.html, plus a standalone
-wrapped copy for opening from disk. The asserts are the build's own guards:
-one script block, no <line> elements (the artifact viewer strips them), and no
-banned vocabulary in anything the reader can see.
+wrapped copy, which is both the file you open from disk and the page that is
+served: it is written to docs/wine/index.html, which is what GitHub Pages
+publishes. The asserts are the build's own guards: one script block, no <line>
+elements, and no banned vocabulary in anything the reader can see.
 """
 import hashlib
 import pathlib
@@ -44,11 +45,14 @@ def build(src=pathlib.Path(__file__).parent, out=None):
     (out / 'cellar_compass.html').write_text(page)
     # the copy that stands on its own: opened from disk, and served from the web.
     # It carries one reader's buying, so it is kept out of search engines.
-    (out / 'cellar_compass_standalone.html').write_text(
-        '<!doctype html><html><head><meta charset="utf-8">'
+    standalone = ('<!doctype html><html><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<meta name="robots" content="noindex,nofollow,noarchive">'
         '<title>Cellar Compass</title></head><body>' + page + '</body></html>')
+    (out / 'cellar_compass_standalone.html').write_text(standalone)
+    published = out / 'docs' / 'wine' / 'index.html'   # what agent.farm/VinoAtlas/wine serves
+    published.parent.mkdir(parents=True, exist_ok=True)
+    published.write_text(standalone)
     return len(page)
 
 if __name__ == '__main__':
