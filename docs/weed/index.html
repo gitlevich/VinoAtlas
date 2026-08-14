@@ -69,6 +69,9 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
 #names .trk{height:9px;background:#1d1d1d;border-radius:2px;overflow:hidden}
 #names .trk i{display:block;height:100%;border-radius:2px}
 #names .nm{font-size:11px;color:var(--ink);white-space:nowrap;letter-spacing:.02em}
+/* Below the leading group: present, but genuinely lesser. */
+#names .nm.less{color:var(--ink-3)}
+#names .trk.less{height:6px;opacity:.5}
 </style>
 
 <div id=wrap>
@@ -125,11 +128,35 @@ function does(t) {
      shows nine bars of equal length, that IS the reading: it does nothing in
      particular. The panel scrolls. */
   const show = e.filter(x => x[1] >= cut);
-  return '<div class=bars>' + show.map(([w, v]) => {
+
+  /* THE LEADING GROUP, and why there is one.
+
+     A bar is round(9 x percentile), so a one-step lead can be a thousandth of a
+     percentile -- nothing. 47% of these weeds have no single longest bar at all
+     and 85% lead by a step or less, so printing them in order, longest first,
+     invents a winner the data does not have. That is the argmax bug in a third
+     costume: it was a coin toss between two, then a mean of everything, and
+     here it is a sorted list read from the top.
+
+     So everything within a step of the best is one group, level, and inside
+     that group the order is settled by which feeling the weed actually stands
+     nearest -- real information, not list order. The top bar is then the star
+     it sits under 77% of the time, against 36% for a hard argmax. What follows
+     the group is drawn quieter, because it is genuinely lesser. */
+  const best = show[0][1];
+  const level = show.filter(x => x[1] >= best - 1);
+  const rest = show.filter(x => x[1] < best - 1);
+  const d = unit(t.pos);
+  level.sort((a, b) => dot(d, unit(EFFECT_COLOUR[b[0]].pos))
+                     - dot(d, unit(EFFECT_COLOUR[a[0]].pos)));
+  const led = level.length;
+  const ordered = level.concat(rest);
+  return '<div class=bars>' + ordered.map(([w, v], i) => {
     const f = EFFECT_COLOUR[w];
-    return `<div class=trk><i style="width:${Math.max(4, 100 * v / 9)}%;`
+    const on = i < led;
+    return `<div class="trk${on ? '' : ' less'}"><i style="width:${Math.max(4, 100 * v / 9)}%;`
       + `background:hsl(${f.hue},${f.sat}%,${f.lit}%)"></i></div>`
-      + `<span class=nm>${w}</span>`;
+      + `<span class="nm${on ? '' : ' less'}">${w}</span>`;
   }).join('') + '</div>';
 }
 const state = new Set();

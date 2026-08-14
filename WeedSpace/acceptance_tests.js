@@ -307,17 +307,26 @@
 
   // -- a mark and its label say the same thing -------------------------------
 
-  await T('the hover names the longest spokes, in order', () => {
+  await T('the hover names the longest spokes', () => {
+    /* Order within the leading group is settled by where the weed stands, not by
+       value, so strict descending is NOT the rule -- but the group must still be
+       the right set, and everything after it must be genuinely lesser. */
     for (const t of ST.slice(0, 60)) {
       const html = does(t);
-      const named = [...html.matchAll(/class=nm>([^<]+)</g)].map(m => m[1]);
+      const named = [...html.matchAll(/class="nm[^"]*">([^<]+)</g)].map(m => m[1]);
       const want = EFFECT_ORDER.map((w, i) => [w, t.r[i]]).sort((a, b) => b[1] - a[1]);
       const cut = want[2][1];
       ok(named.length === want.filter(x => x[1] >= cut).length, t.n + ': wrong number of bars');
       ok(named.length >= 3, t.n + ': fewer than three');
       const vals = named.map(n => t.r[EFFECT_ORDER.indexOf(n)]);
-      ok(vals.every((v, i) => i === 0 || v <= vals[i - 1]), t.n + ': bars out of order');
       ok(Math.min(...vals) >= cut, t.n + ': named an effect below the cut');
+
+      const best = want[0][1];
+      const led = vals.filter(v => v >= best - 1).length;
+      ok(vals.slice(0, led).every(v => v >= best - 1), t.n + ': the leading group is not the level ones');
+      ok(vals.slice(led).every(v => v < best - 1), t.n + ': a lesser effect got into the group');
+      ok(vals.slice(led).every((v, i) => i === 0 || v <= vals[led + i - 1]),
+         t.n + ': the tail is out of order');
     }
   });
 
@@ -325,7 +334,7 @@
     for (const t of ST.slice(0, 60)) {
       const html = does(t);
       const w = [...html.matchAll(/width:([\d.]+)%/g)].map(m => +m[1]);
-      const named = [...html.matchAll(/class=nm>([^<]+)</g)].map(m => m[1]);
+      const named = [...html.matchAll(/class="nm[^"]*">([^<]+)</g)].map(m => m[1]);
       named.forEach((n, i) => {
         const v = t.r[EFFECT_ORDER.indexOf(n)];
         ok(Math.abs(w[i] - Math.max(4, 100 * v / 9)) < 0.01, t.n + '/' + n + ': bar is the wrong length');
@@ -338,17 +347,58 @@
     const by = Object.fromEntries(FEELS.map(f => [f.w, f]));
     for (const t of ST.slice(0, 60)) {
       const html = does(t);
-      const named = [...html.matchAll(/class=nm>([^<]+)</g)].map(m => m[1]);
+      const named = [...html.matchAll(/class="nm[^"]*">([^<]+)</g)].map(m => m[1]);
       const hues = [...html.matchAll(/hsl\(([\d.]+),/g)].map(m => +m[1]);
       named.forEach((n, i) => ok(Math.abs(hues[i] - by[n].hue) < 0.05, n + ': wrong colour'));
     }
+  });
+
+  await T('the top bar is the star the weed sits under, wherever the data allows', () => {
+    /* A bar is round(9 x percentile), so a one-step lead can be a thousandth of
+       a percentile. 47% of weeds have no single longest bar and 85% lead by a
+       step or less, so a plain sorted list invents a winner. Everything within a
+       step of the best is one level group, ordered inside by which feeling the
+       weed actually stands nearest -- and the top bar is then the nearest star
+       77% of the time, against 36% for a hard argmax. */
+    let hit = 0, led = [];
+    for (const t of ST) {
+      const named = [...does(t).matchAll(/class="nm[^"]*">([^<]+)</g)].map(m => m[1]);
+      const d = unit(t.pos);
+      const near = FEELS.map(f => [dot(d, unit(f.pos)), f.w]).sort((a, b) => b[0] - a[0])[0][1];
+      if (named[0] === near) hit++;
+      const best = Math.max(...t.r);
+      led.push(EFFECT_ORDER.filter((w, i) => t.r[i] >= best - 1).length);
+    }
+    const rate = hit / ST.length;
+    ok(rate > 0.70, 'the top bar is the nearest star only ' + (rate * 100).toFixed(0) + '% of the time');
+    ok(Math.max(...led) > 6, 'the leading groups have collapsed to single winners');
+  });
+
+  await T('what follows the leading group is drawn quieter', () => {
+    /* the group is level; what comes after it genuinely is not, and must not
+       read as though it were */
+    const shownOf = t => {
+      const e = EFFECT_ORDER.map((w, i) => [w, t.r[i]]).sort((a, b) => b[1] - a[1]);
+      return e.filter(x => x[1] >= e[2][1]);
+    };
+    const withTail = ST.filter(t => {
+      const s = shownOf(t);
+      return s.some(x => x[1] < s[0][1] - 1);
+    });
+    ok(withTail.length > 150, 'only ' + withTail.length + ' weeds have a tail at all');
+    const many = withTail[0];
+    const html = does(many);
+    ok(html.includes('trk less'), 'the tail is not drawn quieter');
+    ok(html.includes('nm less'), 'the tail is not labelled quieter');
+    const first = html.indexOf('less');
+    ok(html.slice(0, first).includes('class="trk"'), 'the leading group is being dimmed too');
   });
 
   await T('the hover never settles a tie by list order', () => {
     let ties = 0;
     for (const t of ST) {
       const s = [...t.r].sort((a, b) => b - a);
-      const named = [...does(t).matchAll(/class=nm>([^<]+)</g)].map(m => m[1]);
+      const named = [...does(t).matchAll(/class="nm[^"]*">([^<]+)</g)].map(m => m[1]);
       ok(named.length === t.r.filter(v => v >= s[2]).length, t.n + ': a tie was trimmed');
       if (named.length > 3) ties++;
     }

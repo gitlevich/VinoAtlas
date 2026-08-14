@@ -70,7 +70,7 @@ parquet — which words are admitted, where each one sits, what each strain does
 survives the move into the world, that colour follows direction, that a weed
 wears the colour of the ground it stands on.
 
-The other 30 are in `acceptance_tests.js` and need the page running, because
+The other 32 are in `acceptance_tests.js` and need the page running, because
 they are about moving through it:
 
 ```bash
@@ -85,6 +85,25 @@ points, that the bars in a hover are the same spokes the sigil is drawn from.
 Every test is named for the criterion it holds. The data is fixed, so a test
 that passes today passes forever, and a change in the corpus is the only thing
 that should ever break one.
+
+## The leading group
+
+A bar is `round(9 × percentile)`, so a one-step lead can be a thousandth of a
+percentile. **47% of weeds have no single longest bar at all**, and 85% lead by a
+step or less. Printing them longest-first therefore invents a winner the data
+does not have — the argmax bug in a third costume: a coin toss between two, then
+a mean of everything, and finally a sorted list read from the top.
+
+So everything within one step of the best is **one level group**, and inside it
+the order is settled by which feeling the weed actually stands nearest — real
+information, not list order. The top bar is then the star it sits under **77%**
+of the time, against 36% for a hard argmax. What follows the group is drawn
+quieter, because it genuinely is lesser.
+
+The residue is real and visible: `dr who` leads clearly on `relaxed` and stands
+under `euphoric`. Thirteen effects will not fit faithfully in three dimensions,
+and placement improves the more a weed commits — where the top bar leads by
+three steps or more, the nearest star is it 54% of the time with median rank 1.
 
 ## Where a weed stands is where its effects are
 

@@ -19,6 +19,14 @@ NOWHERE = 0.1    # below this, a weed is square-on to every feeling and the
                  # blend that colours it has nothing to weigh
 
 
+def _does_body(page):
+    """The whole of does(), which now contains nested blocks -- so it runs to the
+    function's own closing brace at column zero, not to the first one seen."""
+    start = page.index("function does(t)")
+    end = page.index("\n}\n", start)
+    return page[start:end]
+
+
 @pytest.fixture(scope="session")
 def items(baked):
     return baked["items"]
@@ -71,10 +79,9 @@ def test_the_hover_reads_the_same_array_the_sigil_is_drawn_from(page):
     """One mark, one claim: the bars are the spokes, re-drawn so they can be read."""
     assert "function does(t)" in page
     assert "does(best)" in page
-    body = page[page.index("function does(t)"):]
-    body = body[:body.index("\n}")]
+    body = _does_body(page)
     assert "t.r[i]" in body, "does() no longer reads the profile"
-    assert "class=bars" in body and "class=trk" in body, "the bars are gone"
+    assert "class=bars" in body and 'class="trk' in body, "the bars are gone"
     assert "EFFECT_COLOUR[w]" in body, "a bar no longer carries its effect's colour"
 
 
@@ -82,11 +89,13 @@ def test_the_hover_never_settles_a_tie(page, strains, baked):
     """Three at least, and everything level with the third -- all of it. Thirty
     one weeds have more than six effects at that level; a cap would settle those
     by list order."""
-    body = page[page.index("function does(t)"):]
-    body = body[:body.index("\n}")]
+    body = _does_body(page)
     assert "e[Math.min(2, e.length - 1)][1]" in body
     assert "x[1] >= cut" in body
     assert ".slice(" not in body, "the tie list is being trimmed again"
+    # and the leading group: everything within one rounding step of the best
+    assert "x[1] >= best - 1" in body, "the leading group is gone"
+    assert "level.sort(" in body, "ties are settled by list order again"
 
     order = baked["effectOrder"]
     shown = []
