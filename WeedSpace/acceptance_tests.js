@@ -14,7 +14,11 @@
     catch (e) { R.push('FAIL  ' + name + '  -- ' + String(e.message || e)); }
   };
   const ok = (c, m) => { if (!c) throw new Error(m || 'assert'); };
-  const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  /* Draw synchronously rather than waiting on the animation loop. A hidden tab
+     throttles both requestAnimationFrame and setTimeout to about once a second,
+     which paced this suite in minutes; and what is under test is the geometry a
+     draw produces, not the loop that schedules it. */
+  const frame = async () => { draw(); readout(); };
   const home = { yaw, pitch, fov: fovWant };
   const look = async (y, p) => { yaw = y; pitch = p || 0; vYaw = vPitch = 0; await frame(); };
   const hueGap = (a, b) => Math.abs((a - b + 180) % 360 - 180);
@@ -41,6 +45,29 @@
     lean(1 / 0.6); await frame();
   });
 
+  await T('two fingers walk and a pinch zooms', async () => {
+    /* a trackpad pinch arrives as a wheel event with ctrlKey set; a two-finger
+       scroll arrives without it. They are different acts and must stay so. */
+    const wheel = o => view.dispatchEvent(new WheelEvent('wheel',
+      Object.assign({ deltaY: -120, bubbles: true, cancelable: true }, o)));
+    EYE = [0, 0, 0]; fovWant = WIDE; await frame();
+
+    wheel({}); await frame();
+    ok(len(EYE) > 0, 'two fingers did not walk');
+    ok(Math.abs(fovWant - WIDE) < 1e-9, 'two fingers zoomed as well as walked');
+
+    const where = [...EYE];
+    wheel({ ctrlKey: true }); await frame();
+    ok(fovWant < WIDE, 'a pinch did not narrow the view');
+    ok(len([EYE[0]-where[0], EYE[1]-where[1], EYE[2]-where[2]]) < 1e-9,
+       'a pinch moved you as well as zooming');
+
+    wheel({ deltaY: 120 }); await frame();
+    ok(len(EYE) < len(where) + 1e-9, 'scrolling back did not walk back');
+
+    EYE = [0, 0, 0]; fovWant = WIDE; await frame();
+  });
+
   await T('the view can be turned all the way round without meeting a wall', async () => {
     for (let a = 0; a < 6.2832; a += 0.35) {
       await look(a, 0);
@@ -57,6 +84,71 @@
     await look(away, 0);
     ok(Math.abs(yaw - away) < 1e-9, 'the view would not go there');
     await look(home.yaw, home.pitch);
+  });
+
+  // -- the sky is fixed, the field is not -------------------------------------
+
+  await T('walking does not move a single star', async () => {
+    const sky = () => Object.fromEntries(ITEMS.filter(i => i.hit).map(i => [i.w, i.hit[0]]));
+    EYE = [0, 0, 0]; await frame();
+    const a = sky();
+    for (const step of [0.6, 1.2, -2.0, 3.0]) { walk(step); await frame(); }
+    const b = sky();
+    let worst = 0, at = '';
+    for (const w in a) if (b[w] && Math.abs(b[w] - a[w]) > worst) { worst = Math.abs(b[w] - a[w]); at = w; }
+    ok(Object.keys(a).length > 8, 'no stars were up to check');
+    ok(worst < 1e-9, at + ' moved ' + worst.toFixed(3) + 'px when the eye walked');
+    EYE = [0, 0, 0]; await frame();
+  });
+
+  await T('a near weed sweeps faster than a far one', async () => {
+    /* the instrument: how much a weed slides against the fixed sky is how near
+       it is, and it is the only depth cue turning your head can never give */
+    const snap = () => Object.fromEntries(ST.filter(t => t.node).map(t => [t.n, [t.node[0], t.dist]]));
+    EYE = [0, 0, 0]; await frame();
+    const a = snap();
+    walk(1.2); await frame();
+    const b = snap();
+    const m = [];
+    for (const n in a) if (b[n]) m.push({ d: a[n][1], px: Math.abs(b[n][0] - a[n][0]) });
+    m.sort((p, q) => p.d - q.d);
+    const third = Math.floor(m.length / 3);
+    const avg = xs => xs.reduce((s, x) => s + x.px, 0) / xs.length;
+    const near = avg(m.slice(0, third)), far = avg(m.slice(-third));
+    EYE = [0, 0, 0]; await frame();
+    ok(m.length > 60, 'too few weeds tracked through the step: ' + m.length);
+    ok(near > far * 1.3, 'near weeds sweep ' + near.toFixed(1)
+       + 'px, far ones ' + far.toFixed(1) + 'px -- that is not parallax');
+  });
+
+  await T('the field surrounds you wherever you can get to', async () => {
+    /* the reason there is a rim at all: walk far enough and the field is no
+       longer around you, it is a clump in front of you, which is the
+       third-person view this space exists to refuse */
+    EYE = [0, 0, 0];
+    for (let i = 0; i < 60; i++) walk(0.5);           // press on at the rim
+    await frame();
+    ok(len(EYE) <= 3.0 + 1e-9, 'you walked out of the field, to ' + len(EYE).toFixed(2));
+    const y0 = yaw;
+    let worst = 1e9, at = 0;
+    for (let k = 0; k < 12; k++) {                    // look every thirty degrees
+      yaw = y0 + k * Math.PI / 6; await frame();
+      const n = ST.filter(t => t.node).length;
+      if (n < worst) { worst = n; at = k * 30; }
+    }
+    yaw = y0; EYE = [0, 0, 0]; await frame();
+    ok(worst > 60, 'at the rim, looking ' + at + ' degrees round, only '
+       + worst + ' weeds are there -- the field has ended rather than closed');
+  });
+
+  await T('walking back to the middle puts everything where it was', async () => {
+    const snap = () => JSON.stringify(ST.filter(t => t.node).map(t => t.node[0].toFixed(3)));
+    EYE = [0, 0, 0]; await frame();
+    const a = snap();
+    walk(2.0); await frame();
+    ok(snap() !== a, 'walking changed nothing');
+    document.getElementById('bHome').click(); await frame();
+    ok(snap() === a, 'the middle is not where you left it');
   });
 
   // -- nothing pops ----------------------------------------------------------

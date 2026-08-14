@@ -1,10 +1,34 @@
 # Weed space
 
-You stand at the centre of a space and turn your head. Every smell word and
-every effect word is a direction. Weeds are objects in it. You find the state
-you want, face it, and see which strains lie that way.
+You stand inside a space and turn your head. Every smell word and every effect
+word is a direction. Weeds are objects in it. You find the state you want, face
+it, and see which strains lie that way.
 
 Live at [agent.farm/VinoAtlas/weed/](https://agent.farm/VinoAtlas/weed/).
+
+## A sky and a field
+
+The words are the **sky**. A word is a bearing and nothing else, so it hangs at
+an unreachable remove, fixed, unmoved by anything you do. How sharply it marks
+its bearing is its **magnitude**: a vague word is a faint star, not a distant
+one. Nothing in the sky ever shifts, and that is what makes it usable as a
+frame.
+
+The weeds are a **field you move through**. A weed has a direction *and* a
+radius — the radius says how far its strongest effect stands above its own
+floor, so a weed near the middle commits to nothing and is within reach of every
+feeling. Two fingers walk you through it; a pinch narrows the view.
+
+The pair is the instrument. From a fixed point a ball and a shell look
+identical — rotation gives no depth at any radius. It is the **parallax**, a
+weed sliding against a sky that does not, that says how near it is and what
+stands behind what. Measured: walking 1.2 units moves the stars 0.000px while
+near weeds sweep 45px and far ones 26px.
+
+You cannot walk out. Past a radius of 3 the field stops surrounding you and
+becomes a clump you are looking at — the emptiest direction holds 123 weeds at
+radius 2, 86 at 3, and 11 at 6.4, by which point 536 of 563 are behind you. The
+rim is where first person ends.
 
 ## Build
 
@@ -24,13 +48,13 @@ are not in the repo. It is deterministic: the same corpus gives a byte-identical
 .venv/bin/python -m pytest WeedSpace
 ```
 
-49 tests over the data. `test_pipeline.py` checks navdata.json against the
+53 tests over the data. `test_pipeline.py` checks navdata.json against the
 parquet — which words are admitted, where each one sits, what each strain does.
 `test_page.py` checks horizon.html against navdata.json — that direction
 survives the move into the world, that colour follows direction, that a weed
 wears the colour of the ground it stands on.
 
-The other 18 are in `acceptance_tests.js` and need the page running, because
+The other 23 are in `acceptance_tests.js` and need the page running, because
 they are about moving through it:
 
 ```bash

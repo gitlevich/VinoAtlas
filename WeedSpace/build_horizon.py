@@ -43,12 +43,15 @@ for i in D['items']:
     n = math.dist(i['p'], [0, 0, 0])
     d = [x / n for x in i['p']] if n else [0, 0, 1]
     strength = n / mx
-    dist = NEAR + (FAR - NEAR) * (1 - strength) ** 1.5
     # the two axes the vocabularies agree on most go into the horizontal plane,
     # so turning your head sweeps the real structure; the weak third axis becomes
-    # up and down, where looking is deliberate and rare
-    i['pos'] = [round(d[0] * dist, 3), round(d[2] * dist, 3), round(d[1] * dist, 3)]
-    i['dist'] = round(dist, 2)
+    # up and down, where looking is deliberate and rare.
+    #
+    # A star has no distance. Its position is a bearing and nothing else, and how
+    # sharply it marks that bearing becomes its MAGNITUDE -- a vague word is a
+    # faint star, not a far one. Distance is left entirely to the weeds, which is
+    # what stops the two competing over what "far" means.
+    i['pos'] = [round(d[0], 4), round(d[2], 4), round(d[1], 4)]
     i['str'] = round(strength, 3)
     del i['p']
 DATA = {k: D[k] for k in ('axes', 'items', 'chance', 'total', 'effectOrder')}
@@ -90,15 +93,28 @@ for t in DATA['strains']:
         vx += w * math.cos(th); vy += w * math.sin(th)
     t['h'] = round(math.degrees(math.atan2(vy, vx)) % 360, 1)
     t['l'] = _even(t['h'], 56 + 12 * d[1])
-# strains are placed the same way words are: direction is where, distance is how
-# weakly they mark it
+# Weeds fill the body of the sphere, and you move through them. A word is a
+# bearing with no location at all, so it goes to the sky: fixed, unreachable,
+# unmoved by anything you do. A weed is a thing at a place, and its place has a
+# radius as well as a direction -- the radius tracks how far its strongest
+# effect stands above its own floor. A weed near the middle commits to nothing
+# and is within reach of every feeling, which is the true thing to say about it,
+# and the old scheme, which pushed every weed out onto a surface, could not say
+# it at all.
+#
+# The pair is what makes the space readable: the sky is the given and never
+# shifts, so a weed sliding against it as you move is what tells you how far off
+# it is and what stands behind what. Parallax is the instrument; the fixed stars
+# are what it measures against.
 smx = max(math.dist(t['p'], [0, 0, 0]) for t in DATA['strains'])
 for t in DATA['strains']:
     n = math.dist(t['p'], [0, 0, 0]) or 1e-9
     d = [x / n for x in t['p']]
-    dist = NEAR + (FAR - NEAR) * (1 - n / smx) ** 1.5
+    lean = n / smx
+    dist = NEAR + (FAR - NEAR) * lean
     t['pos'] = [round(x * dist, 3) for x in d]
     t['dist'] = round(dist, 2)
+    t['lean'] = round(lean, 3)
     del t['p']
 
 DATA['near'], DATA['far'] = NEAR, FAR
@@ -136,7 +152,8 @@ button{background:var(--panel);color:var(--ink-2);border:1px solid var(--line);
   border-radius:6px;padding:5px 10px;font:inherit;font-size:11.5px;cursor:pointer}
 button:hover{color:var(--ink);border-color:#414141}
 button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
-#foot{padding:9px 14px 12px;border-top:1px solid var(--line);display:flex;gap:6px}
+#foot{padding:9px 14px 12px;border-top:1px solid var(--line);display:flex;gap:6px;
+  flex-wrap:wrap;flex:none}
 #globe{position:absolute;right:18px;bottom:18px;width:248px;background:#0b0b0b;
   border:1px solid #2e2e2e;border-radius:10px;z-index:3;overflow:hidden;
   box-shadow:0 6px 26px rgba(0,0,0,.65)}
@@ -187,6 +204,7 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
     <div id=foot>
       <button id=bClear>clear</button>
       <button id=bWide style="display:none">step back</button>
+      <button id=bHome style="display:none">the middle</button>
     </div>
   </div>
   <div class=col id=view>
@@ -277,6 +295,32 @@ function place(P, F) {
            edge: 1 - 0.55 * Math.pow(Math.max(0, off - 0.35) / 0.65, 1.6) };
 }
 
+/* WHERE YOU ARE, as distinct from where you are looking. Turning your head
+   changes nothing about the arrangement; walking does. A word is projected
+   straight, because a star is at infinity and no amount of walking shifts it. A
+   weed is projected from the eye, so it slides against that fixed sky by an
+   amount that says how near it is. That sliding is the only depth cue rotation
+   can never give you: from a point, a ball and a shell look the same. */
+let EYE = [0, 0, 0];
+/* How far you may walk is not a matter of taste: it is the radius past which
+   the field stops surrounding you. Measured, looking every thirty degrees, the
+   emptiest direction holds 123 weeds at 2.0, 86 at 3.0, 45 at 4.0, and 11 at
+   6.4 -- by which point 536 of 563 are behind you and you are outside your own
+   field looking in. Three is the last radius that is still a place to stand. */
+const REACH = 3.0;
+const here = P => [P[0] - EYE[0], P[1] - EYE[1], P[2] - EYE[2]];
+
+function walk(step) {
+  const F = frame();
+  const p = [EYE[0] + F.f[0]*step, EYE[1] + F.f[1]*step, EYE[2] + F.f[2]*step];
+  const n = len(p);
+  /* the field closes around you rather than ending: press on at the rim and you
+     slide along it instead of stepping outside and looking in */
+  if (n > REACH) for (let i = 0; i < 3; i++) p[i] *= REACH / n;
+  EYE = p;
+  document.getElementById('bHome').style.display = len(EYE) > 0.15 ? '' : 'none';
+}
+
 function ground(F) {
   /* A ring of ticks at eye level, far off. Turning slides them past, which is
      the cue that says a head turned rather than a chart deformed. */
@@ -335,12 +379,20 @@ function draw() {
   for (const t of ST) t.node = null;
   const strains = [];
   for (let k = 0; k < ST.length; k++) {
-    const t = ST[k], q = place(t.pos, F);
+    const t = ST[k], q = place(here(t.pos), F);       // from the eye, so it parallaxes
     if (!q) continue;
     const off = Math.hypot(q.x - W/2, q.y - H/2) / (Math.min(W, H) * 0.62);
     const attend = 1 / (1 + off * off * 1.5);          // smooth, never a cliff
-    const a = Math.max(0.30, Math.min(0.95, 2.6 / q.dist) * q.edge * attend);
-    strains.push({ t, q, a, R: Math.max(1.6, (20 / q.dist) * (WIDE / FOV) ** 0.5) * q.edge });
+    /* A weed that commits to nothing is a SMALLER THING, not merely a distant
+       one. Once weeds fill the body of the sphere, the uncommitted ones sit
+       near the middle and so near you -- and plain 1/distance would make the
+       blandest weed in the corpus the biggest and brightest object in the
+       view. Its own size carries its commitment, and distance then does what
+       distance does. The two nearly cancel, which is correct: how much a weed
+       commits is not a function of where you happen to be standing. */
+    const a = Math.max(0.30, Math.min(0.95, 6.5 * t.lean / q.dist) * q.edge * attend);
+    strains.push({ t, q, a,
+                   R: Math.max(1.6, (70 * t.lean / q.dist) * (WIDE / FOV) ** 0.5) * q.edge });
   }
   strains.sort((x, y) => y.q.dist - x.q.dist);
   for (const { t, q, a, R } of strains) {
@@ -382,7 +434,7 @@ function draw() {
     it.hit = null;
     if (p) seen.push({ it, p });
   }
-  seen.sort((a, b) => b.p.dist - a.p.dist);           // far things first
+  seen.sort((a, b) => a.it.str - b.it.str);           // faint stars first, bright on top
 
   const drawn = [
     [W / 2, H - 30, W, 86],          // the readout strip along the bottom
@@ -392,9 +444,11 @@ function draw() {
   for (const { it, p } of seen) {
     const feel = it.kind === 'feel';
     const said = state.has(it.w);
-    const sz = ((feel ? 4.2 : 3.8) / p.dist) * p.ppr * 0.0165 + 7;
-    /* strength decides how present a landmark is; the edge of vision dims it.
-       Distance is already carried by size, so it is not doubled up here. */
+    /* Magnitude, not distance: a word that marks its bearing sharply is a bright
+       star, one that marks almost nothing is a faint one. Both hang at the same
+       unreachable remove, so neither moves when you walk. */
+    const mag = 0.40 + 1.70 * it.str;
+    const sz = (feel ? 1.0 : 0.92) * mag * p.ppr * 0.0165 + 7;
     const a = Math.max(0.42, Math.min(1, 0.22 + 0.78 * it.str) * p.edge);
 
     const label = feel ? it.w.toUpperCase() : it.w;
@@ -618,11 +672,28 @@ view.addEventListener('dblclick', e => {
   const r = c.getBoundingClientRect();
   lean(e.shiftKey ? 1 / 0.62 : 0.62, e.clientX - r.left, e.clientY - r.top);
 });
+/* Two fingers WALK you through the field; a pinch narrows the view. Both arrive
+   as wheel events -- a trackpad pinch is a wheel with ctrlKey set -- and the
+   split matters because they are different acts: walking changes where you are
+   and everything shifts against the fixed sky, squinting changes only how much
+   of the sky you can take in at once. */
 view.addEventListener('wheel', e => {
   e.preventDefault();
-  lean(e.deltaY > 0 ? 1.07 : 0.935);
+  if (e.ctrlKey || e.metaKey || e.shiftKey) { lean(e.deltaY > 0 ? 1.07 : 0.935); return; }
+  walk(e.deltaY > 0 ? -0.14 : 0.14);
 }, { passive: false });
 document.getElementById('bWide').onclick = () => lean(WIDE / fovWant);
+document.getElementById('bHome').onclick = () => {
+  EYE = [0, 0, 0];
+  document.getElementById('bHome').style.display = 'none';
+  draw(); readout();
+};
+addEventListener('keydown', e => {
+  if (e.key === 'w' || e.key === 'ArrowUp') walk(0.3);
+  else if (e.key === 's' || e.key === 'ArrowDown') walk(-0.3);
+  else return;
+  draw(); readout();
+});
 
 document.getElementById('bClear').onclick = () => {
   state.clear();
@@ -841,5 +912,7 @@ refit();
 out = HERE / 'horizon.html'
 out.write_text(PAGE.replace('__DATA__', json.dumps(DATA)))
 print('wrote', out, out.stat().st_size, 'bytes')
-print('distances run', min(i['dist'] for i in DATA['items']),
-      'to', max(i['dist'] for i in DATA['items']))
+print('sky: magnitudes run', min(i['str'] for i in DATA['items']),
+      'to', max(i['str'] for i in DATA['items']))
+print('field: weeds run', min(t['dist'] for t in DATA['strains']),
+      'to', max(t['dist'] for t in DATA['strains']), 'deep')

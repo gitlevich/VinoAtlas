@@ -132,40 +132,115 @@ def test_the_two_agreeing_axes_lie_in_the_plane_you_turn_through(items, nav):
     by_word = {i["w"]: i for i in nav["items"]}
     for i in items:
         p = by_word[i["w"]]["p"]
-        assert i["pos"][1] == pytest.approx(unit([p[0], p[2], p[1]])[1] * i["dist"],
-                                            abs=0.01), f"{i['w']} is not upright"
+        assert i["pos"][1] == pytest.approx(unit([p[0], p[2], p[1]])[1], abs=2e-4), \
+            f"{i['w']} is not upright"
 
 
-def test_a_word_that_marks_its_direction_strongly_stands_close(items):
-    """Apparent size and brightness come from distance alone, so distance has to
-    mean weakness and nothing else."""
+def test_a_word_is_a_bearing_and_carries_no_distance_at_all(items):
+    """A star is at infinity. Every word sits at the same unreachable remove, so
+    'far' is left entirely to the weeds and the two stop competing over it."""
     for i in items:
-        want = NEAR + (FAR - NEAR) * (1 - i["str"]) ** 1.5
-        assert i["dist"] == pytest.approx(want, abs=0.01), i["w"]
-    ranked = sorted(items, key=lambda i: i["str"])
-    dists = [i["dist"] for i in ranked]
-    # never rises by more than the rounding step; two words of near-equal
-    # strength may land on the same hundredth in either order
-    assert all(b - a <= 0.01 for a, b in zip(dists, dists[1:])), \
-        "distance is not monotone in strength"
+        assert "dist" not in i, f"{i['w']} was given a distance"
+        assert math.dist(i["pos"], [0, 0, 0]) == pytest.approx(1.0, abs=1e-3), i["w"]
 
 
-def test_the_nearest_word_is_the_strongest_and_reaches_the_near_wall(items):
+def test_a_vague_word_is_a_faint_star_and_not_a_far_one(page, items):
+    """How sharply a word marks its bearing became its MAGNITUDE. Size and
+    brightness therefore have to be read off strength, never off distance --
+    otherwise walking would change what a word means."""
+    assert "const mag = 0.40 + 1.70 * it.str" in page, "magnitude no longer comes from strength"
+    assert "/ p.dist) * p.ppr" not in page, "a word's size is being read off distance again"
+    assert "0.22 + 0.78 * it.str" in page, "a word's brightness left strength"
+    assert "a.it.str - b.it.str" in page, "stars are no longer stacked faint-first"
+
     strongest = max(items, key=lambda i: i["str"])
+    faintest = min(items, key=lambda i: i["str"])
     assert strongest["str"] == pytest.approx(1.0, abs=1e-3)
-    assert strongest["dist"] == pytest.approx(NEAR, abs=0.01)
-    assert all(NEAR <= i["dist"] <= FAR for i in items)
+    assert faintest["str"] < 0.2
+    assert all(0 < i["str"] <= 1 for i in items)
 
 
-def test_every_position_is_the_direction_times_the_distance(items):
-    for i in items:
-        assert math.dist(i["pos"], [0, 0, 0]) == pytest.approx(i["dist"], abs=0.01)
+def test_the_sky_does_not_move_when_you_walk(page):
+    """The instrument depends on it. A weed sliding against the stars is what
+    says how far off it is; if the stars slid too, the reading would be gone."""
+    assert "const here = P => [P[0] - EYE[0]" in page, "the eye is not being subtracted"
+    assert "place(here(t.pos), F)" in page, "weeds are not drawn from the eye"
+    assert "place(here(it.pos)" not in page, "the sky was put on the eye"
+    words = page[page.index("for (const it of ITEMS) {"):]
+    words = words[:words.index("seen.sort")]
+    assert "place(it.pos, F)" in words, "a word is no longer projected straight"
 
 
-def test_strains_are_placed_by_the_same_rule_as_words(strains):
+def test_you_cannot_walk_out_of_your_own_field(page, strains):
+    """Step outside and you would be looking at a clump from the outside, which
+    is the third-person view this whole space exists to refuse."""
+    assert "const REACH = 3.0" in page
+    assert "p[i] *= REACH / n" in page, "the rim no longer holds you"
+    inside = sum(1 for t in strains if t["dist"] > 3.0)
+    assert inside > 200, "the rim is beyond most of the field; walking would empty it"
+
+
+def test_a_weed_is_placed_at_a_radius_as_well_as_a_direction(strains, nav):
+    """Words are bearings and go on a shell. A weed is a thing at a place, and
+    its radius is content: how far its strongest effect stands above its own
+    floor. The old scheme pushed every weed out onto a surface and threw that
+    away."""
+    mx = max(math.dist(t["p"], [0, 0, 0]) for t in nav["strains"])
+    by = {t["n"]: t for t in nav["strains"]}
     for t in strains:
+        lean = math.dist(by[t["n"]]["p"], [0, 0, 0]) / mx
+        assert t["lean"] == pytest.approx(lean, abs=1e-3), t["n"]
+        assert t["dist"] == pytest.approx(NEAR + (FAR - NEAR) * lean, abs=0.01), t["n"]
         assert math.dist(t["pos"], [0, 0, 0]) == pytest.approx(t["dist"], abs=0.01)
         assert NEAR <= t["dist"] <= FAR
+
+
+def test_the_weeds_fill_the_body_and_not_a_shell(strains):
+    """52% of them sit inside half the radius, where a shell would put none."""
+    r = np.array([t["lean"] for t in strains])
+    assert (r < 0.5).mean() > 0.4, "the middle of the sphere has emptied out"
+    assert r.min() < 0.1, "nothing is near the centre any more"
+    assert r.max() == pytest.approx(1.0, abs=1e-3)
+
+
+def test_a_weed_in_the_middle_is_within_reach_of_everything(strains, feels):
+    """The claim the volume exists to make, stated as it is actually true: a weed
+    that commits to nothing is closer to EVERY feeling than a committed weed is
+    to its own nearest one. Its farthest is 6.0; theirs is 7.6 away at the
+    nearest. Only a radius can say that -- on a shell it was given a direction it
+    does not have.
+
+    Note what is NOT claimed. In angle it is no more even-handed than any other
+    weed: a small magnitude means the direction is noise, not that the noise
+    points evenly. Centrality buys nearness to everything, not impartiality.
+    """
+    F = np.array([f["pos"] for f in feels], float)
+    by = sorted(strains, key=lambda t: t["lean"])
+    inner = np.array([t["pos"] for t in by[:40]], float)
+    outer = np.array([t["pos"] for t in by[-40:]], float)
+    din = np.linalg.norm(inner[:, None, :] - F[None], axis=2)
+    dout = np.linalg.norm(outer[:, None, :] - F[None], axis=2)
+    assert din.max(1).mean() < dout.min(1).mean(), \
+        "the middle is no longer nearer to everything than the edge is to anything"
+    assert din.max(1).mean() < 7 and dout.min(1).mean() > 7
+    for t in by[:40]:
+        assert t["lean"] < 0.25, f"{t['n']} is not in the inner quarter"
+
+
+def test_commitment_is_carried_by_the_mark_not_by_how_close_it_lands(page, strains):
+    """Once weeds fill the body, the uncommitted ones are the nearest -- so plain
+    1/distance would make the blandest weed the biggest, brightest thing in the
+    view. Size and brightness come from the weed, and distance then divides."""
+    assert "70 * t.lean / q.dist" in page, "apparent size no longer tracks commitment"
+    assert "6.5 * t.lean / q.dist" in page, "brightness no longer tracks commitment"
+    assert "20 / q.dist" not in page, "the old proximity-is-importance rule is back"
+
+    def R(t):
+        return max(1.6, 70 * t["lean"] / t["dist"])
+
+    by = sorted(strains, key=lambda t: t["lean"])
+    assert R(by[0]) < R(by[-1]) / 2, "the least committed weed is not the smallest"
+    assert sum(1 for t in strains if R(t) > 5) > 300, "the profiles have stopped being drawn"
 
 
 # ---------------------------------------------------------------------- colour
