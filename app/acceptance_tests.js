@@ -213,9 +213,20 @@
   });
 
   // -- copies --
-  await T('on this copy: no download button, green badge; the page can save itself', () => {
-    ok(el('dlApp').hidden === true, 'download hidden locally');
-    eq(el('copyBadge').textContent.trim(), 'local', 'badge names where you are');
+  await T('this page knows which of the three places it is in, and says so', () => {
+    eq([VIEWER, SAVED, WEB].filter(Boolean).length, 1, 'exactly one place at a time');
+    eq(el('copyBadge').textContent.trim(), VIEWER ? 'preview' : WEB ? 'on the web' : 'local',
+      'the badge names where you are');
+  });
+  await T('every control is offered exactly where it can work', () => {
+    // a preview may not save a file; a copy on disk needs no download; the web may
+    ok(el('dlApp').hidden === !WEB, 'download is offered on the web and nowhere else');
+    // only a preview is barred from reaching Anthropic or OpenAI, so only it loses the key and the asking
+    ok(el('setupBtn').hidden === VIEWER, 'the gear is withheld only from a preview');
+    ok(el('askOn').hidden === VIEWER && el('askOff').hidden === !VIEWER,
+      'the sommelier is switched off only in a preview');
+  });
+  await T('on this copy: the page can save itself', () => {
     ok(el('msgs').nextElementSibling.classList.contains('grip'), 'the transcript has a grip');
     ok(!chat.length || getComputedStyle(el('msgs').nextElementSibling).display !== 'none',
       'the grip shows only with the transcript');

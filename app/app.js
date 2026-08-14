@@ -286,16 +286,25 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
 const BUILD='__BUILD__';
-const HOSTED=/claude(usercontent)?\.(ai|com)$/.test(location.hostname);
-if(HOSTED){el('askOn').hidden=true;el('askOff').hidden=false;}
-el('dlApp').hidden=!HOSTED; // download exists only on the shared page
-el('copyBadge').className='copy-badge '+(HOSTED?'web':'local');
-el('copyBadge').innerHTML=HOSTED
-  ?'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>shared page'
-  :'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h6l-2 2v1h8v-1l-2-2h6c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 13H4V5h16v11z"/></svg>local';
+/* Three places this page can be, and they differ in what they permit. The
+   preview inside the artifact viewer is a frame that may neither save a file
+   nor reach Anthropic or OpenAI. A copy served from the web may do both. A
+   copy saved to disk may do both, and needs no download -- the reader is
+   holding the file already. */
+const VIEWER=/claude(usercontent)?\.(ai|com)$/.test(location.hostname);
+const SAVED=location.protocol==='file:';
+const WEB=!VIEWER&&!SAVED;
+if(VIEWER){el('askOn').hidden=true;el('askOff').hidden=false;}
+el('dlApp').hidden=!WEB; // nothing to fetch from a file you have, nothing a preview may write
+const CLOUD='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>';
+const DESK='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h6l-2 2v1h8v-1l-2-2h6c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 13H4V5h16v11z"/></svg>';
+el('copyBadge').className='copy-badge '+(VIEWER?'web':'local');
+el('copyBadge').innerHTML=VIEWER?CLOUD+'preview':WEB?CLOUD+'on the web':DESK+'local';
 el('copyBadge').dataset.build=BUILD;
-el('copyBadge').title=(HOSTED
-  ?'You are on the shared page. Asking is switched off here — download the file to use it.'
+el('copyBadge').title=(VIEWER
+  ?'A preview. The sommelier is switched off here, and this page may not save a file.'
+  :WEB
+  ?'This page runs from the web. Everything works, including the sommelier. Download it to keep a copy.'
   :'This copy runs from your own computer. Everything works, including the sommelier.')
   +'  ·  build '+BUILD;
 let agent=JSON.parse(localStorage.getItem('cc_agent')||'{}');
@@ -820,7 +829,7 @@ function commitPrompt(){
 el('prompt').addEventListener('input',()=>{clearTimeout(promptDebounce);promptDebounce=setTimeout(commitPrompt,400);});
 el('prompt').addEventListener('blur',()=>{commitPrompt(); if(!agent.prompt) el('prompt').value=BUILT_FRAMING;});
 el('model').onchange=()=>{agent.model=el('model').value; saveAgent();};
-if(HOSTED) el('setupBtn').hidden=true; // no key can be used here, so no setup
+if(VIEWER) el('setupBtn').hidden=true; // a preview cannot reach them, so no key can be used
 reflectSetup();
 drawChat();
 drawSpend();
