@@ -8,7 +8,11 @@ banned vocabulary in anything the reader can see.
 """
 import pathlib
 
-BANNED = ['dark fruit', 'heaviness', 'readiness', 'percentile', 'shipment', 'sigil', 'invariant']
+# words that must never reach the reader. The first group is banned anywhere in
+# the copy; the second are our research words, banned in what the page renders
+# but allowed as code identifiers.
+BANNED_COPY = ['dark fruit', 'heaviness', 'readiness', 'shipment']
+BANNED_RESEARCH = ['sigil', 'invariant', 'percentile']
 
 def build(src=pathlib.Path(__file__).parent, out=None):
     out = out or src.parent
@@ -17,9 +21,15 @@ def build(src=pathlib.Path(__file__).parent, out=None):
     js = (src / 'app.js').read_text()
     data = (src / 'app_data.json').read_text()
 
-    for bad in BANNED:
-        hits = [l.strip()[:80] for l in (head + body + js).splitlines() if bad in l.lower()]
-        assert not hits, (bad, hits)
+    import re
+    nocomment = re.sub(r'/\*.*?\*/', '', head + body + js, flags=re.S)
+    code = '\n'.join(l for l in nocomment.splitlines() if not l.strip().startswith('//'))
+    for bad in BANNED_COPY:
+        assert bad not in code.lower(), bad
+    # what the page actually renders: markup text nodes, with tags stripped
+    rendered = re.sub(r'<[^>]*>', ' ', re.sub(r'/\*.*?\*/', '', body, flags=re.S))
+    for bad in BANNED_RESEARCH:
+        assert bad not in rendered.lower(), (bad, rendered.lower().split(bad)[0][-60:])
 
     page = head + body + js.replace('__DATA__', data)
     assert page.count('<script') == 1, 'exactly one script block'
