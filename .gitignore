@@ -3,3 +3,4 @@ data/
 .venv/
 __pycache__/
 cellar_compass*.html
+.DS_Store
