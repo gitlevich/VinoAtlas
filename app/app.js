@@ -283,6 +283,9 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
     if(!picked.includes(c.dataset.id))picked.push(c.dataset.id);
     el('q').value='';el('matches').innerHTML='';drawPicked();centroid();});};
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
+/* stamped by the build with a hash of these bytes, so any copy can be asked
+   which build it is -- the answer to "is this page stale?" */
+const BUILD='__BUILD__';
 const HOSTED=/claude(usercontent)?\.(ai|com)$/.test(location.hostname);
 if(HOSTED){el('askOn').hidden=true;el('askOff').hidden=false;}
 el('dlApp').hidden=!HOSTED; // download exists only on the shared page
@@ -290,9 +293,11 @@ el('copyBadge').className='copy-badge '+(HOSTED?'web':'local');
 el('copyBadge').innerHTML=HOSTED
   ?'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>shared page'
   :'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h6l-2 2v1h8v-1l-2-2h6c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 13H4V5h16v11z"/></svg>local';
-el('copyBadge').title=HOSTED
+el('copyBadge').dataset.build=BUILD;
+el('copyBadge').title=(HOSTED
   ?'You are on the shared page. Asking is switched off here — download the file to use it.'
-  :'This copy runs from your own computer. Everything works, including the sommelier.';
+  :'This copy runs from your own computer. Everything works, including the sommelier.')
+  +'  ·  build '+BUILD;
 let agent=JSON.parse(localStorage.getItem('cc_agent')||'{}');
 let refs={}, msel=0, mlist=[];
 const askEl=el('ask'), menEl=el('mention'), hlEl=el('hl');

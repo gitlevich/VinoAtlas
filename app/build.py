@@ -6,6 +6,7 @@ wrapped copy for opening from disk. The asserts are the build's own guards:
 one script block, no <line> elements (the artifact viewer strips them), and no
 banned vocabulary in anything the reader can see.
 """
+import hashlib
 import pathlib
 
 # words that must never reach the reader. The first group is banned anywhere in
@@ -34,6 +35,11 @@ def build(src=pathlib.Path(__file__).parent, out=None):
     page = head + body + js.replace('__DATA__', data)
     assert page.count('<script') == 1, 'exactly one script block'
     assert '<line' not in page, 'the artifact viewer strips <line> elements'
+    # the stamp names the bytes themselves, so a browser can be asked which build
+    # it is holding instead of guessed at. Hashed before substitution, so the same
+    # parts always yield the same stamp.
+    assert '__BUILD__' in page, 'the build stamp placeholder went missing'
+    page = page.replace('__BUILD__', hashlib.sha256(page.encode()).hexdigest()[:8])
 
     (out / 'cellar_compass.html').write_text(page)
     (out / 'cellar_compass_standalone.html').write_text(

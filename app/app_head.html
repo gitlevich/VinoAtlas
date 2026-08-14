@@ -152,25 +152,27 @@ section{display:flex;flex-direction:column;gap:16px}
 .axval{font-size:11.5px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace}
 /* two-headed slider, ported from SigilAtlas band-widget: the band is the
    invariant, the thin marker the point ranking centres on */
-.band-track{position:relative;height:26px;cursor:pointer;user-select:none;touch-action:none}
-.band-bg{position:absolute;top:50%;left:0;right:0;height:6px;margin-top:-3px;border-radius:3px;background:var(--track)}
+/* built to survive being rendered at a smaller scale: a thin band with a faint
+   tint disappears when downscaled, so both are given weight */
+.band-track{position:relative;height:32px;cursor:pointer;user-select:none;touch-action:none}
+.band-bg{position:absolute;top:50%;left:0;right:0;height:9px;margin-top:-4.5px;border-radius:4.5px;background:var(--track)}
 /* physical color anchors: same in both themes, they depict the thing itself */
 .bg-weight{background:linear-gradient(90deg,#ecc9cd,#5a0f1e)}
 .bg-grip{background:linear-gradient(90deg,#e3d3b4,#5e3a1c)}
 .bg-oak{background:linear-gradient(90deg,#ded6c8,#8a5a24)}
 .bg-fruit{background:linear-gradient(90deg,#9ebf3b,#6d1f4e)}
 .bg-maturity{background:linear-gradient(90deg,#87a733,#c08a3e,#96502a)}
-.band{position:absolute;top:3px;height:20px;border-radius:6px;cursor:grab;min-width:8px;
-  background:rgba(var(--mark-rgb),.13);
-  border:1px solid rgba(var(--mark-rgb),.5)}
-.band:hover{background:rgba(var(--mark-rgb),.2)}
-.band.dragging{cursor:grabbing;background:rgba(var(--mark-rgb),.26)}
-.bh{position:absolute;top:-2px;width:16px;height:24px;cursor:ew-resize;z-index:1}
+.band{position:absolute;top:3px;height:26px;border-radius:7px;cursor:grab;min-width:10px;
+  background:rgba(var(--mark-rgb),.2);
+  border:1.5px solid rgba(var(--mark-rgb),.7)}
+.band:hover{background:rgba(var(--mark-rgb),.28)}
+.band.dragging{cursor:grabbing;background:rgba(var(--mark-rgb),.34)}
+.bh{position:absolute;top:-2px;width:18px;height:30px;cursor:ew-resize;z-index:1}
 .bh.left{left:-8px}
 .bh.right{right:-8px}
-.bh::after{content:'';position:absolute;top:5px;bottom:5px;left:50%;width:4px;margin-left:-2px;
-  border-radius:2px;background:var(--mark);border:1px solid var(--panel);box-sizing:border-box}
-.bmark{position:absolute;top:1px;width:2.5px;height:24px;margin-left:-1.25px;border-radius:1px;
+.bh::after{content:'';position:absolute;top:4px;bottom:4px;left:50%;width:6px;margin-left:-3px;
+  border-radius:3px;background:var(--mark);border:1px solid var(--panel);box-sizing:border-box}
+.bmark{position:absolute;top:1px;width:3px;height:30px;margin-left:-1.5px;border-radius:1.5px;
   background:var(--ink);box-shadow:0 0 0 1px var(--panel);pointer-events:none}
 .ends{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.07em;
   text-transform:uppercase;color:var(--ink-3);margin-top:1px}
