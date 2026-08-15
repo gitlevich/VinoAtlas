@@ -1046,7 +1046,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='797fad6c';
+const BUILD='706bc642';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -2966,19 +2966,24 @@ function drawMini() {
   const marks = POLES.map(p => ({ p, q: at(p.dir) }));
   marks.sort((a, b) => a.q.w - b.q.w);            // the far ones first
   for (const { p, q } of marks) {
-    const front = q.w > 0, r = front ? 5.6 : 4.4;
-    const col = vivid(p.hsl, front ? 1 : 0.55, front ? 4 : 0);
+    const front = q.w > 0, r = front ? 6.4 : 5.4;
     p.gHit = [q.x, q.y];
     p.gFront = front;
-    if (front) {
-      mg.fillStyle = col;
-      mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.fill();
-      mg.strokeStyle = ink(0.8); mg.lineWidth = 1.2;
-      mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.stroke();
-    } else {
-      mg.strokeStyle = col; mg.lineWidth = 1.6;
-      mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.stroke();
-    }
+    /* EACH ONE A LITTLE SPHERE. A flat disc on a wireframe ball is a hole in it;
+       shaded, it is a thing sitting on the surface. The ones round the back are
+       the same spheres at two fifths, which is what you see of something through
+       a globe rather than in front of it. */
+    const A = front ? 1 : 0.4;
+    const gd = mg.createRadialGradient(q.x - r*0.36, q.y - r*0.42, r*0.05, q.x, q.y, r);
+    gd.addColorStop(0,    vivid(p.hsl, A, 24));
+    gd.addColorStop(0.5,  vivid(p.hsl, A, 4));
+    gd.addColorStop(1,    vivid(p.hsl, A, -20));
+    mg.fillStyle = gd;
+    mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.fill();
+    mg.strokeStyle = vivid(p.hsl, A * 0.9, -26); mg.lineWidth = 1;
+    mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.stroke();
+    mg.fillStyle = `rgba(255,255,255,${A * 0.55})`;
+    mg.beginPath(); mg.arc(q.x - r*0.34, q.y - r*0.40, r*0.20, 0, 6.2832); mg.fill();
   }
 
   /* The wines under the crosshair were drawn on here too, and they are not any
