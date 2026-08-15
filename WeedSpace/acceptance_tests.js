@@ -116,15 +116,13 @@
     STAND = [0, 0, 0]; await frame();
   });
 
-  await T('the home button and the keys redraw too', async () => {
+  await T('walking redraws, and the middle button is gone', async () => {
     STAND = [0, 0, 0]; await frame();
     let d = DRAWS;                              // count from BEFORE the act
     walk(1.5); await settle();
     ok(len(STAND) > 0, 'walking did not move you');
     ok(DRAWS > d, 'walking left the screen as it was');
-    d = DRAWS;
-    document.getElementById('bHome').click(); await settle();
-    ok(len(STAND) < 1e-9 && DRAWS > d, 'going back to the middle did not repaint');
+    ok(!document.getElementById('bHome'), 'the middle button is back');
   });
 
   await T('the view can be turned all the way round without meeting a wall', async () => {
@@ -151,34 +149,39 @@
     /* it is infinitely far: nothing you do resolves it into a disc. Scaling by
        pixels-per-radian put letters two hundred tall on things meant to read as
        unreachable. */
-    const size = () => Object.fromEntries(ITEMS.filter(i => i.hit).map(i => [i.w, i.hit[3]]));
-    /* face a populated quarter -- narrowing to 0.14 leaves few stars in view, so
-       a heading with only one or two would prove nothing either way */
-    STAND = [0, 0, 0]; yaw = 1.2; pitch = 0; FOV = fovWant = WIDE; await frame();
+    const size = () => Object.fromEntries(FEELS.filter(i => i.hit).map(i => [i.w, i.hit[3]]));
+    /* Face the most populated quarter and narrow only as far as still leaves
+       several feelings up. There are thirteen in the whole sky, so at 0.14 you
+       see one or two and the comparison proves nothing either way. */
+    STAND = [0, 0, 0]; yaw = 3 * Math.PI / 8; pitch = 0; FOV = fovWant = WIDE; await frame();
     const wide = size();
-    FOV = fovWant = WIDE * 0.14; await frame();
+    FOV = fovWant = WIDE * 0.35; await frame();
     const tight = size();
     FOV = fovWant = WIDE; await frame();
     const both = Object.keys(wide).filter(k => tight[k]);
-    ok(both.length > 3, 'no stars were up to check');
+    ok(both.length > 3, 'only ' + both.length + ' stars were up to check');
     both.forEach(k => ok(Math.abs(tight[k] - wide[k]) < 1e-6,
       k + ' grew ' + (tight[k] / wide[k]).toFixed(1) + 'x when the view narrowed'));
     ok(Math.max(...Object.values(wide)) < 60, 'a star label is larger than a star should be');
   });
 
   await T('a bright star is brighter, not bigger', async () => {
-    const bright = ITEMS.reduce((a, b) => (a.str > b.str ? a : b));
-    const faint = ITEMS.reduce((a, b) => (a.str < b.str ? a : b));
+    const bright = FEELS.reduce((a, b) => (a.str > b.str ? a : b));
+    const faint = FEELS.reduce((a, b) => (a.str < b.str ? a : b));
     ok(bright.str > faint.str);
-    /* size varies only a little with magnitude; the carrying signal is alpha */
-    const szOf = i => (i.kind === 'feel' ? 10.5 : 9.5) + (i.kind === 'feel' ? 6.5 : 5.0) * i.str;
-    ok(szOf(bright) / szOf(faint) < 2, 'magnitude is being spent on size');
+    /* The thirteen feelings span a narrow band of magnitude, 0.707 to 1.0, so
+       the test is not an absolute ratio but which channel carries it: brightness
+       must open a wider gap than size does. */
+    const szOf = i => 10.5 + 6.5 * i.str;
     const aOf = i => Math.max(0.34, Math.min(1, 0.14 + 0.86 * i.str));
-    ok(aOf(bright) / aOf(faint) > 2.4, 'magnitude is not reaching brightness');
+    const bySize = szOf(bright) / szOf(faint), byLight = aOf(bright) / aOf(faint);
+    ok(byLight > bySize * 1.1, 'magnitude is going into size (' + bySize.toFixed(2)
+       + 'x) rather than brightness (' + byLight.toFixed(2) + 'x)');
+    ok(bySize < 1.3, 'a bright star is being drawn bigger, not just brighter');
   });
 
   await T('walking does not move a single star', async () => {
-    const sky = () => Object.fromEntries(ITEMS.filter(i => i.hit).map(i => [i.w, i.hit[0]]));
+    const sky = () => Object.fromEntries(FEELS.filter(i => i.hit).map(i => [i.w, i.hit[0]]));
     STAND = [0, 0, 0]; await frame();
     const a = sky();
     for (const step of [0.6, 1.2, -2.0, 3.0]) { walk(step); await frame(); }
@@ -190,6 +193,27 @@
     STAND = [0, 0, 0]; await frame();
   });
 
+  await T('a smell drifts with the weeds, because it is theirs', async () => {
+    /* It is the WEEDS that smell, not the states. A feeling is a bearing you can
+       want and so it hangs in the sky; a smell is something the weeds have, so
+       it stands among them and moves as they move. */
+    STAND = [0, 0, 0]; yaw = 1.2; pitch = 0; await frame();
+    const grab = k => Object.fromEntries(ITEMS.filter(i => i.kind === k && i.hit).map(i => [i.w, i.hit[0]]));
+    const weeds = () => Object.fromEntries(ST.filter(t => t.node).map(t => [t.n, t.node[0]]));
+    const s0 = grab('smell'), f0 = grab('feel'), w0 = weeds();
+    walk(1.0); await frame();
+    const s1 = grab('smell'), f1 = grab('feel'), w1 = weeds();
+    const move = (a, b) => { const o = []; for (const k in a) if (b[k]) o.push(Math.abs(b[k] - a[k])); return o; };
+    const avg = x => x.reduce((s, v) => s + v, 0) / x.length;
+    const sm = move(s0, s1), fe = move(f0, f1), wd = move(w0, w1);
+    ok(sm.length > 4, 'too few smells up to check: ' + sm.length);
+    ok(Math.max(...fe) < 1e-9, 'a feeling moved when you walked -- it is not sky any more');
+    ok(avg(sm) > 10, 'the smells did not drift at all: ' + avg(sm).toFixed(1) + 'px');
+    ok(FEELS.every(f => f.dist === undefined), 'a feeling was given a distance');
+    ok(SMELLS.every(s => s.dist > 0), 'a smell has no place in the field');
+    STAND = [0, 0, 0]; await frame();
+  });
+
   await T('turning your head slides near weeds past far ones', async () => {
     /* THE CLAIM THIS SPACE IS FOR. Stand still, turn only. A camera pivoting on
        its own optical centre gives nothing here -- every point sweeps by the
@@ -198,7 +222,7 @@
        small translation, and near things really do slide past far ones. */
     STAND = [0, 0, 0]; pitch = 0;
     const snap = () => Object.fromEntries(ST.filter(t => t.node).map(t => [t.n, [t.node[0], t.dist]]));
-    const sky = () => Object.fromEntries(ITEMS.filter(i => i.hit).map(i => [i.w, i.hit[0]]));
+    const sky = () => Object.fromEntries(FEELS.filter(i => i.hit).map(i => [i.w, i.hit[0]]));
     yaw = 1.20; await frame(); const a = snap(), s0 = sky();
     yaw = 1.24; await frame(); const b = snap(), s1 = sky();
 
@@ -263,7 +287,7 @@
     const a = snap();
     walk(2.0); await frame();
     ok(snap() !== a, 'walking changed nothing');
-    document.getElementById('bHome').click(); await frame();
+    STAND = [0, 0, 0]; await frame();
     ok(snap() === a, 'the middle is not where you left it');
   });
 
@@ -311,7 +335,7 @@
         ws.push(val);
         if (val < worstWeed) { worstWeed = val; worstWhere = t.n; }
       }
-      for (const i of ITEMS) if (i.hit)
+      for (const i of FEELS) if (i.hit)
         ds.push(Math.max(0.34, Math.min(1, 0.14 + 0.86 * i.str)) * lum(i.hue, i.sat, i.lit));
       if (ws.length) weedMids.push(mid(ws));
       if (ds.length) wordMids.push(mid(ds));

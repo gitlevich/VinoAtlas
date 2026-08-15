@@ -13,6 +13,69 @@
       throw new Error((m || '') + ' got ' + JSON.stringify(a) + ' want ' + JSON.stringify(b));
   };
   const near = (a, b, m) => { if (Math.abs(a - b) > 1e-9) throw new Error((m||'') + ' got ' + a + ' want ' + b); };
+
+  /* -- reading the page's colours as the eye gets them --------------------
+     A colour reaches the reader composited: its own alpha over whatever
+     backgrounds lie behind it, all the way down to the body. These read that
+     stack the way a browser paints it, so a contrast figure here is the
+     figure on screen, not the one the stylesheet hoped for. */
+  const chan = c => {
+    const m = String(c).trim().match(/^#([0-9a-f]{6})$/i);
+    if (m) return { r: parseInt(m[1].slice(0,2),16), g: parseInt(m[1].slice(2,4),16), b: parseInt(m[1].slice(4,6),16), a: 1 };
+    const n = String(c).match(/rgba?\(([^)]+)\)/);
+    if (!n) return null;
+    const v = n[1].split(/[\s,\/]+/).filter(Boolean).map(Number);
+    return { r: v[0], g: v[1], b: v[2], a: v.length > 3 ? v[3] : 1 };
+  };
+  const rgb = c => { const x = chan(c); return x ? x.r + ',' + x.g + ',' + x.b : String(c); };
+  const token = n => rgb(getComputedStyle(document.documentElement).getPropertyValue(n).trim());
+  const lay = (fg, bg) => ({ r: fg.r*fg.a + bg.r*(1-fg.a), g: fg.g*fg.a + bg.g*(1-fg.a), b: fg.b*fg.a + bg.b*(1-fg.a), a: 1 });
+  const relLum = ({ r, g, b }) => {
+    const f = v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); };
+    return 0.2126*f(r) + 0.7152*f(g) + 0.0722*f(b);
+  };
+  const contrast = (a, b) => {
+    const [x, y] = [relLum(a), relLum(b)];
+    return (Math.max(x,y) + 0.05) / (Math.min(x,y) + 0.05);
+  };
+  const groundUnder = node => {
+    const stack = [];
+    for (let n = node; n; n = n.parentElement) {
+      const c = chan(getComputedStyle(n).backgroundColor);
+      if (c && c.a > 0) { stack.push(c); if (c.a === 1) break; }
+    }
+    let base = chan(getComputedStyle(document.body).backgroundColor) || { r:255, g:255, b:255, a:1 };
+    for (let i = stack.length - 1; i >= 0; i--) base = lay(stack[i], base);
+    return base;
+  };
+  /* every word the page shows, with the contrast it is read at */
+  const readings = () => {
+    const out = [];
+    document.querySelectorAll('*').forEach(node => {
+      const words = [...node.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim())
+        .map(n => n.textContent.trim()).join(' ');
+      if (!words) return;
+      const st = getComputedStyle(node);
+      if (st.display === 'none' || st.visibility === 'hidden') return;
+      const box = node.getBoundingClientRect();
+      if (!box.width || !box.height) return;
+      const drawn = node.ownerSVGElement || node.tagName === 'text' || node.tagName === 'tspan';
+      const face = chan(drawn ? st.fill : st.color);
+      if (!face) return;
+      const veil = parseFloat(st.opacity || 1) * (drawn ? parseFloat(st.fillOpacity || 1) : 1);
+      const ground = groundUnder(node);
+      out.push({ words: words.slice(0, 40), size: parseFloat(st.fontSize),
+                 ratio: contrast(lay({ ...face, a: face.a * veil }, ground), ground) });
+    });
+    return out;
+  };
+  /* the root's own restyle does not reach every subtree before the next read,
+     so a theme swap is given a frame to land before anything is measured */
+  const wearTheme = async name => {
+    name ? document.documentElement.setAttribute('data-theme', name)
+         : document.documentElement.removeAttribute('data-theme');
+    await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame);
+  };
   const ask = el('ask');
   const type = t => { ask.focus(); ask.value = t; ask.setSelectionRange(t.length, t.length); ask.dispatchEvent(new Event('input')); };
   const snap = { v: localStorage.getItem('cc_votes'), a: localStorage.getItem('cc_agent'), c: localStorage.getItem('cc_chat'), s: localStorage.getItem('cc_spend') };
@@ -354,11 +417,13 @@
   await T('each measure wears its own colour wherever it is named', () => {
     const named = [...document.querySelectorAll('.axname')].filter(n => n.style.color);
     ok(named.length >= 5, 'measures are tinted');
-    const want = A.map(a => S.colors[a]);
+    // the colour is the page's, held per ground, so the name asks for it by measure
     [...document.querySelectorAll('#axes .axname')].forEach((n, i) => {
-      const hex = '#' + n.style.color.match(/\d+/g).map(x => (+x).toString(16).padStart(2,'0')).join('');
-      eq(hex, want[i].toLowerCase(), 'measure ' + A[i]);
+      eq(n.style.color, 'var(--ax-' + A[i] + ')', 'measure ' + A[i]);
+      eq(rgb(getComputedStyle(n).color), token('--ax-' + A[i]), A[i] + ' resolves to its ground\'s colour');
     });
+    const distinct = new Set(A.map(a => token('--ax-' + a)));
+    eq(distinct.size, 5, 'five measures, five colours');
     ok(document.querySelector('#out .why span[style*="color"]'), 'the explanation tints its measure');
   });
   await T('the dashed shape is named for what it is', () => {
@@ -499,7 +564,7 @@
     ok(/#radar \.rw\{fill:var\(--rise\)/.test(css), 'a wine lays over it, to try on');
     radarWine(null);
     // and a limit still wears its own measure's hue, never a global one
-    A.forEach(a => eq(getComputedStyle(el('bt-' + a)).getPropertyValue('--c').trim(), S.colors[a],
+    A.forEach(a => eq(rgb(getComputedStyle(el('bt-' + a)).getPropertyValue('--c').trim()), rgb(token('--ax-' + a)),
       a + ' track carries its own hue'));
   });
 
@@ -514,6 +579,70 @@
     A.forEach(a => eq(band[a], span[a], 'opens on the largest type\'s own span, not an average'));
     A.forEach(a => eq(band[a], [0, 1], a));
     ok(ask.value === '', 'composer empty');
+  });
+
+  // -- reading --
+  /* The page writes at 10-14px throughout. WCAG's 4.5:1 is written for text
+     half again that size, so the colours are held to 5.5:1 and the rendered
+     page is only ever allowed to fall to 4.5:1 where a tint lies over a card. */
+  await T('every colour that carries a word clears the reading floor on its own ground', async () => {
+    const was = document.documentElement.getAttribute('data-theme');
+    try {
+      for (const ground of ['light', 'dark']) {
+        await wearTheme(ground);
+        const worst = ['--ink', '--ink-2', '--ink-3'].concat(A.map(a => '--ax-' + a)).map(name => {
+          const face = chan(getComputedStyle(document.documentElement).getPropertyValue(name).trim());
+          // the darkest ground a word can land on: --ground in light, --raise in dark
+          const deepest = ['--ground', '--panel', '--raise'].map(g =>
+            chan(getComputedStyle(document.documentElement).getPropertyValue(g).trim()))
+            .sort((x, y) => contrast(face, x) - contrast(face, y))[0];
+          return { name, ratio: contrast(face, deepest) };
+        }).sort((x, y) => x.ratio - y.ratio)[0];
+        ok(worst.ratio >= 5.5, ground + ': ' + worst.name + ' reads at ' + worst.ratio.toFixed(2) + ':1');
+      }
+    } finally { await wearTheme(was); }
+  });
+  await T('nothing on any tab is rendered below 4.5:1', async () => {
+    const was = document.documentElement.getAttribute('data-theme');
+    const open = ['find','palate','move','pop','how'].find(t => !el('s-' + t).hidden);
+    try {
+      for (const ground of ['light', 'dark']) {
+        await wearTheme(ground);
+        for (const tab of ['find', 'palate', 'move', 'pop', 'how']) {
+          el('t-' + tab).click();
+          await new Promise(requestAnimationFrame);
+          const dim = readings().filter(r => r.ratio < 4.5).sort((x, y) => x.ratio - y.ratio);
+          ok(dim.length === 0, ground + '/' + tab + ': ' + dim.length + ' too dim, worst "' +
+            (dim[0] || {}).words + '" at ' + ((dim[0] || {}).ratio || 0).toFixed(2) + ':1');
+        }
+      }
+    } finally { el('t-' + open).click(); await wearTheme(was); }
+  });
+  await T('a card and its edge stay apart, and the chart grid stays visible', async () => {
+    const was = document.documentElement.getAttribute('data-theme');
+    try {
+      for (const ground of ['light', 'dark']) {
+        await wearTheme(ground);
+        const panel = chan(getComputedStyle(document.documentElement).getPropertyValue('--panel').trim());
+        for (const line of ['--rule', '--grid', '--track']) {
+          const c = contrast(chan(getComputedStyle(document.documentElement).getPropertyValue(line).trim()), panel);
+          ok(c >= 1.4, ground + ': ' + line + ' sits at ' + c.toFixed(2) + ':1 against the card');
+        }
+      }
+    } finally { await wearTheme(was); }
+  });
+  await T('a filled accent is written on in something the accent can be read under', async () => {
+    const was = document.documentElement.getAttribute('data-theme');
+    try {
+      for (const ground of ['light', 'dark']) {
+        await wearTheme(ground);
+        const on = chan(getComputedStyle(document.documentElement).getPropertyValue('--on-accent').trim());
+        for (const fill of ['--mark', '--good', '--bad']) {
+          const c = contrast(on, chan(getComputedStyle(document.documentElement).getPropertyValue(fill).trim()));
+          ok(c >= 4.5, ground + ': text on ' + fill + ' reads at ' + c.toFixed(2) + ':1');
+        }
+      }
+    } finally { await wearTheme(was); }
   });
 
   // -- vocabulary --

@@ -137,30 +137,42 @@ def test_direction_survives_the_move_into_the_world(items, nav):
 
 def test_the_two_agreeing_axes_lie_in_the_plane_you_turn_through(items, nav):
     """Turning your head must sweep the structure the vocabularies share, not
-    the axis they barely agree on."""
+    the axis they barely agree on. Checked as a direction, since a smell now
+    carries a radius as well."""
     by_word = {i["w"]: i for i in nav["items"]}
     for i in items:
         p = by_word[i["w"]]["p"]
-        assert i["pos"][1] == pytest.approx(unit([p[0], p[2], p[1]])[1], abs=2e-4), \
+        assert unit(i["pos"])[1] == pytest.approx(unit([p[0], p[2], p[1]])[1], abs=2e-3), \
             f"{i['w']} is not upright"
 
 
-def test_a_word_is_a_bearing_and_carries_no_distance_at_all(items):
-    """A star is at infinity. Every word sits at the same unreachable remove, so
-    'far' is left entirely to the weeds and the two stop competing over it."""
-    for i in items:
+def test_a_feeling_is_a_bearing_and_a_smell_is_a_thing_in_the_field(items):
+    """A feeling is a state you can want -- a bearing, at infinity, unreachable.
+    A smell is not: it is something the WEEDS have, so it belongs among them at
+    a real place, on the same radius rule they use. It is the weeds that smell,
+    not the states."""
+    feels = [i for i in items if i["kind"] == "feel"]
+    smells = [i for i in items if i["kind"] == "smell"]
+    for i in feels:
         assert "dist" not in i, f"{i['w']} was given a distance"
         assert math.dist(i["pos"], [0, 0, 0]) == pytest.approx(1.0, abs=1e-3), i["w"]
+    for i in smells:
+        assert "dist" in i, f"{i['w']} has no place in the field"
+        assert math.dist(i["pos"], [0, 0, 0]) == pytest.approx(i["dist"], abs=0.01), i["w"]
+        assert i["dist"] == pytest.approx(NEAR + (FAR - NEAR) * i["str"], abs=0.01), i["w"]
+        assert NEAR <= i["dist"] <= FAR
+    assert len(smells) == 32 and len(feels) == 13
 
 
 def test_a_vague_word_is_a_faint_star_and_not_a_far_one(page, items):
     """How sharply a word marks its bearing became its MAGNITUDE. Size and
     brightness therefore have to be read off strength, never off distance --
     otherwise walking would change what a word means."""
-    assert "10.5 : 9.5" in page, "a star's size no longer comes from its magnitude"
+    assert "10.5 + 6.5 * it.str" in page, "a star's size no longer comes from its magnitude"
+    assert "40 * it.str / p.dist" in page, "a smell no longer recedes with distance"
     assert "/ p.dist) * p.ppr" not in page, "a word's size is being read off distance again"
     assert "p.ppr * 0.0165" not in page, "a star swells again when the view narrows"
-    assert "0.14 + 0.86 * it.str" in page, "a word's brightness left strength"
+    assert "0.14 + 0.86 * it.str" in page, "a star's brightness left magnitude"
     assert "a.it.str - b.it.str" in page, "stars are no longer stacked faint-first"
 
     strongest = max(items, key=lambda i: i["str"])
@@ -178,7 +190,8 @@ def test_the_sky_does_not_move_when_you_walk(page):
     assert "place(here(it.pos)" not in page, "the sky was put on the eye"
     words = page[page.index("for (const it of ITEMS) {"):]
     words = words[:words.index("seen.sort")]
-    assert "place(it.pos, F)" in words, "a word is no longer projected straight"
+    assert "place(sky ? it.pos : here(it.pos), F)" in words, \
+        "the sky and the field are no longer projected differently"
 
 
 def test_you_cannot_walk_out_of_your_own_field(page, strains):

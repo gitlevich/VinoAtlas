@@ -59,7 +59,17 @@ for i in D['items']:
     # sharply it marks that bearing becomes its MAGNITUDE -- a vague word is a
     # faint star, not a far one. Distance is left entirely to the weeds, which is
     # what stops the two competing over what "far" means.
-    i['pos'] = [round(d[0], 4), round(d[2], 4), round(d[1], 4)]
+    # A FEELING is a bearing and nothing else, so it goes to the sky at unit
+    # distance and its strength becomes magnitude. A SMELL is not: it is
+    # something the weeds have, not a state you can want, so it belongs among
+    # them at a real place -- same radius rule the weeds use, so it parallaxes
+    # with them and sits where the weeds that smell that way sit.
+    if i['kind'] == 'feel':
+        i['pos'] = [round(d[0], 4), round(d[2], 4), round(d[1], 4)]
+    else:
+        dist = NEAR + (FAR - NEAR) * strength
+        i['pos'] = [round(d[0] * dist, 3), round(d[2] * dist, 3), round(d[1] * dist, 3)]
+        i['dist'] = round(dist, 2)
     i['str'] = round(strength, 3)
     del i['p']
 DATA = {k: D[k] for k in ('axes', 'items', 'chance', 'total', 'effectOrder')}
@@ -220,7 +230,6 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
     <div id=foot>
       <button id=bClear>clear</button>
       <button id=bWide style="display:none">step back</button>
-      <button id=bHome style="display:none">the middle</button>
     </div>
   </div>
   <div class=col id=view>
@@ -394,7 +403,6 @@ function walk(step) {
      slide along it instead of stepping outside and looking in */
   if (n > ROAM) for (let i = 0; i < 3; i++) p[i] *= ROAM / n;
   STAND = p;
-  document.getElementById('bHome').style.display = len(STAND) > 0.15 ? '' : 'none';
   nudge();
 }
 
@@ -511,13 +519,19 @@ function draw() {
     t.node = [q.x, q.y, R, a];
   }
 
+  /* The SKY is projected straight -- a feeling is at infinity and no amount of
+     walking shifts it. A SMELL is in the FIELD, projected from the eye like the
+     weeds, because it is a thing the weeds have and it must drift with them.
+     Stars stack faint-first; smells stack far-first, as depth requires. */
   const seen = [];
   for (const it of ITEMS) {
-    const p = place(it.pos, F);
+    const sky = it.kind === 'feel';
+    const p = place(sky ? it.pos : here(it.pos), F);
     it.hit = null;
-    if (p) seen.push({ it, p });
+    if (p) seen.push({ it, p, sky });
   }
-  seen.sort((a, b) => a.it.str - b.it.str);           // faint stars first, bright on top
+  seen.sort((a, b) => (a.sky !== b.sky) ? (a.sky ? -1 : 1)
+                    : a.sky ? a.it.str - b.it.str : b.p.dist - a.p.dist);
 
   const drawn = [
     [W / 2, H - 30, W, 86],          // the readout strip along the bottom
@@ -536,8 +550,13 @@ function draw() {
        wrong twice over: it made distant things swell as you squinted, and it
        put letters two hundred pixels tall on objects that are meant to read as
        unreachable. */
-    const sz = (feel ? 10.5 : 9.5) + (feel ? 6.5 : 5.0) * it.str;
-    const a = Math.max(0.34, Math.min(1, 0.14 + 0.86 * it.str) * p.edge);
+    /* A star holds a fixed size: infinitely far, nothing resolves it into a
+       disc. A smell is a thing at a distance and so it recedes, by the same
+       rule the weeds obey -- its own sharpness over how far off it is. */
+    const sz = feel ? 10.5 + 6.5 * it.str
+                    : Math.max(8.5, Math.min(19, 40 * it.str / p.dist)) + 6.5;
+    const a = feel ? Math.max(0.34, Math.min(1, 0.14 + 0.86 * it.str) * p.edge)
+                   : Math.max(0.42, Math.min(0.95, 7.5 * it.str / p.dist) * p.edge);
 
     const label = feel ? it.w.toUpperCase() : it.w;
     g.font = `${said ? '600 ' : feel ? '500 ' : ''}${sz.toFixed(1)}px ui-sans-serif,sans-serif`;
@@ -791,11 +810,6 @@ view.addEventListener('wheel', e => {
   nudge();
 }, { passive: false });
 document.getElementById('bWide').onclick = () => lean(WIDE / fovWant);
-document.getElementById('bHome').onclick = () => {
-  STAND = [0, 0, 0];
-  document.getElementById('bHome').style.display = 'none';
-  nudge();
-};
 addEventListener('keydown', e => {
   if (e.key === 'w' || e.key === 'ArrowUp') walk(0.3);
   else if (e.key === 's' || e.key === 'ArrowDown') walk(-0.3);
