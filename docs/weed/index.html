@@ -462,13 +462,30 @@ function draw() {
         g.lineTo(q.x, q.y);
       }
       g.closePath();
-      g.fillStyle = `hsla(112,66%,${lit2}%,${a})`; g.fill();
-      /* Outlined in its own green, NOT in the accent. A seven-leaflet serrated
-         star has an enormous perimeter for the area it encloses, so an accent
-         stroke does not accent it -- measured, the stroke took 968 of 1304
-         pixels against the fill's 167 and the leaf came out pink. The accent
-         goes on the stem and the node instead, which are bounded. */
-      g.strokeStyle = `hsla(112,72%,${lit2 + 14}%,${a})`;
+      /* GREEN AT THE HEART, BLEEDING OUT TO THE TERRITORY. The leaf reads green
+         where the eye lands first and carries the colour of its ground at the
+         tips, which is more of the mark than an edge was and still leaves it a
+         green leaf.
+
+         The hue is walked around the wheel by hand rather than left to the
+         gradient. Canvas interpolates stops in RGB, so green straight to pink
+         passes through grey and the leaf goes muddy in the middle; stepping the
+         hue keeps it a colour the whole way. The exponent holds the green out to
+         about two thirds before the turn, so the bleed happens in the last
+         third of each leaflet.
+
+         The perimeter still matters -- a seven-leaflet serrated star encloses
+         very little for the outline it carries, and an accent-coloured stroke
+         once took 968 of 1304 pixels and turned the leaf pink -- so the stroke
+         takes the same gradient rather than a colour of its own. */
+      let turn = ((t.a - 112 + 540) % 360) - 180;
+      const blade = g.createRadialGradient(q.x, q.y, 0, q.x, q.y, R);
+      for (let k = 0; k <= 6; k++) {
+        const u = k / 6, e = Math.pow(u, 2.1);
+        blade.addColorStop(u, `hsla(${112 + turn * e},${66 + 16 * e}%,${lit2 + 8 * e}%,${a})`);
+      }
+      g.fillStyle = blade; g.fill();
+      g.strokeStyle = blade;
       g.lineWidth = Math.max(1, R * 0.045); g.stroke();
       g.beginPath();
       g.moveTo(q.x, q.y);

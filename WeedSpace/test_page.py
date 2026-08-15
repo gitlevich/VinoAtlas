@@ -71,7 +71,8 @@ def test_a_weed_is_a_green_leaf_with_the_colour_of_its_ground(page, strains, bak
     about a place -- and it is checked by recomputing it here rather than by
     trusting the field.
     """
-    assert "hsla(112,66%," in page, "the leaf body is not green"
+    assert "112 + turn * e" in page, "the leaf no longer starts green at the heart"
+    assert "GREEN AT THE HEART, BLEEDING OUT TO THE TERRITORY" in page
     assert "THE CANNABIS LEAF" in page
     assert "the ground it stands on, held where it can be seen" in page
     assert "hsla(${t.a},88%," in page, "the stem lost the accent"
