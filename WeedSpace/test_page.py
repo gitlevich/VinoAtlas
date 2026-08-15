@@ -61,6 +61,40 @@ def test_no_dead_word_is_drawn_or_used_as_a_signpost(baked, page):
         assert f'"w": "{w}"' not in page
 
 
+def test_a_weed_is_a_green_leaf_and_carries_no_colour_of_its_own(page, strains):
+    """A weed is drawn as a cannabis leaf, flatly green, because it has to be
+    recognisable without being read. What that costs is stated rather than
+    hidden: a weed's colour no longer tells you which country it stands in.
+    Position still does. Lightness still tracks how much it commits, so the
+    field does not flatten into one mass.
+
+    So the per-weed hues are not shipped at all. They are still real properties
+    of the arrangement and still checked in test_pipeline.py -- they are simply
+    not something this page says any more, and a page that ships a field it does
+    not use will eventually state it by accident.
+    """
+    assert "hsla(112,58%," in page, "the leaf is not green"
+    assert "THE CANNABIS LEAF" in page
+    for t in strains:
+        for gone in ("h", "l", "bh"):
+            assert gone not in t, f"{t['n']} still carries '{gone}'"
+    assert "34 + 20 * t.lean" in page, "lightness no longer tracks commitment"
+
+
+def test_a_smell_is_a_nose(page):
+    """Curls and strands were not readable -- the eye had nothing to catch, so
+    the label had to be read, which is the failure. A nose is instantly what it
+    is, asymmetric where a leaf is radial, and two-tone: the nose carries the
+    word's own colour so a smell still tells you its direction, and the scent
+    lines are a pale tint of it."""
+    assert "A SMELL IS A NOSE" in page
+    assert "the nostril, which is what settles it as a nose" in page
+    body = page[page.index("A SMELL IS A NOSE"):]
+    body = body[:body.index("if (said)")]
+    assert "${it.hue}" in body, "the nose stopped carrying the word's colour"
+    assert "it.sat - 24" in body and "it.lit + 26" in body, "the second tone is gone"
+
+
 def test_the_argmax_is_not_carried(strains):
     """It produced the colour-by-coin-toss bug and a tooltip that named one
     effect while the mark was painted by a blend. What is not shipped cannot be
@@ -169,7 +203,7 @@ def test_a_vague_word_is_a_faint_star_and_not_a_far_one(page, items):
     brightness therefore have to be read off strength, never off distance --
     otherwise walking would change what a word means."""
     assert "10.5 + 6.5 * it.str" in page, "a star's size no longer comes from its magnitude"
-    assert "78 * it.str / p.dist" in page, "a smell no longer recedes with distance"
+    assert "108 * it.str / p.dist" in page, "a smell no longer recedes with distance"
     assert "Math.max(0.70," in page, "the smell brightness floor was lowered again"
     assert "/ p.dist) * p.ppr" not in page, "a word's size is being read off distance again"
     assert "p.ppr * 0.0165" not in page, "a star swells again when the view narrows"
@@ -258,7 +292,7 @@ def test_commitment_is_carried_by_the_mark_not_by_how_close_it_lands(page, strai
     """Once weeds fill the body, the uncommitted ones are the nearest -- so plain
     1/distance would make the blandest weed the biggest, brightest thing in the
     view. Size and brightness come from the weed, and distance then divides."""
-    assert "82 * t.lean / q.dist" in page, "apparent size no longer tracks commitment"
+    assert "118 * t.lean / q.dist" in page, "apparent size no longer tracks commitment"
     assert "13 * t.lean / q.dist" in page, "brightness no longer tracks commitment"
     assert "Math.max(0.72," in page, "the weed brightness floor was lowered again"
     assert "20 / q.dist" not in page, "the old proximity-is-importance rule is back"
@@ -303,11 +337,14 @@ def test_every_hue_carries_the_same_weight_on_black(items):
     assert min(lums) > 0.28, "something has gone dark enough to lose"
 
 
-def test_nothing_is_painted_dark_enough_to_vanish(items, strains):
+def test_nothing_is_painted_dark_enough_to_vanish(items, page):
+    """Words only: a weed has no colour of its own any more. Its leaf is green
+    at a lightness set by how much it commits, and the floor for that is in the
+    drawing code rather than in the data."""
     for i in items:
         assert i["lit"] >= FLOOR, i["w"]
-    for t in strains:
-        assert t["l"] >= FLOOR, t["n"]
+    assert "34 + 20 * t.lean" in page and "36 + 20 * t.lean" in page, \
+        "the leaf lightness floor moved"
 
 
 def test_the_lift_is_bounded_at_both_ends(items):
@@ -338,22 +375,6 @@ def test_a_smell_carries_the_colour_of_the_feeling_it_leads_to(items, feels):
     assert gap(by["earthy"], by["relaxed"]) < 6
 
 
-def test_a_weed_takes_the_colour_of_the_ground_it_stands_on(strains, feels):
-    """Recomputed independently. Its colour must always be a colour some feeling
-    actually has, so the globe and the world say the same thing about a place."""
-    pos = [(unit(f["pos"]), f["hue"]) for f in feels]
-    for t in strains:
-        d = unit(t["pos"])
-        cos = [float(d @ fd) for fd, _ in pos]
-        best = max(cos)
-        vx = vy = 0.0
-        for (_, hue), c in zip(pos, cos):
-            w = math.exp((c - best) * 11)
-            vx += w * math.cos(math.radians(hue))
-            vy += w * math.sin(math.radians(hue))
-        want = math.degrees(math.atan2(vy, vx)) % 360
-        assert gap(t["h"], want) < 0.5, t["n"]
-
 
 def _nearest_feeling(t, feels):
     """The feeling a weed stands closest to, and how close that actually is."""
@@ -361,53 +382,7 @@ def _nearest_feeling(t, feels):
     return max(((float(d @ unit(f["pos"])), f) for f in feels), key=lambda x: x[0])
 
 
-def test_a_weeds_colour_agrees_with_where_it_sits(strains, feels):
-    """Colour and position may never contradict each other -- for every weed
-    that stands near a feeling at all. 496 of 563 do, and every one of them
-    wears a colour within 35 degrees of the ground under it."""
-    checked = 0
-    for t in strains:
-        cos, f = _nearest_feeling(t, feels)
-        if cos <= NOWHERE:
-            continue
-        checked += 1
-        assert gap(t["h"], f["hue"]) < 70, f"{t['n']} stands in {f['w']}"
-    assert checked / len(strains) > 0.85, "most weeds should stand somewhere"
 
-
-def test_a_weed_standing_nowhere_has_no_colour_to_be_given(strains, feels):
-    """The blend weighs feelings by how close they are. A weed roughly square-on
-    to all thirteen weighs them all the same, and the answer is then the average
-    of the whole wheel -- a fixed colour that says nothing about that weed. It is
-    the argmax bug in its other form: not a coin toss between two, but a mean of
-    everything. 67 of 563 sit out there. Locked so the count cannot grow in
-    silence.
-    """
-    nowhere = [t for t in strains if _nearest_feeling(t, feels)[0] <= NOWHERE]
-    assert 35 <= len(nowhere) <= 60, len(nowhere)
-    # they converge on one colour, which is the tell
-    same = {}
-    for t in nowhere:
-        same.setdefault(round(t["h"]), []).append(t["n"])
-    assert max(len(v) for v in same.values()) >= 3, \
-        "the degenerate blend no longer collapses; re-measure before relaxing this"
-
-
-def test_the_two_colours_a_weed_carries_now_largely_agree(strains):
-    """h is where it stands, bh is what it does. Under the old average of the two
-    views these were different answers -- more than a tenth of weeds had them
-    over 60 degrees apart, and `rainbow` sat in green country reading aroused.
-    Placed by the effect view, where a weed stands IS what it does: the median
-    gap is 14 degrees and only 9% still exceed 60.
-
-    They stay two fields rather than one, because the day they diverge again is
-    the day this test has to say so.
-    """
-    assert all("bh" in t and "h" in t for t in strains)
-    gaps = sorted(gap(t["h"], t["bh"]) for t in strains)
-    assert np.median(gaps) < 20, f"median gap back up to {np.median(gaps):.0f} deg"
-    apart = [t for t in strains if gap(t["h"], t["bh"]) > 60]
-    assert len(apart) / len(strains) < 0.13, "position and effect have drifted apart again"
 
 
 # ------------------------------------------------------------------- the frame

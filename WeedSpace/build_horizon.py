@@ -76,7 +76,12 @@ DATA = {k: D[k] for k in ('axes', 'items', 'chance', 'total', 'effectOrder')}
 # The argmax ('e' in navdata) is deliberately NOT carried. It was the source of
 # the colour-by-coin-toss bug and of a tooltip that named one effect while the
 # mark was painted by a blend. What the page can state, it states from 'r'.
-DATA['strains'] = [{'n': t['n'], 'r': t['r'], 'bh': t['bh'],
+# Neither the argmax nor any colour is carried. The argmax produced the
+# coin-toss bug; the colours became dead the moment a weed was drawn as a green
+# leaf, and a page that ships a field it does not use will eventually state it
+# by accident. The arrangement's colour geometry is still real and still tested
+# in test_pipeline.py -- it is simply not a thing this page says any more.
+DATA['strains'] = [{'n': t['n'], 'r': t['r'],
                     'p': [t['p'][0], t['p'][2], t['p'][1]]}
                    for t in D['strains']]
 # Hue follows the direction a word lies in, so words sitting together get
@@ -90,27 +95,15 @@ for i in D['items']:
     i['lit'] = _even(ang, (58 if i['kind'] == 'feel' else 71) + 14 * lift)
     i['sat'] = 74 if i['kind'] == 'feel' else 58
 HUE = {i['w']: (i['hue'], i['lit']) for i in D['items'] if i['kind'] == 'feel'}
-# A weed takes the colour of the ground it stands on: the same blend of nearby
-# feeling regions the globe paints with. So its colour is always a colour some
-# feeling actually has, it always agrees with where it sits, and the globe and
-# the world say the same thing about the same place.
+# A weed used to take the colour of the ground it stood on, blended from the
+# feeling regions around it. That is gone: a weed is drawn as a green cannabis
+# leaf now, so the blend has no consumer, and a build that computes a field
+# nothing reads is a field that will eventually be read by mistake. The colour
+# geometry of the arrangement itself is unchanged and still tested in
+# test_pipeline.py -- it is simply not something this page says about a weed.
 def _unit(v):
     n = math.dist(v, [0, 0, 0]) or 1
     return [c / n for c in v]
-
-FEELPOS = [(_unit(i['pos']), i['hue']) for i in D['items'] if i['kind'] == 'feel']
-BLEND = 11
-for t in DATA['strains']:
-    d = _unit(t['p'])
-    cosines = [sum(a * b for a, b in zip(d, fd)) for fd, _ in FEELPOS]
-    best = max(cosines)
-    vx = vy = 0.0
-    for (fd, hue), cos in zip(FEELPOS, cosines):
-        w = math.exp((cos - best) * BLEND)
-        th = math.radians(hue)
-        vx += w * math.cos(th); vy += w * math.sin(th)
-    t['h'] = round(math.degrees(math.atan2(vy, vx)) % 360, 1)
-    t['l'] = _even(t['h'], 67 + 12 * d[1])
 # Weeds fill the body of the sphere, and you move through them. A word is a
 # bearing with no location at all, so it goes to the sky: fixed, unreachable,
 # unmoved by anything you do. A weed is a thing at a place, and its place has a
@@ -538,7 +531,7 @@ function draw() {
     let a = Math.max(0.72, Math.min(1, 13 * t.lean / q.dist) * q.edge * attend);
     if (held && !held.has(t)) a *= 0.34;          // it slid out of frame on the way
     strains.push({ t, q, a,
-                   R: Math.max(2.1, (82 * t.lean / q.dist) * (WIDE / FOV) ** 0.5) * q.edge });
+                   R: Math.max(3.2, (118 * t.lean / q.dist) * (WIDE / FOV) ** 0.5) * q.edge });
   }
   strains.sort((x, y) => y.q.dist - x.q.dist);
   for (const { t, q, a, R } of strains) {
@@ -552,56 +545,63 @@ function draw() {
         k ? g.lineTo(x, y) : g.moveTo(x, y);
       }
       g.closePath();
-      /* SOLID. At this size the only thing that separates a weed from a smell
-         is that one is filled and compact and the other is an upright hairline.
-         A hollow chip out here read as vapour. */
-      g.fillStyle = `hsla(${t.h},70%,${t.l}%,${a})`; g.fill();
-      g.strokeStyle = `hsla(${t.h},75%,${t.l + 8}%,${a})`; g.lineWidth = 1; g.stroke();
-    } else {
-      /* A CANNABIS LEAF, and still the profile.
-
-         What makes the silhouette recognisable is not the number of leaflets,
-         it is the TAPER: the middle leaflet is longest and they shorten toward
-         the edges, each one a narrow lance rather than a wedge. Laying the
-         thirteen values out in list order gave a flat fan -- a palm frond.
-
-         So the values are sorted and laid centre-out, longest in the middle,
-         alternating sides. That keeps shape-identity, since the layout is a
-         function of the profile alone and two weeds that do the same thing
-         still draw the same outline; what it gives up is reading WHICH effect
-         from which leaflet, and the hover panel does that job properly anyway.
-         A taper on top guarantees the leaf reads even for a flat profile. */
-      const N = t.r.length;
-      const rank = t.r.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]);
-      const slot = [];                       // centre outward: 0, +1, -1, +2, -2 ...
-      for (let k = 0; k < N; k++) slot.push(k === 0 ? 0 : (k % 2 ? (k + 1) / 2 : -k / 2));
-      const half = (N - 1) / 2;
-      const leaflet = [];
-      for (let k = 0; k < N; k++) {
-        const off = slot[k] / half;                       // -1 .. 1 across the fan
-        const th = -1.5708 + off * 1.62;                  // just past horizontal
-        const taper = 0.40 + 0.60 * Math.cos(off * 1.35);
-        leaflet.push({ th, rr: R * taper * (0.42 + 0.58 * rank[k][0] / 9) });
-      }
-      leaflet.sort((a, b) => a.th - b.th);
+      /* Far off, still a leaf: three points and a stem, filled green. What
+         separates it from a smell out here is that a leaf is solid and squat
+         and a smell is an open upright curl. */
+      const lit3 = 36 + 20 * t.lean;
       g.beginPath();
-      for (const { th, rr } of leaflet) {
-        const wob = 0.115;                                // a lance, widest a third along
+      for (const th of [-1.5708, -1.5708 - 0.95, -1.5708 + 0.95]) {
         g.moveTo(q.x, q.y);
-        g.quadraticCurveTo(q.x + Math.cos(th - wob) * rr * 0.38,
-                           q.y + Math.sin(th - wob) * rr * 0.38,
-                           q.x + Math.cos(th) * rr, q.y + Math.sin(th) * rr);
-        g.quadraticCurveTo(q.x + Math.cos(th + wob) * rr * 0.38,
-                           q.y + Math.sin(th + wob) * rr * 0.38, q.x, q.y);
+        g.lineTo(q.x + Math.cos(th - 0.2) * R * 0.55, q.y + Math.sin(th - 0.2) * R * 0.55);
+        g.lineTo(q.x + Math.cos(th) * R * 1.25, q.y + Math.sin(th) * R * 1.25);
+        g.lineTo(q.x + Math.cos(th + 0.2) * R * 0.55, q.y + Math.sin(th + 0.2) * R * 0.55);
+        g.lineTo(q.x, q.y);
       }
       g.closePath();
-      g.fillStyle = `hsla(${t.h},68%,${t.l}%,${a * 0.40})`; g.fill();
-      g.strokeStyle = `hsla(${t.h},72%,${t.l}%,${a})`;
-      g.lineWidth = Math.max(1, R * 0.06); g.stroke();
+      g.fillStyle = `hsla(112,60%,${lit3}%,${a})`; g.fill();
+      g.strokeStyle = `hsla(112,70%,${lit3 + 18}%,${a})`; g.lineWidth = 1; g.stroke();
+    } else {
+      /* THE CANNABIS LEAF, drawn as the thing people already know.
+
+         Seven leaflets, not thirteen. Serrated edges, because the sawtooth is
+         most of what makes it recognisable. The centre one longest and vertical,
+         the pairs shortening and sweeping outward until the last pair sits below
+         horizontal. And GREEN -- flatly, deliberately green.
+
+         What that costs, stated plainly: a weed's colour no longer tells you
+         which country it stands in. Position still does, and the leaf now tells
+         you at a glance that it is a weed. Lightness still tracks how much the
+         weed commits, so the field does not flatten into one mass. The profile
+         is no longer legible from the outline; the hover panel carries it. */
+      const ANG = [0, -0.66, 0.66, -1.26, 1.26, -1.82, 1.82];
+      const LEN = [1.0, 0.87, 0.87, 0.64, 0.64, 0.42, 0.42];
+      const lit2 = 34 + 20 * t.lean;
+      g.beginPath();
+      for (let k = 0; k < 7; k++) {
+        const th = -1.5708 + ANG[k], L = R * LEN[k], w = R * 0.115 * (1 - 0.22 * Math.abs(ANG[k]));
+        const ux = Math.cos(th), uy = Math.sin(th), px = -uy, py = ux;
+        const wid = u => w * Math.sin(Math.pow(u, 0.5) * 3.1416);
+        const S = 7;
+        g.moveTo(q.x, q.y);
+        for (let i = 1; i <= S; i++) {
+          const u = i / S, tooth = i % 2 ? 1 : 0.58, d = wid(u) * tooth;
+          g.lineTo(q.x + ux*L*u + px*d, q.y + uy*L*u + py*d);
+        }
+        for (let i = S; i >= 1; i--) {
+          const u = i / S, tooth = i % 2 ? 1 : 0.58, d = wid(u) * tooth;
+          g.lineTo(q.x + ux*L*u - px*d, q.y + uy*L*u - py*d);
+        }
+        g.lineTo(q.x, q.y);
+      }
+      g.closePath();
+      g.fillStyle = `hsla(112,58%,${lit2}%,${a})`; g.fill();
+      g.strokeStyle = `hsla(112,70%,${lit2 + 20}%,${a})`;
+      g.lineWidth = Math.max(1, R * 0.05); g.stroke();
       g.beginPath();
       g.moveTo(q.x, q.y);
-      g.lineTo(q.x, q.y + R * 0.55);
-      g.lineWidth = Math.max(1, R * 0.08); g.stroke();
+      g.lineTo(q.x, q.y + R * 0.52);
+      g.strokeStyle = `hsla(112,55%,${lit2 + 8}%,${a})`;
+      g.lineWidth = Math.max(1.2, R * 0.085); g.stroke();
     }
     t.node = [q.x, q.y, R, a];
   }
@@ -645,7 +645,7 @@ function draw() {
        drew at one size, near and far alike. A distance encoding that is entirely
        clamped is not an encoding. */
     const sz = feel ? 10.5 + 6.5 * it.str
-                    : Math.max(7.5, Math.min(21, 78 * it.str / p.dist)) + 5.5;
+                    : Math.max(11, Math.min(28, 108 * it.str / p.dist)) + 7;
     let a = feel ? Math.max(0.34, Math.min(1, 0.14 + 0.86 * it.str) * p.edge)
                  : Math.max(0.70, Math.min(1, 12 * it.str / p.dist) * p.edge);
     if (!feel && held && !held.has(it)) a *= 0.34;   // it slid out of frame on the way
@@ -674,30 +674,46 @@ function draw() {
       g.beginPath(); g.arc(p.x, my, R * 0.24, 0, 6.2832);
       g.fillStyle = `hsla(${it.hue},90%,${it.lit + 26}%,${a})`; g.fill();
     } else {
-      /* A SMELL CURLS.
+      /* A SMELL IS A NOSE, with scent drifting into it.
 
-         Straight strands over a dot read as an exclamation mark, which is what
-         the last version drew. What cannot be mistaken for punctuation, or for
-         a leaf, is a line that CHANGES DIRECTION on the way up -- vapour rising
-         off something. So each strand is an S: out one way, back the other,
-         leaving at the top. No dot at the base; the dot was the offender.
+         Curls and strands were not readable -- the eye had nothing to catch and
+         so the label had to be read, which is the failure. A nose in profile is
+         instantly what it is, it is asymmetric where a leaf is radial, and it
+         cannot be confused with anything else in the view.
 
-         How wide the S opens is how weakly the word holds its direction. A sharp
-         smell rises in a tight ribbon, a vague one wanders. */
-      const R = face * 0.72;
-      const loose = 0.35 + 0.95 * (1 - it.str);
+         Two-tone, as asked: the nose carries the word's own colour, so a smell
+         still tells you its direction, and the scent lines are a pale tint of it
+         drifting in from the left. How far the lines spread is how weakly the
+         word holds its bearing. */
+      const R = face * 1.05;
+      const nx = p.x + R * 0.16, ny = my;
+      g.beginPath();
+      g.moveTo(nx - R*0.16, ny - R*0.86);
+      g.bezierCurveTo(nx + R*0.04, ny - R*0.42, nx + R*0.22, ny - R*0.16, nx + R*0.28, ny + R*0.03);
+      g.bezierCurveTo(nx + R*0.54, ny + R*0.10, nx + R*0.68, ny + R*0.30, nx + R*0.55, ny + R*0.45);
+      g.bezierCurveTo(nx + R*0.47, ny + R*0.54, nx + R*0.33, ny + R*0.54, nx + R*0.26, ny + R*0.48);
+      g.bezierCurveTo(nx + R*0.30, ny + R*0.62, nx + R*0.20, ny + R*0.72, nx + R*0.01, ny + R*0.74);
+      g.bezierCurveTo(nx - R*0.12, ny + R*0.74, nx - R*0.19, ny + R*0.58, nx - R*0.18, ny + R*0.36);
+      g.closePath();
+      g.fillStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a * 0.92})`; g.fill();
+      g.strokeStyle = `hsla(${it.hue},${it.sat + 8}%,${it.lit + 14}%,${a})`;
+      g.lineWidth = Math.max(1, R * 0.055); g.stroke();
+      /* the nostril, which is what settles it as a nose */
+      g.beginPath();
+      g.ellipse(nx + R*0.34, ny + R*0.50, R*0.11, R*0.055, -0.35, 0, 6.2832);
+      g.fillStyle = `hsla(${it.hue},${it.sat}%,${Math.max(12, it.lit - 34)}%,${a})`; g.fill();
+      /* scent drifting in -- the second tone */
+      const drift = 0.5 + 1.0 * (1 - it.str);
       g.lineCap = 'round';
-      g.lineWidth = Math.max(1.3, R * 0.16);
-      const strands = R < 8 ? [0] : [-1, 0, 1];
-      for (const k of strands) {
-        const side = k === 0 ? 1 : -1;                    // neighbours curl against the middle
-        const x0 = p.x + k * R * 0.30;
-        g.strokeStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a * (k ? 0.62 : 1)})`;
+      g.lineWidth = Math.max(1, R * 0.075);
+      g.strokeStyle = `hsla(${it.hue},${Math.max(20, it.sat - 24)}%,${Math.min(92, it.lit + 26)}%,${a * 0.85})`;
+      for (let k = -1; k <= 1; k++) {
+        const yy = ny + R * (0.05 + k * 0.30);
         g.beginPath();
-        g.moveTo(x0, my + R * 1.05);
-        g.bezierCurveTo(x0 + side * R * 0.62 * loose, my + R * 0.42,
-                        x0 - side * R * 0.62 * loose, my - R * 0.30,
-                        x0 + side * R * 0.30 * loose, my - R * 1.05);
+        g.moveTo(nx - R * 0.34, yy);
+        g.bezierCurveTo(nx - R * (0.60 + 0.14*drift), yy - R * 0.20 * drift,
+                        nx - R * (0.76 + 0.14*drift), yy + R * 0.20 * drift,
+                        nx - R * (1.02 + 0.20*drift), yy);
         g.stroke();
       }
     }
