@@ -70,7 +70,7 @@ parquet — which words are admitted, where each one sits, what each strain does
 survives the move into the world, that colour follows direction, that a weed
 wears the colour of the ground it stands on.
 
-The other 34 are in `acceptance_tests.js` and need the page running, because
+The other 35 are in `acceptance_tests.js` and need the page running, because
 they are about moving through it:
 
 ```bash

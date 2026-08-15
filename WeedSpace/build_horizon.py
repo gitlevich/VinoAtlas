@@ -779,9 +779,14 @@ view.addEventListener('wheel', e => {
   if (e.ctrlKey || e.metaKey) { walk(e.deltaY > 0 ? -0.16 : 0.16); }
   else if (e.shiftKey) { lean(e.deltaY > 0 ? 1.07 : 0.935); }
   else {
+    /* Sideways was right and up-down was inverted -- reported from the
+       trackpad, which is the only place this can be judged. The two axes do not
+       share a sign here because a trackpad's horizontal and vertical deltas do
+       not share one either once "natural" scrolling is in play. Do not tidy
+       these into one sign; that is what made it wrong. */
     target = null; vYaw = vPitch = 0;
     yaw -= e.deltaX * 0.0032;
-    pitch = Math.max(-1.1, Math.min(1.1, pitch - e.deltaY * 0.0032));
+    pitch = Math.max(-1.1, Math.min(1.1, pitch + e.deltaY * 0.0032));
   }
   nudge();
 }, { passive: false });

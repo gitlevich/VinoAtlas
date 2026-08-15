@@ -83,6 +83,20 @@
     ok(DRAWS > d1, 'the view tilted but the page never redrew it');
   });
 
+  await T('the two fingers turn the way the trackpad says they should', () => {
+    /* Which way is correct cannot be derived, only reported: sideways was right
+       and up-down was inverted, judged on the trackpad. Both senses are pinned
+       here so neither can flip back in a tidy-up -- and note they do NOT share a
+       sign, because the trackpad's own deltas do not either. */
+    STAND = [0, 0, 0]; yaw = 0; pitch = 0; target = null; draw();
+    wheel({ deltaX: 60 });
+    ok(yaw < 0, 'sideways reversed: deltaX 60 moved yaw to ' + yaw.toFixed(3));
+    yaw = 0; pitch = 0; target = null;
+    wheel({ deltaY: 60 });
+    ok(pitch > 0, 'up-down reversed: deltaY 60 moved pitch to ' + pitch.toFixed(3));
+    yaw = 0; pitch = 0; target = null; draw();
+  });
+
   await T('a pinch moves you through the field, and two fingers never do', async () => {
     STAND = [0, 0, 0]; yaw = 1.2; await frame();
 
