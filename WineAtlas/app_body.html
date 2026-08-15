@@ -246,6 +246,7 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
       </div>
       <div class="atlas-view">
         <canvas id="atlasCanvas"></canvas>
+        <div class="atlas-bar">
         <button id="atlasBig" class="atlas-grow" aria-label="Fill the screen with the shop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -258,16 +259,17 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h10"/></svg>
-          <span>words</span>
+          <span>the words</span>
         </button>
         <button id="atlasAsk" class="atlas-ask" aria-label="What you can do here">?</button>
+        </div>
         <div id="atlasHelp" hidden>
           <b>You are standing in the shop.</b>
           <p>Every glass is a wine the shop has. A bottle is one on your account.
           The names in the sky are the five measures, written at both ends.</p>
           <dl>
             <dt>Look around</dt><dd>drag the view, or two fingers on the trackpad</dd>
-            <dt>Walk in, and back out</dt><dd>pinch, or the handle at the bottom left</dd>
+            <dt>Walk in, and back out</dt><dd>pinch, or the handle under the globe</dd>
             <dt>Turn right round</dt><dd>the globe shows what is behind you — double-click
               anywhere on it to face that way. <b>G</b> hides and shows it.</dd>
             <dt>Read a bottle</dt><dd>point at it</dd>
@@ -285,16 +287,16 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
           The names in the sky are the five<br>
           measures, written at both ends.
         </div>
-        <div id="atlasZoom">
-          <span class="zl far"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3h14l-1.6 7.2A6 6 0 0 1 13 14.7V19h4v2H7v-2h4v-4.3a6 6 0 0 1-4.4-4.5z"/></svg></span>
-          <input type="range" id="atlasFov" min="0" max="1000" value="0"
-                 aria-label="How close you are looking">
-          <span class="zl near"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3h14l-1.6 7.2A6 6 0 0 1 13 14.7V19h4v2H7v-2h4v-4.3a6 6 0 0 1-4.4-4.5z"/></svg></span>
-        </div>
         <div id="atlasFacing"></div>
         <div id="atlasGlobe">
           <div id="atlasGbar"><button id="atlasGx" aria-label="close the globe">&times;</button></div>
           <canvas id="atlasMini" width="224" height="224"></canvas>
+          <div id="atlasZoom">
+            <span class="zl far"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3h14l-1.6 7.2A6 6 0 0 1 13 14.7V19h4v2H7v-2h4v-4.3a6 6 0 0 1-4.4-4.5z"/></svg></span>
+            <input type="range" id="atlasFov" min="0" max="1000" value="0"
+                   aria-label="How close you are looking">
+            <span class="zl near"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3h14l-1.6 7.2A6 6 0 0 1 13 14.7V19h4v2H7v-2h4v-4.3a6 6 0 0 1-4.4-4.5z"/></svg></span>
+          </div>
         </div>
         <div id="atlasName"></div>
       </div>

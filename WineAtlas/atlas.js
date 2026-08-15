@@ -1319,8 +1319,10 @@ el('atlasList').onclick = e => {
   const hide = !view.classList.contains('nowords');
   view.classList.toggle('nowords', hide);
   view.classList.toggle('words', !hide);
+  el('atlasList').setAttribute('aria-pressed', hide ? 'false' : 'true');
   refit();
 };
+el('atlasList').setAttribute('aria-pressed', 'true');
 
 /* WHAT YOU CAN DO HERE, said as what and not as how. It is a space and a space
    does not announce itself; the one thing a reader needs is the list of acts

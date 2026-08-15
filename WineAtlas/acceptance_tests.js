@@ -1031,6 +1031,21 @@
     AT.FOV = AT.OPEN;
   });
 
+  await T('the controls sit in a row and none is laid over another', () => {
+    el('atlasBig').click();
+    const box = id => el(id).getBoundingClientRect();
+    const over = (a, b) => a.left < b.right && a.right > b.left
+                        && a.top < b.bottom && a.bottom > b.top;
+    const [big, list, ask] = ['atlasBig', 'atlasList', 'atlasAsk'].map(box);
+    ok(!over(big, list), '"back to the page  esc" is wide and the words button sat on its tail');
+    ok(!over(list, ask), 'and the question mark on that');
+    ok(big.right <= list.left && list.right <= ask.left, 'in order, left to right');
+    /* and how close you are looking is docked to where you are looking */
+    ok(el('atlasGlobe').contains(el('atlasZoom')), 'the handle lives in the globe');
+    ok(box('atlasZoom').top >= box('atlasMini').bottom - 1, 'under the ball, not beside it');
+    el('atlasBig').click();
+  });
+
   await T('the zoom handle drives the view, and the view drives the handle', () => {
     const bar = el('atlasFov');
     AT.STAND = [0, 0, 0]; AT.FOV = AT.OPEN; AT.readout();
