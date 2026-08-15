@@ -1077,8 +1077,8 @@ function drawMini() {
   const curve = pts => {
     for (let k = 0; k + 1 < pts.length; k++) {
       const a = pts[k], b = pts[k+1], front = (a.w + b.w) > 0;
-      mg.strokeStyle = ink(front ? (DARK ? 0.30 : 0.26) : (DARK ? 0.085 : 0.075));
-      mg.lineWidth = front ? 1 : 0.9;
+      mg.strokeStyle = ink(front ? (DARK ? 0.42 : 0.34) : (DARK ? 0.12 : 0.10));
+      mg.lineWidth = front ? 1 : 0.85;
       mg.beginPath(); mg.moveTo(a.x, a.y); mg.lineTo(b.x, b.y); mg.stroke();
     }
   };
@@ -1098,7 +1098,7 @@ function drawMini() {
     }
     curve(pts);
   }
-  mg.strokeStyle = ink(DARK ? 0.34 : 0.30); mg.lineWidth = 1;
+  mg.strokeStyle = ink(DARK ? 0.5 : 0.4); mg.lineWidth = 1.2;
   mg.beginPath(); mg.arc(GC, GC, GR, 0, 6.2832); mg.stroke();
 
   /* THE TEN CIRCLES, which are where the colour lives. Facing you: filled, with a
@@ -1114,10 +1114,10 @@ function drawMini() {
     if (front) {
       mg.fillStyle = col;
       mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.fill();
-      mg.strokeStyle = ink(0.55); mg.lineWidth = 1;
+      mg.strokeStyle = ink(0.8); mg.lineWidth = 1.2;
       mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.stroke();
     } else {
-      mg.strokeStyle = col; mg.lineWidth = 1.4;
+      mg.strokeStyle = col; mg.lineWidth = 1.6;
       mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.stroke();
     }
   }
@@ -1167,18 +1167,23 @@ function drawMini() {
      postage-stamp ball covered the thing they were labelling. */
   if (gHover) {
     const p = gHover, q = at(p.dir);
-    mg.font = `600 11px system-ui,-apple-system,"Segoe UI",sans-serif`;
-    mg.textAlign = 'center'; mg.textBaseline = 'middle';
-    const tw = mg.measureText(p.w).width, bw = tw + 12, bh = 18;
-    const x = Math.max(bw/2 + 2, Math.min(GS - bw/2 - 2, q.x));
-    const y = Math.max(bh/2 + 2, Math.min(GS - bh/2 - 2, q.y - 15));
-    mg.fillStyle = DARK ? 'rgba(8,8,8,.92)' : 'rgba(255,255,255,.94)';
-    mg.beginPath(); mg.roundRect(x - bw/2, y - bh/2, bw, bh, 5); mg.fill();
-    mg.strokeStyle = vivid(p.hsl, 0.95); mg.lineWidth = 1.2;
-    mg.beginPath(); mg.roundRect(x - bw/2, y - bh/2, bw, bh, 5); mg.stroke();
-    mg.fillStyle = DARK ? 'rgba(255,255,255,.96)' : 'rgba(18,18,22,.96)';
-    mg.fillText(p.w + (q.w > 0 ? '' : ' · behind you'), x, y + 0.5);
-    mg.textBaseline = 'alphabetic';
+    const say = p.w + (q.w > 0 ? '' : '  ·  behind you');
+    mg.font = `600 13.5px system-ui,-apple-system,"Segoe UI",sans-serif`;
+    mg.textAlign = 'left'; mg.textBaseline = 'middle';
+    /* No frame round it. A coloured border on a label is a second thing to read
+       and it was the brightest edge on the ball; the colour belongs to the
+       circle, so the label carries one dot of it and nothing else. Plain plate,
+       plain white, and big enough not to be a struggle. */
+    const dotw = 15, tw = mg.measureText(say).width, bw = tw + dotw + 18, bh = 23;
+    const x = Math.max(4, Math.min(GS - bw - 4, q.x - bw/2));
+    const y = Math.max(bh/2 + 3, Math.min(GS - bh/2 - 3, q.y - 17));
+    mg.fillStyle = DARK ? 'rgba(0,0,0,.94)' : 'rgba(255,255,255,.97)';
+    mg.beginPath(); mg.roundRect(x, y - bh/2, bw, bh, 5); mg.fill();
+    mg.fillStyle = vivid(p.hsl, 1, 6);
+    mg.beginPath(); mg.arc(x + 12, y, 4.4, 0, 6.2832); mg.fill();
+    mg.fillStyle = DARK ? '#fff' : '#111';
+    mg.fillText(say, x + dotw + 8, y + 0.5);
+    mg.textAlign = 'center'; mg.textBaseline = 'alphabetic';
   }
 }
 
@@ -1325,6 +1330,13 @@ function size() {
   W = cv.clientWidth; H = cv.clientHeight;
   if (!W || !H) return false;
   cv.width = W*dpr; cv.height = H*dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  /* THE GLOBE HAD NO SUCH THING and was drawn at one pixel per pixel, then
+     stretched over two on any retina screen: every line and every letter on it
+     was soft. Same treatment as the view. */
+  if (mini.width !== GS*dpr) {
+    mini.width = GS*dpr; mini.height = GS*dpr;
+    mg.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
   return true;
 }
 function theme() {
