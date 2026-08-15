@@ -307,8 +307,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   font-size:11.5px;color:var(--ink-3);line-height:1.6;max-width:238px}
 .atlas-cues b{color:var(--ink-2);font-weight:600}
 #atlasFacing{position:absolute;left:0;right:0;bottom:14px;text-align:center;pointer-events:none;
-  padding:0 240px 0 22px;transition:padding .2s}
-#atlasFacing.wide{padding:0 22px}
+  padding:0 252px 0 248px;transition:padding .2s}#atlasFacing.wide{padding:0 26px 0 248px}
 #atlasFacing .lead{color:var(--ink-3);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase}
 #atlasFacing .set{font-size:14.5px;margin-top:3px;line-height:1.55}
 #atlasFacing .set.dim{color:var(--ink-3)}
@@ -321,7 +320,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   gap:8px;padding:5px 9px;border-radius:8px;background:var(--panel);border:1px solid var(--rule);
   opacity:.72;transition:opacity .12s}
 #atlasZoom:hover,#atlasZoom:focus-within{opacity:1}
-#atlasZoom .zl{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+/* a small glass and a big one: far and close, with nothing to read */
+#atlasZoom .zl{display:flex;align-items:center;color:var(--ink-3);flex:none}
+#atlasZoom .zl svg{display:block}
+#atlasZoom .far svg{width:10px;height:10px}
+#atlasZoom .near svg{width:16px;height:16px}
 #atlasFov{-webkit-appearance:none;appearance:none;width:150px;height:14px;background:none;cursor:pointer}
 #atlasFov::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:var(--track)}
 #atlasFov::-moz-range-track{height:3px;border-radius:2px;background:var(--track)}
@@ -372,6 +375,41 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-grow svg{width:15px;height:15px;display:block}
 .atlas-grow .in{display:none}
 .atlas-grow span::after{content:"fill the screen"}
+/* the words follow the shop onto the full screen. They are referenced by
+   everything the view says, so losing them there loses half the tab. */
+.atlas-list{position:absolute;left:150px;top:12px;z-index:5;display:none;align-items:center;
+  gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;font:inherit;font-size:11.5px;
+  border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
+  transition:opacity .12s,color .12s}
+.atlas-view.big .atlas-list{display:flex}
+.atlas-list:hover{opacity:1;color:var(--ink)}
+.atlas-list:focus-visible{outline:2px solid var(--mark);outline-offset:2px;opacity:1}
+.atlas-list svg{width:14px;height:14px;display:block}
+.atlas-view.big .atlas-side{position:absolute;left:12px;top:50px;bottom:58px;width:262px;z-index:6;
+  padding:13px 14px;border-radius:10px;background:var(--panel);border:1px solid var(--rule);
+  box-shadow:0 10px 34px rgba(0,0,0,.45)}
+.atlas-view.big.nowords .atlas-side{display:none}
+.atlas-view.big .atlas-side h2{margin-bottom:8px}
+.atlas-view.big .awlist{max-height:none}
+.atlas-view.big #atlasHelp{left:12px;top:50px}
+.atlas-view.big.words #atlasHelp{left:286px}
+.atlas-ask{position:absolute;left:246px;top:12px;z-index:5;width:24px;height:24px;padding:0;
+  border-radius:50%;cursor:pointer;font:inherit;font-size:12px;font-weight:600;
+  border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
+  transition:opacity .12s,color .12s}
+.atlas-ask:hover{opacity:1;color:var(--ink)}
+.atlas-ask:focus-visible{outline:2px solid var(--mark);outline-offset:2px;opacity:1}
+.atlas-ask[aria-expanded="true"]{opacity:1;color:var(--ink);border-color:var(--ink-3)}
+#atlasHelp{position:absolute;left:12px;top:44px;z-index:6;width:352px;max-width:calc(100% - 24px);
+  max-height:calc(100% - 60px);overflow-y:auto;padding:14px 16px 16px;border-radius:10px;
+  background:var(--panel);border:1px solid var(--rule);box-shadow:0 10px 34px rgba(0,0,0,.45)}
+#atlasHelp[hidden]{display:none}
+#atlasHelp>b{display:block;font-size:13px;color:var(--ink);margin-bottom:6px}
+#atlasHelp p{margin:0 0 12px;font-size:12px;line-height:1.55;color:var(--ink-3)}
+#atlasHelp dl{margin:0;display:grid;grid-template-columns:auto;gap:9px 0}
+#atlasHelp dt{font-size:12.5px;font-weight:600;color:var(--ink)}
+#atlasHelp dd{margin:1px 0 0;font-size:12px;line-height:1.5;color:var(--ink-3)}
+#atlasHelp dd b{color:var(--ink-2)}
 .atlas-view.big{position:fixed;inset:0;z-index:70;height:auto;border-radius:0;border:0}
 .atlas-view.big .atlas-grow .out{display:none}
 .atlas-view.big .atlas-grow .in{display:block}
@@ -388,7 +426,10 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
      shop; it keeps its 224 pixels of canvas and is simply drawn smaller */
   #atlasGlobe{width:158px}
   #atlasMini{width:158px;height:158px}
-  #atlasFacing{padding:0 172px 0 14px}
+  #atlasFacing{padding:0 172px 0 14px;bottom:44px}
+  #atlasZoom{left:10px;bottom:10px}
+  #atlasHelp{width:auto;left:10px;right:10px}
+  .atlas-ask{left:146px}
 }
 </style>
 <div class="wrap">
@@ -647,6 +688,30 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
           </svg>
           <span></span>
         </button>
+        <button id="atlasList" class="atlas-list" aria-label="Show or hide the words">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          <span>words</span>
+        </button>
+        <button id="atlasAsk" class="atlas-ask" aria-label="What you can do here">?</button>
+        <div id="atlasHelp" hidden>
+          <b>You are standing in the shop.</b>
+          <p>Every glass is a wine the shop has. A bottle is one on your account.
+          The names in the sky are the five measures, written at both ends.</p>
+          <dl>
+            <dt>Look around</dt><dd>drag the view, or two fingers on the trackpad</dd>
+            <dt>Walk in, and back out</dt><dd>pinch, or the handle at the bottom left</dd>
+            <dt>Turn right round</dt><dd>the globe shows what is behind you — double-click
+              anywhere on it to face that way. <b>G</b> hides and shows it.</dd>
+            <dt>Read a bottle</dt><dd>point at it</dd>
+            <dt>Go to something named</dt><dd>click the name and you are carried toward it</dd>
+            <dt>Leave only some wines lit</dt><dd>tick a word on the left; the rest of the
+              shop goes quiet but stays where it is</dd>
+            <dt>Fill the screen</dt><dd>the arrows at the top left, or <b>F</b>.
+              <b>Esc</b> comes back.</dd>
+          </dl>
+        </div>
         <div class="atlas-cues">
           <b>You are standing in the shop.</b><br>
           Every glass is one of the 1,652 wines,<br>
@@ -655,10 +720,10 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
           measures, written at both ends.
         </div>
         <div id="atlasZoom">
-          <span class="zl">wide</span>
+          <span class="zl far"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3h14l-1.6 7.2A6 6 0 0 1 13 14.7V19h4v2H7v-2h4v-4.3a6 6 0 0 1-4.4-4.5z"/></svg></span>
           <input type="range" id="atlasFov" min="0" max="1000" value="0"
                  aria-label="How close you are looking">
-          <span class="zl">close</span>
+          <span class="zl near"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 3h14l-1.6 7.2A6 6 0 0 1 13 14.7V19h4v2H7v-2h4v-4.3a6 6 0 0 1-4.4-4.5z"/></svg></span>
         </div>
         <div id="atlasFacing"></div>
         <div id="atlasGlobe">
@@ -978,7 +1043,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='32ec4727';
+const BUILD='28ecc396';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -2775,6 +2840,7 @@ cv.addEventListener('wheel', e => {
 addEventListener('keydown', e => {
   if (!live || /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
   if (e.key === 'f' || e.key === 'F') { fill(); e.preventDefault(); return; }
+  if (e.key === '?') { help(); e.preventDefault(); return; }
   if (e.key === 'w' || e.key === 'ArrowUp') walk(0.3);
   else if (e.key === 's' || e.key === 'ArrowDown') walk(-0.3);
   else if (e.key === 'g' || e.key === 'G') toggleGlobe();
@@ -2877,6 +2943,45 @@ function drawMini() {
   }
   mg.clearRect(0, 0, GS, GS);
   mg.putImageData(gimg, 0, 0);
+
+  /* WHAT IS UNDER THE CROSSHAIR, PUT ON THE BALL. The globe says which way you
+     are facing; it did not say what you are facing AT. The wines inside the
+     crosshair are drawn on it at their own bearing -- a bottle for his, a glass
+     for the shop's, each in the wine's own colour -- so the thing you are
+     pointing at is shown standing on the ground it stands on. */
+  const near0 = [];
+  for (const m of WMARK) {
+    if (!m.node) continue;
+    const d = Math.hypot(m.node[0] - W/2, m.node[1] - H/2);
+    if (d < 46) near0.push({ m, d });
+  }
+  near0.sort((a, b) => a.d - b.d);
+  const put0 = [];
+  for (const { m } of near0.slice(0, 6)) {
+    const u = unit(here(m.pos));
+    if (dot(u, fwd) <= 0.02) continue;
+    let px0 = GC + dot(u, gr)*GR, py0 = GC - dot(u, gu)*GR, k = 0;
+    while (k < 8 && put0.some(q => Math.hypot(q[0]-px0, q[1]-py0) < 11)) { k++; px0 += 9; }
+    put0.push([px0, py0]);
+    const wine = pour(m.i), fill = `hsl(${wine[0]},${wine[1]}%,${wine[2]}%)`;
+    mg.save();
+    mg.shadowColor = 'rgba(0,0,0,.85)'; mg.shadowBlur = 4;
+    if (MINE[m.i]) {                                  // a bottle: his
+      mg.fillStyle = fill;
+      mg.fillRect(px0 - 1.4, py0 - 7, 2.8, 4.4);
+      mg.beginPath(); mg.roundRect(px0 - 3.4, py0 - 3.2, 6.8, 10.4, 1.6); mg.fill();
+      mg.strokeStyle = 'rgba(255,255,255,.9)'; mg.lineWidth = 1;
+      mg.beginPath(); mg.roundRect(px0 - 3.4, py0 - 3.2, 6.8, 10.4, 1.6); mg.stroke();
+    } else {                                          // a glass: the shop's
+      mg.fillStyle = fill;
+      mg.beginPath(); mg.moveTo(px0 - 3.6, py0 - 4.4); mg.lineTo(px0 + 3.6, py0 - 4.4);
+      mg.lineTo(px0, py0 + 3.2); mg.closePath(); mg.fill();
+      mg.strokeStyle = 'rgba(255,255,255,.9)'; mg.lineWidth = 1; mg.stroke();
+      mg.beginPath(); mg.moveTo(px0, py0 + 3.2); mg.lineTo(px0, py0 + 6.4);
+      mg.moveTo(px0 - 2.6, py0 + 6.6); mg.lineTo(px0 + 2.6, py0 + 6.6); mg.stroke();
+    }
+    mg.restore();
+  }
 
   mg.textAlign = 'center'; mg.textBaseline = 'middle';
   const FS = 11;
@@ -3011,17 +3116,45 @@ el('atlasGx').onclick = e => { e.stopPropagation(); toggleGlobe(false); };
    is watched for its size already, so it measures and repaints itself on the way
    in and on the way out. */
 const view = el('atlasCanvas').parentElement;
+const side = document.querySelector('.atlas-side');
+const sideHome = side.parentElement;
 function fill(on) {
   const want = on === undefined ? !view.classList.contains('big') : on;
+  /* the word list travels with the view: on the full screen it becomes a drawer
+     inside it, and it goes back to its column on the way out */
+  if (want) view.appendChild(side); else sideHome.insertBefore(side, sideHome.firstChild);
   view.classList.toggle('big', want);
+  view.classList.toggle('words', want && !view.classList.contains('nowords'));
   document.body.style.overflow = want ? 'hidden' : '';
   el('atlasBig').setAttribute('aria-label',
     want ? 'Return the shop to the page' : 'Fill the screen with the shop');
   refit();
 }
 el('atlasBig').onclick = e => { e.stopPropagation(); fill(); };
+el('atlasList').onclick = e => {
+  e.stopPropagation();
+  const hide = !view.classList.contains('nowords');
+  view.classList.toggle('nowords', hide);
+  view.classList.toggle('words', !hide);
+  refit();
+};
+
+/* WHAT YOU CAN DO HERE, said as what and not as how. It is a space and a space
+   does not announce itself; the one thing a reader needs is the list of acts
+   available, each with the gesture that performs it underneath. */
+const helpBox = el('atlasHelp'), helpBtn = el('atlasAsk');
+function help(on) {
+  const want = on === undefined ? helpBox.hidden : on;
+  helpBox.hidden = !want;
+  helpBtn.setAttribute('aria-expanded', want ? 'true' : 'false');
+}
+help(false);
+helpBtn.onclick = e => { e.stopPropagation(); help(); };
+cv.addEventListener('pointerdown', () => help(false));
 addEventListener('keydown', e => {
-  if (e.key === 'Escape' && view.classList.contains('big')) { fill(false); e.preventDefault(); }
+  if (e.key !== 'Escape') return;
+  if (!helpBox.hidden) { help(false); e.preventDefault(); return; }
+  if (view.classList.contains('big')) { fill(false); e.preventDefault(); }
 });
 
 /* ---- size, theme, and the loop ------------------------------------------- */
@@ -3095,7 +3228,7 @@ return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, r
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },
          get FOV() { return FOV; }, set FOV(v) { FOV = fovWant = v; },
-         glide, easeStand, showZoom, zOf, FOVMIN,
+         glide, easeStand, showZoom, zOf, FOVMIN, help,
          get STAND() { return STAND; }, set STAND(v) { STAND = v; standWant = null; },
          get standWant() { return standWant; },
          get EYE() { return EYE; },

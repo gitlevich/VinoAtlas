@@ -1041,6 +1041,36 @@
     eq(document.body.style.overflow, '', 'and the page scrolls again');
   });
 
+  await T('what you can do here is one button away, and says what before how', () => {
+    const box = el('atlasHelp');
+    ok(box.hidden, 'closed until asked');
+    el('atlasAsk').click();
+    ok(!box.hidden, 'the question mark opens it');
+    const acts = [...box.querySelectorAll('dt')].map(d => d.textContent.trim());
+    ok(acts.length >= 6, acts.length + ' things you can do');
+    /* every line names an act first: what, then the gesture underneath */
+    for (const a of acts) ok(/^(Look|Walk|Turn|Read|Go|Leave|Fill)/.test(a), a);
+    const txt = box.textContent.toLowerCase();
+    for (const w of ['drag', 'pinch', 'globe', 'point at it', 'tick a word'])
+      ok(txt.includes(w), w + ' is said');
+    dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    ok(box.hidden, 'esc closes it');
+  });
+
+  await T('the words follow the shop onto the full screen, and fold away', () => {
+    const sd = document.querySelector('.atlas-side');
+    el('atlasBig').click();
+    ok(cvA.parentElement.contains(sd), 'the list came with it');
+    eq(getComputedStyle(sd).display !== 'none', true, 'and is showing');
+    el('atlasList').click();
+    eq(getComputedStyle(sd).display, 'none', 'folded away');
+    el('atlasList').click();
+    ok(getComputedStyle(sd).display !== 'none', 'and back');
+    el('atlasBig').click();
+    ok(!cvA.parentElement.contains(sd), 'and back to its own column on the way out');
+    ok(getComputedStyle(sd).display !== 'none', 'still there');
+  });
+
   await T('leaving the tab puts the screen back', () => {
     el('atlasBig').click();
     ok(cvA.parentElement.classList.contains('big'));

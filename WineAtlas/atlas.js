@@ -996,6 +996,7 @@ cv.addEventListener('wheel', e => {
 addEventListener('keydown', e => {
   if (!live || /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
   if (e.key === 'f' || e.key === 'F') { fill(); e.preventDefault(); return; }
+  if (e.key === '?') { help(); e.preventDefault(); return; }
   if (e.key === 'w' || e.key === 'ArrowUp') walk(0.3);
   else if (e.key === 's' || e.key === 'ArrowDown') walk(-0.3);
   else if (e.key === 'g' || e.key === 'G') toggleGlobe();
@@ -1098,6 +1099,45 @@ function drawMini() {
   }
   mg.clearRect(0, 0, GS, GS);
   mg.putImageData(gimg, 0, 0);
+
+  /* WHAT IS UNDER THE CROSSHAIR, PUT ON THE BALL. The globe says which way you
+     are facing; it did not say what you are facing AT. The wines inside the
+     crosshair are drawn on it at their own bearing -- a bottle for his, a glass
+     for the shop's, each in the wine's own colour -- so the thing you are
+     pointing at is shown standing on the ground it stands on. */
+  const near0 = [];
+  for (const m of WMARK) {
+    if (!m.node) continue;
+    const d = Math.hypot(m.node[0] - W/2, m.node[1] - H/2);
+    if (d < 46) near0.push({ m, d });
+  }
+  near0.sort((a, b) => a.d - b.d);
+  const put0 = [];
+  for (const { m } of near0.slice(0, 6)) {
+    const u = unit(here(m.pos));
+    if (dot(u, fwd) <= 0.02) continue;
+    let px0 = GC + dot(u, gr)*GR, py0 = GC - dot(u, gu)*GR, k = 0;
+    while (k < 8 && put0.some(q => Math.hypot(q[0]-px0, q[1]-py0) < 11)) { k++; px0 += 9; }
+    put0.push([px0, py0]);
+    const wine = pour(m.i), fill = `hsl(${wine[0]},${wine[1]}%,${wine[2]}%)`;
+    mg.save();
+    mg.shadowColor = 'rgba(0,0,0,.85)'; mg.shadowBlur = 4;
+    if (MINE[m.i]) {                                  // a bottle: his
+      mg.fillStyle = fill;
+      mg.fillRect(px0 - 1.4, py0 - 7, 2.8, 4.4);
+      mg.beginPath(); mg.roundRect(px0 - 3.4, py0 - 3.2, 6.8, 10.4, 1.6); mg.fill();
+      mg.strokeStyle = 'rgba(255,255,255,.9)'; mg.lineWidth = 1;
+      mg.beginPath(); mg.roundRect(px0 - 3.4, py0 - 3.2, 6.8, 10.4, 1.6); mg.stroke();
+    } else {                                          // a glass: the shop's
+      mg.fillStyle = fill;
+      mg.beginPath(); mg.moveTo(px0 - 3.6, py0 - 4.4); mg.lineTo(px0 + 3.6, py0 - 4.4);
+      mg.lineTo(px0, py0 + 3.2); mg.closePath(); mg.fill();
+      mg.strokeStyle = 'rgba(255,255,255,.9)'; mg.lineWidth = 1; mg.stroke();
+      mg.beginPath(); mg.moveTo(px0, py0 + 3.2); mg.lineTo(px0, py0 + 6.4);
+      mg.moveTo(px0 - 2.6, py0 + 6.6); mg.lineTo(px0 + 2.6, py0 + 6.6); mg.stroke();
+    }
+    mg.restore();
+  }
 
   mg.textAlign = 'center'; mg.textBaseline = 'middle';
   const FS = 11;
@@ -1232,17 +1272,45 @@ el('atlasGx').onclick = e => { e.stopPropagation(); toggleGlobe(false); };
    is watched for its size already, so it measures and repaints itself on the way
    in and on the way out. */
 const view = el('atlasCanvas').parentElement;
+const side = document.querySelector('.atlas-side');
+const sideHome = side.parentElement;
 function fill(on) {
   const want = on === undefined ? !view.classList.contains('big') : on;
+  /* the word list travels with the view: on the full screen it becomes a drawer
+     inside it, and it goes back to its column on the way out */
+  if (want) view.appendChild(side); else sideHome.insertBefore(side, sideHome.firstChild);
   view.classList.toggle('big', want);
+  view.classList.toggle('words', want && !view.classList.contains('nowords'));
   document.body.style.overflow = want ? 'hidden' : '';
   el('atlasBig').setAttribute('aria-label',
     want ? 'Return the shop to the page' : 'Fill the screen with the shop');
   refit();
 }
 el('atlasBig').onclick = e => { e.stopPropagation(); fill(); };
+el('atlasList').onclick = e => {
+  e.stopPropagation();
+  const hide = !view.classList.contains('nowords');
+  view.classList.toggle('nowords', hide);
+  view.classList.toggle('words', !hide);
+  refit();
+};
+
+/* WHAT YOU CAN DO HERE, said as what and not as how. It is a space and a space
+   does not announce itself; the one thing a reader needs is the list of acts
+   available, each with the gesture that performs it underneath. */
+const helpBox = el('atlasHelp'), helpBtn = el('atlasAsk');
+function help(on) {
+  const want = on === undefined ? helpBox.hidden : on;
+  helpBox.hidden = !want;
+  helpBtn.setAttribute('aria-expanded', want ? 'true' : 'false');
+}
+help(false);
+helpBtn.onclick = e => { e.stopPropagation(); help(); };
+cv.addEventListener('pointerdown', () => help(false));
 addEventListener('keydown', e => {
-  if (e.key === 'Escape' && view.classList.contains('big')) { fill(false); e.preventDefault(); }
+  if (e.key !== 'Escape') return;
+  if (!helpBox.hidden) { help(false); e.preventDefault(); return; }
+  if (view.classList.contains('big')) { fill(false); e.preventDefault(); }
 });
 
 /* ---- size, theme, and the loop ------------------------------------------- */
@@ -1316,7 +1384,7 @@ return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, r
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },
          get FOV() { return FOV; }, set FOV(v) { FOV = fovWant = v; },
-         glide, easeStand, showZoom, zOf, FOVMIN,
+         glide, easeStand, showZoom, zOf, FOVMIN, help,
          get STAND() { return STAND; }, set STAND(v) { STAND = v; standWant = null; },
          get standWant() { return standWant; },
          get EYE() { return EYE; },
