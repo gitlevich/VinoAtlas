@@ -615,6 +615,27 @@
     ok(nearest()[0].dist > AT.NECK, 'nothing stands nearer than the neck is long');
   });
 
+  await T('nothing explodes and nothing is dust: size is bounded at both ends', () => {
+    /* Apparent size goes as one over distance from the EYE, which rides a neck
+       into the field -- so a wine walked up to sat at a fraction of a unit and
+       filled the view while the rest stayed specks, and no distance could be
+       read off any of it. */
+    const spread = () => {
+      const R = AT.WMARK.filter(m => m.node).map(m => m.node[2]).sort((a, b) => a - b);
+      return [R[0], R[R.length - 1]];
+    };
+    AT.STAND = [0, 0, 0]; AT.yaw = Math.PI; AT.pitch = 0;
+    AT.FOV = AT.WIDE; AT.draw();
+    const [lo] = spread();
+    ok(lo >= 4, `nothing is dust at the full field: smallest ${lo.toFixed(1)}px`);
+    AT.FOV = AT.OPEN;
+    for (let i = 0; i < 200; i++) AT.walk(0.3);      // hard against the rim
+    AT.draw();
+    const [, hi] = spread();
+    ok(hi <= 31, `and nothing explodes: largest ${hi.toFixed(1)}px`);
+    AT.STAND = [0, 0, 0]; AT.FOV = AT.OPEN; AT.draw();
+  });
+
   await T('turning your head slides near glasses past far ones, and not the sky', () => {
     AT.STAND = [0, 0, 0]; AT.FOV = AT.OPEN; AT.yaw = 0.4; AT.pitch = 0; AT.draw();
     const was = new Map();
@@ -782,15 +803,15 @@
     };
     AT.STAND = [0, 0, 0]; AT.yaw = Math.PI; AT.pitch = 0;
     AT.FOV = AT.WIDE * 0.12; AT.draw();
-    const close = clashes(6);
+    const close = clashes(11);
     ok(close[0] > 6, 'something is in view leaned in');
     eq(close[1], 0, 'leaned in, no mark covers another');
     AT.FOV = AT.WIDE * 0.25; AT.draw();
-    eq(clashes(6)[1], 0, 'and none at a quarter of the field either');
+    eq(clashes(11)[1], 0, 'and none at a quarter of the field either');
     /* and the wide view is left alone: the crowd out there is the shop */
     AT.FOV = AT.WIDE; AT.draw();
-    ok(AT.WMARK.filter(m => m.node && m.node[2] >= 6).length === 0,
-       'nothing is object-sized at the full field, so nothing was moved');
+    ok(AT.WMARK.filter(m => m.node && m.node[2] >= 11).length === 0,
+       'nothing is that large at the full field, so nothing was moved');
     AT.FOV = AT.OPEN; AT.draw();
   });
 
@@ -802,7 +823,9 @@
        grows with it rather than being a fixed ring around a point */
     for (const [dx, dy] of [[0, 0], [0, -R * 0.9], [0, R * 0.9], [-R * 0.5, 0]])
       ok(AT.hoverAt(x + dx, y + dy), `missed at ${dx},${dy} of a glass ${R.toFixed(1)} across`);
-    ok(!AT.hoverAt(x, y + R * 4 + 40), 'and stops where the glass does');
+    /* and it stops where the glass does -- far enough below, whatever the pointer
+       finds it is not this one any more */
+    ok(AT.hoverAt(x, y + R * 4 + 40) !== big, 'the reach stops where the glass does');
     ok(!AT.hoverAt(-500, -500), 'and nothing where there is nothing');
   });
 

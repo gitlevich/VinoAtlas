@@ -1046,7 +1046,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='e9f93815';
+const BUILD='797fad6c';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -2374,9 +2374,19 @@ function draw() {
        plainly it is drawn instead. */
     let a = Math.max(DARK ? 0.82 : 0.82, Math.min(1, 0.52 + 1.5 * m.lean) * q.edge * attend);
     if (held && !held.has(m)) a *= 0.34;
-    /* the floor is on the drawn size, so the fade toward the edge of the eye
-       cannot take a glass below it */
-    let R = Math.max(3.2, (54 * m.lean / q.dist) * Math.pow(WIDE/FOV, 0.5) * q.edge);
+    /* HOW BIG A THING IS, BOUNDED AT BOTH ENDS.
+       Apparent size goes as one over distance, and the distance here is measured
+       from the EYE, which rides a neck INTO the field -- so a wine you have walked
+       up to sits at a fraction of a unit and blows up to fill the view while
+       everything else stays a speck. Nothing about the shop can be reconstructed
+       from that. The near end is clamped so nothing can explode, and the drawn
+       size is held between five and thirty pixels, which is the range over which
+       a glass reads as a glass. Inside that range size still falls off with
+       distance and the reading survives; outside it there was no reading, only
+       one enormous object and a field of dust. */
+    const dEye = Math.max(1.6, q.dist);
+    let R = Math.max(5, Math.min(30,
+      (74 * m.lean / dEye) * Math.pow(WIDE/FOV, 0.5))) * (0.72 + 0.28 * q.edge);
     const asked = !onlyThese || onlyThese.has(m.i);
     if (!asked) { a = Math.max(0.13, a * 0.22); R *= 0.6; }
     shown.push({ m, q, a, R, asked });
@@ -2397,8 +2407,9 @@ function draw() {
   /* Only where a mark is big enough for the stacking to be confusing. Zoomed
      right out there are five hundred glasses in a view and they genuinely do
      crowd; pushing them apart there would scatter the shop to hide a density
-     that is true. Six pixels is where a glass starts to look like an object. */
-  const CELL = 40, grid = new Map(), BIG = 6;
+     that is true. Eleven pixels is where a glass is large enough that one sitting
+     inside another reads as a single strange object rather than as a crowd. */
+  const CELL = 40, grid = new Map(), BIG = 11;
   const key = (cx, cy) => ((cx * 46341) ^ cy);
   for (const it of shown) {
     if (it.R < BIG) continue;
@@ -2453,7 +2464,7 @@ function draw() {
        An aroma is a thing at a distance, so it recedes by its own sharpness over
        how far off it is. */
     const sz = sky ? 11 + 6 * it.str
-                   : Math.max(9.5, Math.min(19, 74 * it.str / p.dist)) + 4;
+                   : Math.max(11, Math.min(22, 82 * it.str / Math.max(1.6, p.dist))) + 4;
     let a = sky ? Math.max(DARK ? 0.74 : 0.80, Math.min(1, 0.48 + 0.52 * it.str) * p.edge)
                 : Math.max(DARK ? 0.74 : 0.78, Math.min(1, 10 * it.str / p.dist) * p.edge);
     if (!sky && held && m && !held.has(m)) a *= 0.34;

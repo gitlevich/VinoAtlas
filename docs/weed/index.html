@@ -30,6 +30,25 @@ h1{margin:0;padding:14px 14px 3px;font-size:13.5px;font-weight:600}
 .s i{width:11px;height:11px;border-radius:3px;border:1.5px solid;flex:none;opacity:.85}
 .s[aria-checked=yes]{color:var(--ink);font-weight:600}
 /* the fill is the word's own colour, set where the row is built */
+/* Naming one. The field is text and text is the one thing here that IS read,
+   so it gets its selection back. */
+#find{padding:0 14px 9px;flex:none}
+#q{width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:6px;padding:6px 9px;font:inherit;font-size:12.5px;
+  -webkit-user-select:text;user-select:text}
+#q::placeholder{color:var(--ink-3)}
+#q:focus{outline:none;border-color:#414141}
+#q::selection{background:#2c4a63}
+#hits{margin-top:6px;max-height:29vh;overflow-y:auto}
+/* Each name wears the colour of the ground that weed stands on -- the same
+   accent its leaf carries out in the field -- so the row and the thing are
+   recognised as one, the way the smell rows already are. */
+#hits .h{padding:3px 7px;border-radius:4px;cursor:pointer;font-size:12.5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hits .h:hover,#hits .h.on{background:#1b1b1b}
+#hits .h.mark{font-weight:600;background:#212121}
+#hits .h.mark::after{content:'\2022';float:right;color:var(--ink-2)}
+#hits .say{padding:3px 7px;color:var(--ink-3);font-size:11.5px}
 button{background:var(--panel);color:var(--ink-2);border:1px solid var(--line);
   border-radius:6px;padding:5px 10px;font:inherit;font-size:11.5px;cursor:pointer}
 button:hover{color:var(--ink);border-color:#414141}
@@ -84,6 +103,12 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
     <h1>What do you smell?</h1>
     <p class=lede>Tick what is in the jar and you will be turned to face it.
       Or drag the view and look around.</p>
+    <div class=grp>By name</div>
+    <div id=find>
+      <input id=q placeholder="a strain you already know" autocomplete=off
+             spellcheck=false aria-label="find a strain by name">
+      <div id=hits></div>
+    </div>
     <div class=grp>Smells</div>
     <div class=scroll id=list></div>
     <div id=foot>
@@ -396,6 +421,8 @@ function draw() {
        has to be plainly there, so the floor rises and the gain with it. */
     let a = Math.max(0.72, Math.min(1, 13 * t.lean / q.dist) * q.edge * attend);
     if (held && !held.has(t)) a *= 0.34;          // it slid out of frame on the way
+    /* You asked for this one by name, so it is never the thing that faded. */
+    if (t === found) a = 1;
     strains.push({ t, q, a,
                    R: Math.max(3.2, (118 * t.lean / q.dist) * (WIDE / FOV) ** 0.5) * q.edge });
   }
@@ -495,6 +522,21 @@ function draw() {
       g.lineWidth = Math.max(1.6, R * 0.13); g.stroke();
       g.beginPath(); g.arc(q.x, q.y, Math.max(1.4, R * 0.15), 0, 6.2832);
       g.fillStyle = `hsla(${t.a},90%,${lit2 + 24}%,${a})`; g.fill();
+    }
+    /* THE ONE YOU NAMED, RINGED.
+
+       Not a brighter leaf and not a different colour: every part of how a weed
+       is drawn already carries a claim -- green that it is a weed, lightness
+       how far it commits, the accent the ground it stands on -- so a mark made
+       out of any of them would say something false about the weed in order to
+       say something true about your search. The ring is yours, not the weed's,
+       so it is drawn in no colour this space uses, and dark under light so it
+       holds against the black and against a bright country alike. */
+    if (t === found) {
+      const cy = q.y - R * 0.45, rr = Math.max(15, R * 1.35);
+      g.beginPath(); g.arc(q.x, cy, rr, 0, 6.2832);
+      g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 3.6; g.stroke();
+      g.strokeStyle = 'rgba(255,255,255,.82)'; g.lineWidth = 1.4; g.stroke();
     }
     t.node = [q.x, q.y, R, a];
   }
@@ -645,6 +687,23 @@ function draw() {
     it.hit = [p.x, p.y, w, sz + face];
   }
 
+  /* ITS NAME, AT ANY WIDTH. Every other name here arrives by leaning in, and
+     is dropped when it would land on something. This one cannot be: a weed you
+     asked for by name, and then cannot see the name of, has not been found. It
+     is placed first, so the names that may be dropped are dropped around it. */
+  if (found && found.node) {
+    const [x, y, R] = found.node;
+    const fs = 13, cy = y - R * 0.45, rr = Math.max(15, R * 1.35);
+    g.font = `600 ${fs}px ui-sans-serif,sans-serif`;
+    g.textAlign = 'left';
+    const tw = g.measureText(found.n).width, bx = x + rr + 7;
+    g.fillStyle = 'rgba(0,0,0,.62)';
+    g.beginPath(); g.roundRect(bx - 5, cy - fs * 0.8, tw + 10, fs * 1.55, 4); g.fill();
+    g.fillStyle = '#fff';
+    g.fillText(found.n, bx, cy + fs * 0.34);
+    drawn.push([bx + tw / 2, cy, tw + 10, fs * 1.55]);
+  }
+
   /* Strain names, once the words have taken what they need. Leaning in spreads
      the nodes apart, so more names fit -- the labels arrive by themselves. */
   if (FOV < WIDE * 0.80) {
@@ -653,13 +712,19 @@ function draw() {
     g.font = `${fs.toFixed(1)}px ui-sans-serif,sans-serif`;
     g.textAlign = 'left';
     for (const t of lit) {
+      if (t === found) continue;                  // already named, above
       const [x, y, r] = t.node;
       const tw = g.measureText(t.n).width;
       const bx = x + r + 4, by = y - fs / 2;
       if (drawn.some(b => bx < b[0] + b[2] / 2 + 4 && bx + tw > b[0] - b[2] / 2 - 4
                        && by < b[1] + b[3] / 2 + 3 && by + fs > b[1] - b[3] / 2 - 3)) continue;
       drawn.push([bx + tw / 2, y, tw, fs]);
-      g.fillStyle = `hsla(${t.h},58%,${t.l}%,.72)`;
+      /* The colour of the ground it stands on. This read `t.h` and `t.l`, which
+         no strain has ever carried -- an invalid colour string, which canvas
+         silently declines, so every strain name was painted in whatever colour
+         the last mark happened to leave behind. The accent is the field this
+         weed actually has, and it is the one its own stem is drawn in. */
+      g.fillStyle = `hsla(${t.a},58%,72%,.72)`;
       g.fillText(t.n, bx, y + fs / 3);
     }
   }
@@ -754,6 +819,93 @@ for (const s of SMELLS) {
   };
   list.append(row);
 }
+
+/* ---- A WEED YOU ALREADY KNOW ---------------------------------------------
+
+   Everything else in this panel runs one way: from what is in the jar, or from
+   the state you want, out to the weeds that lie that way. This runs the other
+   way. You arrive holding the name, and what you do not have is where it
+   stands -- so naming one turns you to face it and leaves it marked, and from
+   then on it is read the way any other place is read: what it is near, what
+   country it stands in, what else lies that way.
+
+   The mark stays until you clear it, because the question a name asks is not
+   "which one is it" -- you knew that -- but "what is around it", and that is
+   asked by turning away and coming back. */
+let found = null;
+const qbox = document.getElementById('q'), hits = document.getElementById('hits');
+const HITS = 14;                       // as many as fit without the panel taking over
+let shown = [], cursor = 0;
+const esc = s => s.replace(/[&<>"]/g,
+  ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+function matches(q) {
+  q = q.trim().toLowerCase();
+  if (!q) return [];
+  /* A name that BEGINS with what you typed is the one you meant, so it leads;
+     the rest follow rather than being mixed in with it. Ties go to the shorter
+     name, since the longer one contains it. Nothing here settles a tie by the
+     order the corpus happened to be in -- the last resort is the alphabet. */
+  return ST.map(t => ({ t, at: t.n.toLowerCase().indexOf(q) }))
+           .filter(o => o.at >= 0)
+           .sort((a, b) => a.at - b.at || a.t.n.length - b.t.n.length
+                        || (a.t.n < b.t.n ? -1 : 1))
+           .map(o => o.t);
+}
+
+function drawHits() {
+  const all = matches(qbox.value);
+  shown = all.slice(0, HITS);
+  cursor = Math.max(0, Math.min(cursor, shown.length - 1));
+  if (!qbox.value.trim()) { hits.innerHTML = ''; return; }
+  if (!all.length) {
+    hits.innerHTML = '<div class=say>no strain here by that name</div>';
+    return;
+  }
+  hits.innerHTML = shown.map((t, i) =>
+      `<div class="h${i === cursor ? ' on' : ''}${t === found ? ' mark' : ''}"`
+    + ` data-i=${i} style="color:hsl(${t.a},58%,72%)">${esc(t.n)}</div>`).join('')
+    + (all.length > shown.length
+       ? `<div class=say>and ${all.length - shown.length} more that carry it</div>` : '');
+}
+
+function goTo(t) {
+  found = t;
+  faceTo(t.pos);          // the space turns; you are not moved, only faced round
+  drawHits();
+  nudge();
+}
+
+function unmark() {
+  found = null;
+  drawHits();
+  nudge();
+}
+
+qbox.addEventListener('input', () => { cursor = 0; drawHits(); });
+hits.addEventListener('click', e => {
+  const row = e.target.closest('.h');
+  if (!row) return;
+  cursor = +row.dataset.i;
+  goTo(shown[cursor]);
+});
+qbox.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (shown.length) {
+      cursor = (cursor + (e.key === 'ArrowDown' ? 1 : shown.length - 1)) % shown.length;
+      drawHits();
+      if (hits.children[cursor]) hits.children[cursor].scrollIntoView({ block: 'nearest' });
+    }
+    e.preventDefault();
+  } else if (e.key === 'Enter') {
+    if (shown[cursor]) goTo(shown[cursor]);
+    e.preventDefault();
+  } else if (e.key === 'Escape') {
+    qbox.value = ''; cursor = 0; unmark();
+  }
+  /* the field is where letters go; w and s walk, and must not do it from here */
+  e.stopPropagation();
+});
 
 const view = document.getElementById('view');
 let down = false, lx = 0, ly = 0, moved = 0;
@@ -863,17 +1015,22 @@ view.addEventListener('wheel', e => {
 }, { passive: false });
 document.getElementById('bWide').onclick = () => lean(WIDE / fovWant);
 addEventListener('keydown', e => {
+  /* Typing a name is typing, not walking. Without this, spelling "wedding
+     cake" walked you two thirds of a metre across the field. */
+  if (/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
   if (e.key === 'w' || e.key === 'ArrowUp') walk(0.3);
   else if (e.key === 's' || e.key === 'ArrowDown') walk(-0.3);
   else return;
 });
 
+/* One panel, one clear: the ticks, the name you typed, and the mark it left. */
 document.getElementById('bClear').onclick = () => {
   state.clear();
   [...list.children].forEach(r => {
     r.setAttribute('aria-checked', 'off');
     r.querySelector('i').style.background = '';
   });
+  qbox.value = ''; cursor = 0; found = null; drawHits();
   draw(); readout();
 };
 /* ---- the globe -----------------------------------------------------------
