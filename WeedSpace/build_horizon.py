@@ -92,7 +92,7 @@ for i in D['items']:
     ang = math.degrees(math.atan2(z, x)) % 360
     lift = y / math.dist(i['pos'], [0, 0, 0])          # how high it sits
     i['hue'] = round(ang, 1)
-    i['lit'] = _even(ang, (58 if i['kind'] == 'feel' else 71) + 14 * lift)
+    i['lit'] = _even(ang, (70 if i['kind'] == 'feel' else 71) + 14 * lift)
     i['sat'] = 74 if i['kind'] == 'feel' else 58
 HUE = {i['w']: (i['hue'], i['lit']) for i in D['items'] if i['kind'] == 'feel'}
 # A weed is a GREEN LEAF WITH AN ACCENT. The body is green so it is recognisable
@@ -560,7 +560,7 @@ function draw() {
       /* Far off, still a leaf: three points and a stem, filled green. What
          separates it from a smell out here is that a leaf is solid and squat
          and a smell is an open upright curl. */
-      const lit3 = 36 + 20 * t.lean;
+      const lit3 = 48 + 20 * t.lean;
       g.beginPath();
       for (const th of [-1.5708, -1.5708 - 0.95, -1.5708 + 0.95]) {
         g.moveTo(q.x, q.y);
@@ -570,9 +570,10 @@ function draw() {
         g.lineTo(q.x, q.y);
       }
       g.closePath();
-      g.fillStyle = `hsla(112,60%,${lit3}%,${a})`; g.fill();
-      g.strokeStyle = `hsla(${t.a},80%,${lit3 + 28}%,${a})`;
-      g.lineWidth = 1.3; g.stroke();
+      g.fillStyle = `hsla(112,66%,${lit3}%,${a})`; g.fill();
+      g.strokeStyle = `hsla(112,72%,${lit3 + 14}%,${a})`; g.lineWidth = 1; g.stroke();
+      g.beginPath(); g.arc(q.x, q.y, Math.max(1.2, R * 0.24), 0, 6.2832);
+      g.fillStyle = `hsla(${t.a},90%,${lit3 + 22}%,${a})`; g.fill();
     } else {
       /* THE CANNABIS LEAF, drawn as the thing people already know.
 
@@ -588,7 +589,7 @@ function draw() {
          is no longer legible from the outline; the hover panel carries it. */
       const ANG = [0, -0.66, 0.66, -1.26, 1.26, -1.82, 1.82];
       const LEN = [1.0, 0.87, 0.87, 0.64, 0.64, 0.42, 0.42];
-      const lit2 = 34 + 20 * t.lean;
+      const lit2 = 46 + 20 * t.lean;
       g.beginPath();
       for (let k = 0; k < 7; k++) {
         const th = -1.5708 + ANG[k], L = R * LEN[k], w = R * 0.115 * (1 - 0.22 * Math.abs(ANG[k]));
@@ -607,15 +608,22 @@ function draw() {
         g.lineTo(q.x, q.y);
       }
       g.closePath();
-      g.fillStyle = `hsla(112,58%,${lit2}%,${a})`; g.fill();
-      /* the edge is the ground it stands on */
-      g.strokeStyle = `hsla(${t.a},80%,${lit2 + 30}%,${a})`;
-      g.lineWidth = Math.max(1.2, R * 0.075); g.stroke();
+      g.fillStyle = `hsla(112,66%,${lit2}%,${a})`; g.fill();
+      /* Outlined in its own green, NOT in the accent. A seven-leaflet serrated
+         star has an enormous perimeter for the area it encloses, so an accent
+         stroke does not accent it -- measured, the stroke took 968 of 1304
+         pixels against the fill's 167 and the leaf came out pink. The accent
+         goes on the stem and the node instead, which are bounded. */
+      g.strokeStyle = `hsla(112,72%,${lit2 + 14}%,${a})`;
+      g.lineWidth = Math.max(1, R * 0.045); g.stroke();
       g.beginPath();
       g.moveTo(q.x, q.y);
       g.lineTo(q.x, q.y + R * 0.52);
-      g.strokeStyle = `hsla(${t.a},70%,${lit2 + 22}%,${a})`;
-      g.lineWidth = Math.max(1.2, R * 0.09); g.stroke();
+      /* the ground it stands on, held where it can be seen without swamping */
+      g.strokeStyle = `hsla(${t.a},88%,${lit2 + 20}%,${a})`;
+      g.lineWidth = Math.max(1.6, R * 0.13); g.stroke();
+      g.beginPath(); g.arc(q.x, q.y, Math.max(1.4, R * 0.15), 0, 6.2832);
+      g.fillStyle = `hsla(${t.a},90%,${lit2 + 24}%,${a})`; g.fill();
     }
     t.node = [q.x, q.y, R, a];
   }
@@ -660,7 +668,7 @@ function draw() {
        clamped is not an encoding. */
     const sz = feel ? 10.5 + 6.5 * it.str
                     : Math.max(11, Math.min(28, 108 * it.str / p.dist)) + 7;
-    let a = feel ? Math.max(0.34, Math.min(1, 0.14 + 0.86 * it.str) * p.edge)
+    let a = feel ? Math.max(0.52, Math.min(1, 0.30 + 0.70 * it.str) * p.edge)
                  : Math.max(0.70, Math.min(1, 12 * it.str / p.dist) * p.edge);
     if (!feel && held && !held.has(it)) a *= 0.34;   // it slid out of frame on the way
 
@@ -678,10 +686,15 @@ function draw() {
        every size. Flipped, and the clearance is now computed from how far each
        glyph actually hangs below its centre rather than from one shared guess,
        because a ring, a nose and a leaf do not extend alike. */
-    const drop = feel ? face * 0.88 : face * 0.78;  // how far this glyph hangs down
-    const my = p.y + sz * 0.34 + drop;              // its centre, clear of the text
+    /* THE GLYPH ON TOP, THE NAME UNDER IT -- which is where it was asked to be.
+       The overlap that forced the swap is gone for a different reason: the
+       clearance is now computed from how far each glyph actually reaches from
+       its own centre, per kind, rather than from one shared guess. A ring, a
+       leaf and three rising waves do not extend alike. */
+    const reach = feel ? face * 0.88 : face * 0.95;
+    const my = p.y - sz * 0.86 - reach;             // its centre, clear above the text
 
-    drawn.push([p.x, (p.y + my) / 2, w, sz + drop * 2.4]);
+    drawn.push([p.x, (p.y + my) / 2, w, sz + reach * 2.4]);
 
     if (feel) {
       /* a beacon: a lit ring with a soft core. Something you head toward. */
@@ -697,49 +710,28 @@ function draw() {
       g.beginPath(); g.arc(p.x, my, R * 0.24, 0, 6.2832);
       g.fillStyle = `hsla(${it.hue},90%,${it.lit + 26}%,${a})`; g.fill();
     } else {
-      /* A SMELL IS A NOSE, with scent drifting into it.
+      /* A SMELL IS RISING WAVES. The nose was worse than the thing it replaced,
+         so it is gone and only the waves are left -- stood upright, because
+         rising is what a smell does and lying flat is what a line does.
 
-         Curls and strands were not readable -- the eye had nothing to catch and
-         so the label had to be read, which is the failure. A nose in profile is
-         instantly what it is, it is asymmetric where a leaf is radial, and it
-         cannot be confused with anything else in the view.
-
-         Two-tone, as asked: the nose carries the word's own colour, so a smell
-         still tells you its direction, and the scent lines are a pale tint of it
-         drifting in from the left. How far the lines spread is how weakly the
-         word holds its bearing. */
-      const R = face * 1.05;
-      const nx = p.x - R * 0.58, ny = my;   // the scent trails right, so the face sits left
-      g.beginPath();
-      g.moveTo(nx - R*0.16, ny - R*0.86);
-      g.bezierCurveTo(nx + R*0.04, ny - R*0.42, nx + R*0.22, ny - R*0.16, nx + R*0.28, ny + R*0.03);
-      g.bezierCurveTo(nx + R*0.54, ny + R*0.10, nx + R*0.68, ny + R*0.30, nx + R*0.55, ny + R*0.45);
-      g.bezierCurveTo(nx + R*0.47, ny + R*0.54, nx + R*0.33, ny + R*0.54, nx + R*0.26, ny + R*0.48);
-      g.bezierCurveTo(nx + R*0.30, ny + R*0.62, nx + R*0.20, ny + R*0.72, nx + R*0.01, ny + R*0.74);
-      g.bezierCurveTo(nx - R*0.12, ny + R*0.74, nx - R*0.19, ny + R*0.58, nx - R*0.18, ny + R*0.36);
-      g.closePath();
-      g.fillStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a * 0.92})`; g.fill();
-      g.strokeStyle = `hsla(${it.hue},${it.sat + 8}%,${it.lit + 14}%,${a})`;
-      g.lineWidth = Math.max(1, R * 0.055); g.stroke();
-      /* the nostril, which is what settles it as a nose */
-      g.beginPath();
-      g.ellipse(nx + R*0.34, ny + R*0.50, R*0.11, R*0.055, -0.35, 0, 6.2832);
-      g.fillStyle = `hsla(${it.hue},${it.sat}%,${Math.max(12, it.lit - 34)}%,${a})`; g.fill();
-      /* scent drifting in -- the second tone */
-      const drift = 0.5 + 1.0 * (1 - it.str);
+         Two tones, as before: the middle wave carries the word's own colour so
+         a smell still tells you its direction, and the outer pair are a pale
+         tint of it. How far they waver is how weakly the word holds its
+         bearing -- a sharp smell rises almost straight, a vague one wanders. */
+      const R = face * 0.92;
+      const wig = 0.42 + 1.05 * (1 - it.str);
       g.lineCap = 'round';
-      g.lineWidth = Math.max(1, R * 0.075);
-      g.strokeStyle = `hsla(${it.hue},${Math.max(20, it.sat - 24)}%,${Math.min(92, it.lit + 26)}%,${a * 0.85})`;
-      /* IN FRONT OF THE NOSE, not behind it. The lines were on the far side of
-         the face, which reads as scent leaving the back of someone's head. A
-         nose points somewhere; the thing it is smelling has to be there. */
+      g.lineWidth = Math.max(1.5, R * 0.17);
       for (let k = -1; k <= 1; k++) {
-        const yy = ny + R * (0.26 + k * 0.27);
+        const xx = p.x + k * R * 0.40;
+        g.strokeStyle = k === 0
+          ? `hsla(${it.hue},${it.sat + 10}%,${it.lit}%,${a})`
+          : `hsla(${it.hue},${Math.max(20, it.sat - 26)}%,${Math.min(92, it.lit + 24)}%,${a * 0.8})`;
         g.beginPath();
-        g.moveTo(nx + R * 0.84, yy);
-        g.bezierCurveTo(nx + R * (1.08 + 0.14*drift), yy - R * 0.19 * drift,
-                        nx + R * (1.26 + 0.14*drift), yy + R * 0.19 * drift,
-                        nx + R * (1.52 + 0.20*drift), yy);
+        g.moveTo(xx, my + R * 1.0);
+        g.bezierCurveTo(xx + R * 0.34 * wig, my + R * 0.34,
+                        xx - R * 0.34 * wig, my - R * 0.34,
+                        xx, my - R * 1.0);
         g.stroke();
       }
     }

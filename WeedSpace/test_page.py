@@ -71,11 +71,11 @@ def test_a_weed_is_a_green_leaf_with_the_colour_of_its_ground(page, strains, bak
     about a place -- and it is checked by recomputing it here rather than by
     trusting the field.
     """
-    assert "hsla(112,58%," in page, "the leaf body is not green"
+    assert "hsla(112,66%," in page, "the leaf body is not green"
     assert "THE CANNABIS LEAF" in page
-    assert "the edge is the ground it stands on" in page
-    assert "hsla(${t.a},80%," in page, "the edge lost the accent"
-    assert "34 + 20 * t.lean" in page, "lightness no longer tracks commitment"
+    assert "the ground it stands on, held where it can be seen" in page
+    assert "hsla(${t.a},88%," in page, "the stem lost the accent"
+    assert "46 + 20 * t.lean" in page, "lightness no longer tracks commitment"
     for s in strains:
         assert "a" in s, f"{s['n']} has no accent"
         for gone in ("h", "l", "bh"):
@@ -114,20 +114,21 @@ def test_the_accent_actually_tells_the_countries_apart(strains, baked):
     assert len({round(s["a"] / 10) for s in strains}) >= 16, "the accents have collapsed"
 
 
-def test_a_smell_is_a_nose(page):
-    """Curls and strands were not readable -- the eye had nothing to catch, so
-    the label had to be read, which is the failure. A nose is instantly what it
-    is, asymmetric where a leaf is radial, and two-tone: the nose carries the
-    word's own colour so a smell still tells you its direction, and the scent
-    lines are a pale tint of it."""
-    assert "A SMELL IS A NOSE" in page
-    assert "the nostril, which is what settles it as a nose" in page
-    body = page[page.index("A SMELL IS A NOSE"):]
+def test_a_smell_is_rising_waves(page):
+    """The nose was worse than the thing it replaced, so only the waves remain,
+    stood upright -- rising is what a smell does. Two tones kept: the middle wave
+    carries the word's own colour so a smell still tells you its direction, and
+    the outer pair are a pale tint of it. How far they waver is how weakly the
+    word holds its bearing."""
+    assert "A SMELL IS RISING WAVES" in page
+    assert "A SMELL IS A NOSE" not in page and "the nostril" not in page, "the nose is back"
+    body = page[page.index("A SMELL IS RISING WAVES"):]
     body = body[:body.index("if (said)")]
-    assert "${it.hue}" in body, "the nose stopped carrying the word's colour"
-    assert "it.sat - 24" in body and "it.lit + 26" in body, "the second tone is gone"
-    assert "IN FRONT OF THE NOSE" in body, "the scent went behind the face again"
-    assert "g.moveTo(nx + R * 0.84, yy);" in body, "the scent lines are not ahead of the tip"
+    assert "${it.hue}" in body, "the waves stopped carrying the word's colour"
+    assert "it.sat - 26" in body and "it.lit + 24" in body, "the second tone is gone"
+    assert "0.42 + 1.05 * (1 - it.str)" in body, "the waver no longer tracks bearing strength"
+    # upright: the curve runs in y, not x
+    assert "g.moveTo(xx, my + R * 1.0);" in body, "the waves are lying down again"
 
 
 def test_the_argmax_is_not_carried(strains):
@@ -242,7 +243,8 @@ def test_a_vague_word_is_a_faint_star_and_not_a_far_one(page, items):
     assert "Math.max(0.70," in page, "the smell brightness floor was lowered again"
     assert "/ p.dist) * p.ppr" not in page, "a word's size is being read off distance again"
     assert "p.ppr * 0.0165" not in page, "a star swells again when the view narrows"
-    assert "0.14 + 0.86 * it.str" in page, "a star's brightness left magnitude"
+    assert "0.30 + 0.70 * it.str" in page, "a star's brightness left magnitude"
+    assert "Math.max(0.52," in page, "the star brightness floor was lowered"
     assert "a.it.str - b.it.str" in page, "stars are no longer stacked faint-first"
 
     strongest = max(items, key=lambda i: i["str"])
@@ -378,7 +380,7 @@ def test_nothing_is_painted_dark_enough_to_vanish(items, page):
     drawing code rather than in the data."""
     for i in items:
         assert i["lit"] >= FLOOR, i["w"]
-    assert "34 + 20 * t.lean" in page and "36 + 20 * t.lean" in page, \
+    assert "46 + 20 * t.lean" in page and "48 + 20 * t.lean" in page, \
         "the leaf lightness floor moved"
 
 

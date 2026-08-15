@@ -413,7 +413,7 @@
            recomputed here, which would only prove the formula equals itself.
            A weed is green now, at a lightness set by how much it commits, so
            there is no per-weed hue to read. */
-        const val = t.node[3] * lum(112, 58, 34 + 20 * t.lean);
+        const val = t.node[3] * lum(112, 66, 46 + 20 * t.lean);
         ws.push(val);
         if (val < worstWeed) { worstWeed = val; worstWhere = t.n; }
       }
