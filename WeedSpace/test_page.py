@@ -170,6 +170,7 @@ def test_a_vague_word_is_a_faint_star_and_not_a_far_one(page, items):
     otherwise walking would change what a word means."""
     assert "10.5 + 6.5 * it.str" in page, "a star's size no longer comes from its magnitude"
     assert "40 * it.str / p.dist" in page, "a smell no longer recedes with distance"
+    assert "Math.max(0.70," in page, "the smell brightness floor was lowered again"
     assert "/ p.dist) * p.ppr" not in page, "a word's size is being read off distance again"
     assert "p.ppr * 0.0165" not in page, "a star swells again when the view narrows"
     assert "0.14 + 0.86 * it.str" in page, "a star's brightness left magnitude"
@@ -256,10 +257,11 @@ def test_commitment_is_carried_by_the_mark_not_by_how_close_it_lands(page, strai
     """Once weeds fill the body, the uncommitted ones are the nearest -- so plain
     1/distance would make the blandest weed the biggest, brightest thing in the
     view. Size and brightness come from the weed, and distance then divides."""
-    assert "70 * t.lean / q.dist" in page, "apparent size no longer tracks commitment"
-    assert "8.5 * t.lean / q.dist" in page, "brightness no longer tracks commitment"
-    assert "Math.max(0.46," in page, "the weed brightness floor was lowered again"
+    assert "82 * t.lean / q.dist" in page, "apparent size no longer tracks commitment"
+    assert "13 * t.lean / q.dist" in page, "brightness no longer tracks commitment"
+    assert "Math.max(0.72," in page, "the weed brightness floor was lowered again"
     assert "20 / q.dist" not in page, "the old proximity-is-importance rule is back"
+    assert "0.52 * (0.30" in page, "the globe is blazing against the field again"
 
     def R(t):
         return max(1.6, 70 * t["lean"] / t["dist"])

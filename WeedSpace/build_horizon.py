@@ -87,8 +87,8 @@ for i in D['items']:
     ang = math.degrees(math.atan2(z, x)) % 360
     lift = y / math.dist(i['pos'], [0, 0, 0])          # how high it sits
     i['hue'] = round(ang, 1)
-    i['lit'] = _even(ang, (58 if i['kind'] == 'feel' else 63) + 14 * lift)
-    i['sat'] = 74 if i['kind'] == 'feel' else 48
+    i['lit'] = _even(ang, (58 if i['kind'] == 'feel' else 71) + 14 * lift)
+    i['sat'] = 74 if i['kind'] == 'feel' else 58
 HUE = {i['w']: (i['hue'], i['lit']) for i in D['items'] if i['kind'] == 'feel'}
 # A weed takes the colour of the ground it stands on: the same blend of nearby
 # feeling regions the globe paints with. So its colour is always a colour some
@@ -110,7 +110,7 @@ for t in DATA['strains']:
         th = math.radians(hue)
         vx += w * math.cos(th); vy += w * math.sin(th)
     t['h'] = round(math.degrees(math.atan2(vy, vx)) % 360, 1)
-    t['l'] = _even(t['h'], 56 + 12 * d[1])
+    t['l'] = _even(t['h'], 67 + 12 * d[1])
 # Weeds fill the body of the sphere, and you move through them. A word is a
 # bearing with no location at all, so it goes to the sky: fixed, unreachable,
 # unmoved by anything you do. A weed is a thing at a place, and its place has a
@@ -410,7 +410,11 @@ function ground(F) {
   /* A ring of ticks at eye level, far off. Turning slides them past, which is
      the cue that says a head turned rather than a chart deformed. */
   const R = 26;
-  g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = 1;
+  /* Lifted from .07. With 3.5% of pixels painted and almost all of that above
+     half luminance, the scene was binary -- bright specks on absolute black,
+     nothing in between -- and the eye adapts to the black. These rings are the
+     only midtone in the view, so they are what makes the rest sit comfortably. */
+  g.strokeStyle = 'rgba(255,255,255,.15)'; g.lineWidth = 1;
   let started = false;
   g.beginPath();
   for (let a = 0; a <= 360; a += 3) {
@@ -481,9 +485,9 @@ function draw() {
        fell to 0.179, below even the dimmest word. Most were pinned on the
        floor. A weed must not outshine the sky -- the sky is the frame -- but it
        has to be plainly there, so the floor rises and the gain with it. */
-    const a = Math.max(0.46, Math.min(0.95, 8.5 * t.lean / q.dist) * q.edge * attend);
+    const a = Math.max(0.72, Math.min(1, 13 * t.lean / q.dist) * q.edge * attend);
     strains.push({ t, q, a,
-                   R: Math.max(1.6, (70 * t.lean / q.dist) * (WIDE / FOV) ** 0.5) * q.edge });
+                   R: Math.max(2.1, (82 * t.lean / q.dist) * (WIDE / FOV) ** 0.5) * q.edge });
   }
   strains.sort((x, y) => y.q.dist - x.q.dist);
   for (const { t, q, a, R } of strains) {
@@ -497,7 +501,7 @@ function draw() {
         k ? g.lineTo(x, y) : g.moveTo(x, y);
       }
       g.closePath();
-      g.fillStyle = `hsla(${t.h},66%,${t.l - 6}%,${a * 0.72})`; g.fill();
+      g.fillStyle = `hsla(${t.h},68%,${t.l - 5}%,${a * 0.8})`; g.fill();
       g.strokeStyle = `hsla(${t.h},75%,${t.l}%,${a})`; g.lineWidth = 1; g.stroke();
     } else {
       /* the profile itself: one spoke per feeling, so two strains that do the
@@ -556,7 +560,7 @@ function draw() {
     const sz = feel ? 10.5 + 6.5 * it.str
                     : Math.max(8.5, Math.min(19, 40 * it.str / p.dist)) + 6.5;
     const a = feel ? Math.max(0.34, Math.min(1, 0.14 + 0.86 * it.str) * p.edge)
-                   : Math.max(0.42, Math.min(0.95, 7.5 * it.str / p.dist) * p.edge);
+                   : Math.max(0.70, Math.min(1, 12 * it.str / p.dist) * p.edge);
 
     const label = feel ? it.w.toUpperCase() : it.w;
     g.font = `${said ? '600 ' : feel ? '500 ' : ''}${sz.toFixed(1)}px ui-sans-serif,sans-serif`;
@@ -882,7 +886,12 @@ function drawMini() {
       }
       const edge = Math.cos(FOV / 2);
       const vis = w >= edge ? 1 : Math.max(0, 1 - (edge - w) / 0.10);
-      const shade = (0.34 + 0.66 * w) * (0.40 + 0.60 * vis) / tot;
+      /* Measured against the world beside it: the globe painted at mean
+         luminance 0.297 over 65% of its panel, the world at 0.026 over 3.5% of
+         its own -- an eleven-fold outlier sitting in the corner of a nearly
+         black field. It is a reference, not the subject. Halved, and the near
+         face no longer runs to full strength. */
+      const shade = 0.52 * (0.30 + 0.58 * w) * (0.40 + 0.60 * vis) / tot;
       px[k] = r * shade; px[k+1] = g2 * shade; px[k+2] = b2 * shade;
       px[k+3] = 255;
     }
