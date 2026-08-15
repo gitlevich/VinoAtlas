@@ -13,7 +13,11 @@ the catalogue has changed.
 """
 import hashlib
 import pathlib
+import sys
 import urllib.parse
+
+# the rasteriser is shared with the weed space and with the landing page
+sys.path.append(str(pathlib.Path(__file__).resolve().parent.parent / 'scripts'))
 
 # ---- the glass ------------------------------------------------------------
 # The tab icon is the shop's own glass, at the shop's own proportions: these are
@@ -41,47 +45,98 @@ GLASS_W = 2 * GLASS['rw']                                  # the bowl at its rim
 GLASS_H = GLASS['foot'] + GLASS['wire'] - GLASS['top']     # rim down to the foot
 
 
-def glass_svg(R, cx, cy, ink='g'):
-    """A glass of radius R, its box centred on (cx, cy): wine poured to the
-    line, the bowl drawn around it, stem and foot under it. The one highlight
-    down the left of the bowl is what makes it read as glass rather than as a
-    filled shape, and the wine is a gradient rather than a flat fill for the
-    page's own reason -- wine in a bowl is lighter where the surface meets the
-    air and deepest at the base. Liquid, not paint."""
+WINE_RAMP = [(0, (4, 65, 58)), (.35, (4, 71, 45)), (1, (8, 75, 31))]
+VESSEL_HSL = (240, 4, 57)          # the neutral above, as the rasteriser wants it
+
+
+def glass_parts(R, cx, cy):
+    """WHERE THE GLASS IS, and nothing about how to draw it: the bowl as the
+    two cubics atlas.js writes, the line the wine is poured to, the streak of
+    light down the left, the stem and the foot. Both renderers read this, so
+    the icon in the tab and the icon in the page are one glass."""
     g = GLASS
     y = cy - (g['top'] + g['foot'] + g['wire']) / 2 * R
-    x = cx
     rw, top, bot = g['rw'] * R, y + g['top'] * R, y + g['bot'] * R
     dep = bot - top
-    line = top + dep * g['fill']
-    bowl = (f'M{x - rw:.2f} {top:.2f}'
-            f'C{x - rw:.2f} {top + dep * g["waist"]:.2f}'
-            f' {x - rw * g["tuck"]:.2f} {bot:.2f} {x:.2f} {bot:.2f}'
-            f'C{x + rw * g["tuck"]:.2f} {bot:.2f}'
-            f' {x + rw:.2f} {top + dep * g["waist"]:.2f} {x + rw:.2f} {top:.2f}')
+    return dict(
+        bowl=[('M', (cx - rw, top)),
+              ('C', (cx - rw, top + dep * g['waist']), (cx - rw * g['tuck'], bot), (cx, bot)),
+              ('C', (cx + rw * g['tuck'], bot), (cx + rw, top + dep * g['waist']), (cx + rw, top))],
+        rim=(cx - rw, top, rw * 2, dep),                 # the bowl's bounding box
+        line=top + dep * g['fill'],                      # where the wine stands
+        gleam=(cx - rw * 0.86, top + dep * 0.14, max(1.1, R * 0.07), dep * 0.60),
+        stem=((cx, bot), (cx, y + g['stem'] * R), max(1.2, R * g['wire'])),
+        foot=((cx - g['footR'] * R, y + g['foot'] * R),
+              (cx + g['footR'] * R, y + g['foot'] * R), max(1.2, R * g['wire'] * 1.6)),
+        edge=max(1.1, R * 0.05), bot=bot, top=top)
+
+
+def glass_svg(R, cx, cy, ink='g'):
+    """A glass: wine poured to the line, the bowl drawn around it, stem and foot
+    under it. The one highlight down the left of the bowl is what makes it read
+    as glass rather than as a filled shape, and the wine is a gradient rather
+    than a flat fill for the page's own reason -- wine in a bowl is lighter
+    where the surface meets the air and deepest at the base. Liquid, not paint.
+    """
+    m = glass_parts(R, cx, cy)
+    x, top, w, dep = m['rim']
+    line, bot = m['line'], m['bot']
+    def seg(s):
+        if s[0] == 'M':
+            return f'M{s[1][0]:.2f} {s[1][1]:.2f}'
+        c1, c2, end = s[1], s[2], s[3]
+        return (f'C{c1[0]:.2f} {c1[1]:.2f} {c2[0]:.2f} {c2[1]:.2f}'
+                f' {end[0]:.2f} {end[1]:.2f}')
+
+    bowl = ''.join(seg(s) for s in m['bowl'])
+    stops = ''.join(f'<stop offset="{o}" stop-color="hsl({h},{s}%,{l}%)"/>'
+                    for o, (h, s, l) in WINE_RAMP)
+    (sx, sy), (ex, ey), sw = m['stem']
+    (fx, fy), (gx, gy), fw = m['foot']
     return (
       f'<linearGradient id="{ink}w" gradientUnits="userSpaceOnUse"'
-      f' x1="0" y1="{line:.2f}" x2="0" y2="{bot:.2f}">'
-      f'<stop offset="0" stop-color="hsl(4,65%,58%)"/>'
-      f'<stop offset=".35" stop-color="{WINE}"/>'
-      f'<stop offset="1" stop-color="hsl(8,75%,31%)"/></linearGradient>'
+      f' x1="0" y1="{line:.2f}" x2="0" y2="{bot:.2f}">{stops}</linearGradient>'
       f'<clipPath id="{ink}b"><path d="{bowl}Z"/></clipPath>'
       f'<g clip-path="url(#{ink}b)">'
-      f'<rect x="{x - rw:.2f}" y="{top:.2f}" width="{rw * 2:.2f}"'
-      f' height="{line - top:.2f}" fill="{VESSEL}" fill-opacity=".16"/>'
-      f'<rect x="{x - rw:.2f}" y="{line:.2f}" width="{rw * 2:.2f}"'
-      f' height="{bot - line:.2f}" fill="url(#{ink}w)"/>'
-      f'<rect x="{x - rw * 0.86:.2f}" y="{top + dep * 0.14:.2f}"'
-      f' width="{max(1.1, R * 0.07):.2f}" height="{dep * 0.60:.2f}"'
+      f'<rect x="{x:.2f}" y="{top:.2f}" width="{w:.2f}" height="{line - top:.2f}"'
+      f' fill="{VESSEL}" fill-opacity=".16"/>'
+      f'<rect x="{x:.2f}" y="{line:.2f}" width="{w:.2f}" height="{bot - line:.2f}"'
+      f' fill="url(#{ink}w)"/>'
+      f'<rect x="{m["gleam"][0]:.2f}" y="{m["gleam"][1]:.2f}"'
+      f' width="{m["gleam"][2]:.2f}" height="{m["gleam"][3]:.2f}"'
       f' fill="#fff" fill-opacity=".34"/></g>'
       f'<path d="{bowl}" fill="none" stroke="{VESSEL}"'
-      f' stroke-width="{max(1.1, R * 0.05):.2f}" stroke-linecap="round"/>'
-      f'<path d="M{x:.2f} {bot:.2f}L{x:.2f} {y + g["stem"] * R:.2f}"'
-      f' stroke="{VESSEL}" stroke-width="{max(1.2, R * g["wire"]):.2f}"/>'
-      f'<path d="M{x - g["footR"] * R:.2f} {y + g["foot"] * R:.2f}'
-      f'L{x + g["footR"] * R:.2f} {y + g["foot"] * R:.2f}"'
-      f' stroke="{VESSEL}" stroke-width="{max(1.2, R * g["wire"] * 1.6):.2f}"'
-      f' stroke-linecap="round"/>')
+      f' stroke-width="{m["edge"]:.2f}" stroke-linecap="round"/>'
+      f'<path d="M{sx:.2f} {sy:.2f}L{ex:.2f} {ey:.2f}"'
+      f' stroke="{VESSEL}" stroke-width="{sw:.2f}"/>'
+      f'<path d="M{fx:.2f} {fy:.2f}L{gx:.2f} {gy:.2f}"'
+      f' stroke="{VESSEL}" stroke-width="{fw:.2f}" stroke-linecap="round"/>')
+
+
+def glass_raster(canvas, R, cx, cy):
+    """The same glass, in pixels, laid in the order the page lays it: what is
+    in the bowl first and clipped to it, then the bowl around that, then what
+    holds it up."""
+    import raster
+
+    m = glass_parts(R, cx, cy)
+    x, top, w, dep = m['rim']
+    line, bot = m['line'], m['bot']
+    outline = raster.flatten(m['bowl'])
+    inside = canvas.cover([outline])                     # the bowl, as a clip
+    vessel = raster.hsl(*VESSEL_HSL)
+
+    def slab(x0, y0, w0, h0):
+        return [[(x0, y0), (x0 + w0, y0), (x0 + w0, y0 + h0), (x0, y0 + h0)]]
+
+    canvas.fill(slab(x, top, w, line - top), raster.Flat(vessel, .16), clip=inside)
+    canvas.fill(slab(x, line, w, bot - line),
+                raster.Linear(line, bot, [(o, raster.hsl(*c)) for o, c in WINE_RAMP]),
+                clip=inside)
+    canvas.fill(slab(*m['gleam']), raster.Flat((1, 1, 1), .34), clip=inside)
+    canvas.stroke(outline, m['edge'], raster.Flat(vessel))
+    for (a, b, width) in (m['stem'], m['foot']):
+        canvas.stroke([a, b], width, raster.Flat(vessel))
 
 
 def favicon(box=32, pad=0.5):
@@ -91,6 +146,15 @@ def favicon(box=32, pad=0.5):
            f' viewBox="0 0 {box} {box}">'
            + glass_svg(R, box / 2, box / 2) + '</svg>')
     return 'data:image/svg+xml,' + urllib.parse.quote(svg)
+
+
+def favicon_png(box=32, pad=0.5):
+    """The same glass in pixels, for Safari, which does not take an SVG icon."""
+    import raster
+
+    canvas = raster.Canvas(box)
+    glass_raster(canvas, (box - 2 * pad) / max(GLASS_W, GLASS_H), box / 2, box / 2)
+    return canvas.uri()
 
 # words that must never reach the reader. The first group is banned anywhere in
 # the copy; the second are our research words, banned in what the page renders
@@ -135,7 +199,8 @@ def build(src=pathlib.Path(__file__).parent, out=None):
     standalone = ('<!doctype html><html><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<meta name="robots" content="noindex,nofollow,noarchive">'
-        '<link rel="icon" href="' + favicon() + '">'
+        '<link rel="icon" href="' + favicon_png() + '" sizes="32x32">'
+        '<link rel="icon" type="image/svg+xml" href="' + favicon() + '">'
         '<title>Cellar Compass</title></head><body>' + page + '</body></html>')
     (out / 'cellar_compass_standalone.html').write_text(standalone)
     published = out / 'docs' / 'wine' / 'index.html'   # what agent.farm/VinoAtlas/wine serves

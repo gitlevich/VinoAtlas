@@ -475,4 +475,50 @@ def test_the_tab_icon_is_one_self_contained_picture():
     assert 'http' not in svg.replace('http://www.w3.org/2000/svg', ''), 'it reaches out'
     assert svg.count('<svg') == 1 and svg.endswith('</svg>')
     published = (HERE.parent / 'docs' / 'wine' / 'index.html').read_text()
-    assert f'<link rel="icon" href="{icon}">' in published, 'the page carries no icon'
+    assert f'<link rel="icon" type="image/svg+xml" href="{icon}">' in published
+
+
+def test_the_page_carries_a_glass_safari_can_also_read():
+    """Safari does not take an SVG icon. The PNG stands first for it; every
+    other browser prefers the SVG and stays sharp at any size."""
+    import build
+
+    published = (HERE.parent / 'docs' / 'wine' / 'index.html').read_text()
+    png = build.favicon_png()
+    assert png.startswith('data:image/png;base64,')
+    assert f'<link rel="icon" href="{png}" sizes="32x32">' in published
+    assert published.index('image/png;base64') < published.index('image/svg+xml'), \
+        'the SVG is offered first, which is the order Safari loses on'
+
+
+def test_the_glass_in_pixels_is_the_glass_the_vectors_draw():
+    """Not a second drawing of it: the same points through the other renderer.
+    So the wine has to be red below the line it is poured to, the bowl has to be
+    empty above that line, the stem has to be there, and outside the glass has
+    to be nothing at all."""
+    import raster
+
+    import build
+
+    box, pad = 32, 0.5
+    R = (box - 2 * pad) / max(build.GLASS_W, build.GLASS_H)
+    canvas = raster.Canvas(box)
+    build.glass_raster(canvas, R, box / 2, box / 2)
+    px = canvas.pixels()
+    m = build.glass_parts(R, box / 2, box / 2)
+    mid = int(box / 2)
+
+    below = px[int(m['line']) + 2, mid]
+    assert below[3] == 255 and below[0] > below[1] and below[0] > below[2], \
+        f'what is in the bowl is not wine: {tuple(below)}'
+
+    above = px[int(m['top']) + 2, mid]
+    assert above[0] <= above[2] + 12, f'the empty half of the bowl is red: {tuple(above)}'
+
+    (sx, sy), (ex, ey), _ = m['stem']
+    assert px[int((sy + ey) / 2), int(sx), 3] > 0, 'the glass has no stem'
+
+    assert px[0, 0, 3] == 0 and px[box - 1, 0, 3] == 0, 'it fills the corners'
+    # beside the bowl at its widest, where a glass is not
+    beside = int(m['rim'][0]) - 2
+    assert px[int((m['top'] + m['line']) / 2), beside, 3] == 0, 'it spills past the bowl'

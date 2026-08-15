@@ -134,9 +134,17 @@ wine's own colour and the ground under it — an icon for the whole shop cannot
 have, so it wears a red from the middle of the range `pour()` spans and a
 neutral for the vessel.
 
-`glass_svg()` draws one at any size anywhere, which is how the landing page sets
-a glass beside the weed space's leaf — `scripts/landing_icon.py`, tested in
-`scripts/test_landing_icon.py`.
+It is drawn twice, because **Safari does not take an SVG icon**. The page offers
+a PNG first and the SVG second: Safari takes the PNG, everything else prefers the
+SVG. Nothing is drawn twice by hand — `glass_parts()` hands over the bowl's two
+cubics, the line the wine stands at, the streak of light, the stem and the foot,
+and `glass_svg()` and `glass_raster()` are two readings of the same numbers.
+
+`glass_parts()` places one at any size anywhere, which is how the landing page
+sets a glass beside the weed space's leaf — `scripts/landing_icon.py`, tested in
+`scripts/test_landing_icon.py`. The rasteriser itself is `scripts/raster.py`:
+fills, strokes, clips, gradients and a PNG writer, about two hundred lines and
+no new dependency, held by `scripts/test_raster.py`.
 
 ## Publish
 
@@ -186,7 +194,7 @@ Every test name states an acceptance criterion. **112 of 112 pass.**
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from
 the catalogue by a second route and checks every claim the page makes about it:
 
-    .venv/bin/python -m pytest WineAtlas/test_atlas.py -q      # 32 pass
+    .venv/bin/python -m pytest WineAtlas/test_atlas.py -q      # 34 pass
 
 ## Settled
 
