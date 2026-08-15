@@ -268,7 +268,7 @@
     STAND = [0, 0, 0];
     for (let i = 0; i < 60; i++) walk(0.5);           // press on at the rim
     await frame();
-    ok(len(EYE) <= 3.4 + 1e-6, 'your eye left the field, reaching ' + len(EYE).toFixed(2));
+    ok(len(EYE) <= 5.0 + 1e-6, 'your eye left the field, reaching ' + len(EYE).toFixed(2));
     const y0 = yaw;
     let worst = 1e9, at = 0;
     for (let k = 0; k < 12; k++) {                    // look every thirty degrees
@@ -277,7 +277,11 @@
       if (n < worst) { worst = n; at = k * 30; }
     }
     yaw = y0; STAND = [0, 0, 0]; await frame();
-    ok(worst >= 55, 'at the rim, looking ' + at + ' degrees round, only '
+    /* Lowered from 55. The rim moved out to buy a walk worth taking, and the
+       cost was stated rather than hidden: out there the sparsest direction holds
+       a few weeds instead of twenty. What must still be true is that it is never
+       EMPTY -- you can reach somewhere sparse, never somewhere outside. */
+    ok(worst >= 8, 'at the rim, looking ' + at + ' degrees round, only '
        + worst + ' weeds are there -- the field has ended rather than closed');
   });
 
@@ -289,6 +293,56 @@
     ok(snap() !== a, 'walking changed nothing');
     STAND = [0, 0, 0]; await frame();
     ok(snap() === a, 'the middle is not where you left it');
+  });
+
+  // -- the approach ----------------------------------------------------------
+
+  await T('what stays in frame through an approach is what lies that way', async () => {
+    /* THE RECOGNITION TEST, run first person. A thing attracts attention,
+       attention moves toward it, and what holds frame through the movement is
+       what was really there. Checked against what the statistics already say:
+       approaching focused should keep the citrus family, approaching relaxed
+       should keep the earthy one. If walking and computing disagree, one of
+       them is wrong. */
+    const go = word => {
+      STAND = [0, 0, 0]; FOV = fovWant = WIDE; held = null;
+      const it = ITEMS.find(i => i.w === word);
+      faceTo(it.pos); yaw = target[0]; pitch = target[1]; target = null; draw();
+      beginApproach();
+      let guard = 60;
+      while (approaching > 0 && guard-- > 0) { stepApproach(); draw(); }
+      return new Set([...held].filter(m => m.kind === 'smell').map(m => m.w));
+    };
+    const f = go('focused'), r = go('relaxed');
+    STAND = [0, 0, 0]; held = null; await frame();
+
+    ok(f.size && r.size, 'nothing held either approach');
+    ok(f.has('citrus'), 'citrus did not hold on the way to focused');
+    ok(r.has('earthy'), 'earthy did not hold on the way to relaxed');
+    ok(!f.has('earthy'), 'earthy held on the way to focused -- it lies the other way');
+    ok(!r.has('citrus'), 'citrus held on the way to relaxed -- it lies the other way');
+    ok(f.size < SMELLS.length / 2 && r.size < SMELLS.length / 2,
+       'the approach kept nearly everything, so it is not discriminating');
+  });
+
+  await T('an approach walks the whole way it is allowed', async () => {
+    STAND = [0, 0, 0]; held = null;
+    beginApproach();
+    let guard = 60;
+    while (approaching > 0 && guard-- > 0) { stepApproach(); draw(); }
+    ok(len(STAND) > 2.5, 'the walk stopped at ' + len(STAND).toFixed(2) + ' -- too short to test anything');
+    ok(len(STAND) <= 5.0 - 2.2 + 1e-6, 'the approach walked past the rim');
+    STAND = [0, 0, 0]; held = null; await frame();
+  });
+
+  await T('the sky cannot fail an approach, which is why it is the reference', async () => {
+    STAND = [0, 0, 0]; held = null;
+    beginApproach();
+    let guard = 60;
+    while (approaching > 0 && guard-- > 0) { stepApproach(); draw(); }
+    ok(held, 'no approach was recorded');
+    ok([...held].every(m => m.kind !== 'feel'), 'a feeling was entered into the test');
+    STAND = [0, 0, 0]; held = null; await frame();
   });
 
   // -- nothing pops ----------------------------------------------------------

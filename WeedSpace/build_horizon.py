@@ -387,13 +387,63 @@ const here = P => [P[0] - EYE[0], P[1] - EYE[1], P[2] - EYE[2]];
 /* How far you may go is not a matter of taste: it is the radius past which the
    field stops surrounding you and becomes a clump you are looking at. What has
    to be bounded is the EYE, which swings out to STAND + NECK as you turn.
-   Re-measured after the weeds moved to the effect view, looking every thirty
-   degrees: the emptiest direction holds 83 weeds with the eye at 2.2, 73 at
-   3.0, 60 at 3.4 and 49 at 3.8. Past about 3.4 there is no longer a field
-   around you in every direction, so that is the rim -- and it leaves 1.2 to
-   walk, since the neck spends the rest. */
-const REACH = 3.4;
+   Counting weeds per thirty-degree sector around the standing point rather
+   than marks in view: the emptiest sector holds 22 at the centre, 27 at radius
+   1 -- stepping off centre briefly improves it -- 18 at 2, 7 at 3, 2 at 5 and
+   0 by 6. So the field is smaller than it looks and there is genuinely not far
+   to go while staying inside it.
+
+   The rim was at 3.4, which left 1.2 to walk once the neck took its 2.2. That
+   is too short to be worth doing. Moved to 5.0, which buys 2.8 -- more than
+   twice the walk -- and the price is stated rather than hidden: past about 3.4
+   the field thins, and at the far end the sparsest direction holds two or three
+   weeds instead of twenty. You can get somewhere sparse now. You still cannot
+   get outside. */
+const REACH = 5.0;
 const ROAM = REACH - NECK;
+
+/* THE APPROACH, and what it is for.
+
+   A thing attracts attention; attention moves toward it; what stays in frame
+   through that movement is what was really there. That is recognition, and it
+   cannot be done from a chart -- it needs a viewpoint that can move, and marks
+   that can either hold or fail to hold.
+
+   So: point at something and you are carried toward it. Everything in the field
+   is watched for the whole way. A mark that is still in view when you arrive
+   HELD; one that slid out of frame did not. Held marks stay lit afterwards and
+   the rest go quiet, until you move again and the question is asked afresh.
+
+   Only the field is tested. The sky cannot fail this -- a star never moves --
+   which is exactly why it is the thing the test is made against. */
+let held = null;                       // Set of marks that survived the last approach
+let approaching = 0;                   // frames left in the current approach
+let watch = null;
+
+function beginApproach() {
+  if (len(STAND) > REACH - NECK - 0.05) return;   // nowhere left to go
+  watch = new Map();
+  for (const t of ST) watch.set(t, 0);
+  for (const i of SMELLS) watch.set(i, 0);
+  approaching = 22;
+  held = null;
+  nudge();
+}
+
+function stepApproach() {
+  walk(0.13);
+  let n = 0;
+  for (const [m, c] of watch) {
+    const inFrame = m.node ? !!m.node : !!m.hit;
+    if (inFrame) { watch.set(m, c + 1); n++; }
+  }
+  if (--approaching > 0) return;
+  /* held = in frame on every step from the moment the approach began */
+  const total = 22 - approaching;
+  held = new Set();
+  for (const [m, c] of watch) if (c >= total - 1) held.add(m);
+  readout();
+}
 
 function walk(step) {
   const F = frame();
@@ -485,7 +535,8 @@ function draw() {
        fell to 0.179, below even the dimmest word. Most were pinned on the
        floor. A weed must not outshine the sky -- the sky is the frame -- but it
        has to be plainly there, so the floor rises and the gain with it. */
-    const a = Math.max(0.72, Math.min(1, 13 * t.lean / q.dist) * q.edge * attend);
+    let a = Math.max(0.72, Math.min(1, 13 * t.lean / q.dist) * q.edge * attend);
+    if (held && !held.has(t)) a *= 0.34;          // it slid out of frame on the way
     strains.push({ t, q, a,
                    R: Math.max(2.1, (82 * t.lean / q.dist) * (WIDE / FOV) ** 0.5) * q.edge });
   }
@@ -587,8 +638,9 @@ function draw() {
        clamped is not an encoding. */
     const sz = feel ? 10.5 + 6.5 * it.str
                     : Math.max(7.5, Math.min(21, 78 * it.str / p.dist)) + 5.5;
-    const a = feel ? Math.max(0.34, Math.min(1, 0.14 + 0.86 * it.str) * p.edge)
-                   : Math.max(0.70, Math.min(1, 12 * it.str / p.dist) * p.edge);
+    let a = feel ? Math.max(0.34, Math.min(1, 0.14 + 0.86 * it.str) * p.edge)
+                 : Math.max(0.70, Math.min(1, 12 * it.str / p.dist) * p.edge);
+    if (!feel && held && !held.has(it)) a *= 0.34;   // it slid out of frame on the way
 
     const label = feel ? it.w.toUpperCase() : it.w;
     g.font = `${said ? '600 ' : feel ? '500 ' : ''}${sz.toFixed(1)}px ui-sans-serif,sans-serif`;
@@ -817,7 +869,7 @@ view.addEventListener('pointerup', e => {
   for (const it of ITEMS) {
     if (!it.hit) continue;
     const [x, y, w, s] = it.hit;
-    if (Math.abs(mx - x) < w/2 + 8 && Math.abs(my - y) < s) { faceTo(it.pos); return; }
+    if (Math.abs(mx - x) < w/2 + 8 && Math.abs(my - y) < s) { faceTo(it.pos); beginApproach(); return; }
   }
 });
 
@@ -1084,6 +1136,7 @@ new ResizeObserver(refit).observe(view);
     yaw += vYaw; pitch = Math.max(-1.1, Math.min(1.1, pitch + vPitch));
     vYaw *= 0.92; vPitch *= 0.92; moving = true;
   }
+  if (approaching > 0) { stepApproach(); moving = true; }
   if (moving) { draw(); readout(); drawMini(); }
   requestAnimationFrame(loop);
 })();
