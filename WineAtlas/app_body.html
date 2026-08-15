@@ -82,13 +82,13 @@
     </div>
     <div class="card chat">
       <div class="chathead">
-        <h2 style="margin:0">Sommelier</h2>
-        <span style="display:flex;gap:2px;align-items:center">
         <button class="atlas-shut" id="atlasChatShut" aria-label="Close the sommelier">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M9 6l6 6-6 6"/></svg>
         </button>
+        <h2 style="margin:0">Sommelier</h2>
+        <span style="display:flex;gap:2px;align-items:center">
         <button class="panel-reset" id="resetChat" aria-label="Discard this conversation"
           title="Discard what has been said and start again. Your key and its setup stay.">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -286,8 +286,8 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
             <path d="M4 6h16M4 12h16M4 18h10"/></svg>
           <span>the words</span>
         </button>
-        <button id="atlasAsk" class="atlas-ask" aria-label="What you can do here">?</button>
         </div>
+        <button id="atlasAsk" class="atlas-ask" aria-label="What you can do here — H">?</button>
         <div id="atlasHelp" hidden>
           <b>You are standing in the shop.</b>
           <p>Every glass is a wine the shop has. A bottle is one on your account.
@@ -305,14 +305,9 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
               shop goes quiet but stays where it is</dd>
             <dt>Fill the screen</dt><dd>the arrows at the top left, or <b>F</b>.
               <b>Esc</b> comes back.</dd>
+            <dt>Read this again</dt><dd><b>H</b>, or the question mark at the top
+              right. <b>Esc</b> closes it.</dd>
           </dl>
-        </div>
-        <div class="atlas-cues">
-          <b>You are standing in the shop.</b><br>
-          Every glass is one of the 1,652 wines,<br>
-          and the ones on your account are lit.<br>
-          The names in the sky are the five<br>
-          measures, written at both ends.
         </div>
         <div id="atlasFacing"></div>
         <div id="atlasGlobe">

@@ -1149,6 +1149,21 @@
     ok(box.hidden, 'closed until asked');
     el('atlasAsk').click();
     ok(!box.hidden, 'the question mark opens it');
+    /* and H, since a space is a place and reading how to be in it is a thing you
+       want back without hunting for a button */
+    dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    ok(box.hidden, 'esc');
+    document.activeElement.blur();
+    dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }));
+    ok(!box.hidden, 'H opens it');
+    dispatchEvent(new KeyboardEvent('keydown', { key: 'H' }));
+    ok(box.hidden, 'and closes it');
+    el('atlasAsk').click();
+    /* it sits at the top right, where the standing copy used to be -- that copy
+       said what this panel says and stood there whether or not it was wanted */
+    ok(!document.querySelector('.atlas-cues'), 'the corner copy is gone');
+    const v = cvA.getBoundingClientRect(), q = el('atlasAsk').getBoundingClientRect();
+    ok(v.right - q.right < 20, 'the question mark is at the right');
     const acts = [...box.querySelectorAll('dt')].map(d => d.textContent.trim());
     ok(acts.length >= 6, acts.length + ' things you can do');
     /* every line names an act first: what, then the gesture underneath */

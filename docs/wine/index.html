@@ -303,7 +303,20 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-rail svg{width:13px;height:13px;flex:none}
 .atlas-rail b{writing-mode:vertical-rl;font-size:9.5px;font-weight:600;letter-spacing:.10em;
   text-transform:uppercase}
+/* SYMMETRICAL. Each panel's chevron sits on its INNER edge, pointing outward:
+   the words' at the right of its head, the sommelier's at the left of its own,
+   so the pair mirror each other about the shop between them. The sommelier's was
+   sitting inside the reset-and-gear group, which read as a third icon of that
+   kind rather than as the twin of the one across the way.
+   In the Find tab there is no rail to come back from, so there is no chevron. */
 .three .atlas-shut{display:none}
+.chathead .atlas-shut{margin-right:8px}
+/* the two panels are inset alike, so their chevrons land at the same height and
+   the same distance in from the shop -- the sommelier is a card with padding and
+   the words were flush to their column, which put one 20 pixels below the other */
+.atlas>.atlas-side{padding:18px 19px 0 2px}
+.atlas-side .panelhead{align-items:flex-start;margin-bottom:10px}
+.atlas-side .panelhead .atlas-shut{margin-top:3px}
 .atlas-shut{display:flex;align-items:center;justify-content:center;width:24px;height:24px;
   flex:none;padding:0;border:0;border-radius:6px;background:none;color:var(--ink-3);cursor:pointer}
 .atlas-shut:hover{color:var(--ink);background:var(--raise)}
@@ -345,9 +358,6 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   height:clamp(430px,64vh,720px);background:var(--sky)}
 #atlasCanvas{display:block;width:100%;height:100%;background:var(--sky);cursor:grab;touch-action:none}
 #atlasCanvas.drag{cursor:grabbing}
-.atlas-cues{position:absolute;right:14px;top:12px;text-align:right;pointer-events:none;
-  font-size:11.5px;color:var(--ink-3);line-height:1.6;max-width:238px}
-.atlas-cues b{color:var(--ink-2);font-weight:600}
 #atlasFacing{position:absolute;left:0;right:0;bottom:14px;text-align:center;pointer-events:none;
   padding:0 252px 0 26px;transition:padding .2s}#atlasFacing.wide{padding:0 26px}
 #atlasFacing .lead{color:var(--ink-3);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase}
@@ -444,16 +454,15 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-view.big.nowords .atlas-side{display:none}
 .atlas-view.big .atlas-side h2{margin-bottom:8px}
 .atlas-view.big .awlist{max-height:none}
-.atlas-view.big #atlasHelp{left:12px;top:50px}
-.atlas-view.big.words #atlasHelp{left:286px}
-.atlas-ask{width:24px;height:24px;flex:none;padding:0;
+.atlas-view.big #atlasHelp{right:12px;top:50px}
+.atlas-ask{position:absolute;right:12px;top:12px;z-index:5;width:26px;height:26px;padding:0;
   border-radius:50%;cursor:pointer;font:inherit;font-size:12px;font-weight:600;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
   transition:opacity .12s,color .12s}
 .atlas-ask:hover{opacity:1;color:var(--ink)}
 .atlas-ask:focus-visible{outline:2px solid var(--mark);outline-offset:2px;opacity:1}
 .atlas-ask[aria-expanded="true"]{opacity:1;color:var(--ink);border-color:var(--ink-3)}
-#atlasHelp{position:absolute;left:12px;top:44px;z-index:6;width:352px;max-width:calc(100% - 24px);
+#atlasHelp{position:absolute;right:12px;top:46px;z-index:6;width:352px;max-width:calc(100% - 24px);
   max-height:calc(100% - 60px);overflow-y:auto;padding:14px 16px 16px;border-radius:10px;
   background:var(--panel);border:1px solid var(--rule);box-shadow:0 10px 34px rgba(0,0,0,.45)}
 #atlasHelp[hidden]{display:none}
@@ -568,13 +577,13 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
     </div>
     <div class="card chat">
       <div class="chathead">
-        <h2 style="margin:0">Sommelier</h2>
-        <span style="display:flex;gap:2px;align-items:center">
         <button class="atlas-shut" id="atlasChatShut" aria-label="Close the sommelier">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M9 6l6 6-6 6"/></svg>
         </button>
+        <h2 style="margin:0">Sommelier</h2>
+        <span style="display:flex;gap:2px;align-items:center">
         <button class="panel-reset" id="resetChat" aria-label="Discard this conversation"
           title="Discard what has been said and start again. Your key and its setup stay.">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -772,8 +781,8 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
             <path d="M4 6h16M4 12h16M4 18h10"/></svg>
           <span>the words</span>
         </button>
-        <button id="atlasAsk" class="atlas-ask" aria-label="What you can do here">?</button>
         </div>
+        <button id="atlasAsk" class="atlas-ask" aria-label="What you can do here — H">?</button>
         <div id="atlasHelp" hidden>
           <b>You are standing in the shop.</b>
           <p>Every glass is a wine the shop has. A bottle is one on your account.
@@ -791,14 +800,9 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
               shop goes quiet but stays where it is</dd>
             <dt>Fill the screen</dt><dd>the arrows at the top left, or <b>F</b>.
               <b>Esc</b> comes back.</dd>
+            <dt>Read this again</dt><dd><b>H</b>, or the question mark at the top
+              right. <b>Esc</b> closes it.</dd>
           </dl>
-        </div>
-        <div class="atlas-cues">
-          <b>You are standing in the shop.</b><br>
-          Every glass is one of the 1,652 wines,<br>
-          and the ones on your account are lit.<br>
-          The names in the sky are the five<br>
-          measures, written at both ends.
         </div>
         <div id="atlasFacing"></div>
         <div id="atlasGlobe">
@@ -1116,7 +1120,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='17275f4d';
+const BUILD='fc0412d9';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -2405,7 +2409,7 @@ function draw() {
      measure's name along its line, a wine's name beside its glass -- is put
      where a panel already is */
   drawn.length = 0;
-  drawn.push([W/2, H - 26, W, 78], [W - 118, H - 118, 240, 240], [W - 112, 66, 236, 150]);
+  drawn.push([W/2, H - 26, W, 78], [W - 118, H - 118, 240, 240], [W - 26, 26, 60, 60]);
   ground(F);
 
   g.strokeStyle = INK(0.16); g.lineWidth = 1;
@@ -2957,7 +2961,7 @@ cv.addEventListener('wheel', e => {
 addEventListener('keydown', e => {
   if (!live || /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
   if (e.key === 'f' || e.key === 'F') { fill(); e.preventDefault(); return; }
-  if (e.key === '?') { help(); e.preventDefault(); return; }
+  if (e.key === 'h' || e.key === 'H' || e.key === '?') { help(); e.preventDefault(); return; }
   if (e.key === 'w' || e.key === 'ArrowUp') walk(0.3);
   else if (e.key === 's' || e.key === 'ArrowDown') walk(-0.3);
   else if (e.key === 'g' || e.key === 'G') toggleGlobe();
@@ -3433,6 +3437,8 @@ const orderMid = o => {
 function tour() {
   const os = (S.orders || []).filter(o => o.ids && o.ids.length);
   if (!os.length) return;
+  /* PLAIN TEXT. The chat escapes what it is given, as it must -- so tags came out
+     as tags. Emphasis is carried by the words. */
   const q = [];
   q.push({ say: `Ten orders, oldest to newest. I will stand you at each one in turn:`
              + ` where you are looking is the middle of the bottles it held.`,
@@ -3440,7 +3446,7 @@ function tour() {
   os.forEach((o, k) => {
     const d = orderMid(o);
     if (!d) return;
-    let say = `<b>Order ${o.n}</b> — ${o.ids.length} `
+    let say = `Order ${o.n} — ${o.ids.length} `
             + (o.ids.length === 1 ? 'bottle' : 'bottles') + '. ';
     if (k === 0) {
       say += A.map(a => `${S.labels[a].toLowerCase()} ${o[a].toFixed(2)}`).join(', ') + '.';
@@ -3451,7 +3457,7 @@ function tour() {
       say += Math.abs(moved.d) < 0.04
         ? 'much where the last one was.'
         : `${S.labels[moved.a].toLowerCase()} moved toward `
-          + `<b>${S.ends[moved.a][moved.d > 0 ? 1 : 0]}</b>`
+          + `${S.ends[moved.a][moved.d > 0 ? 1 : 0]}`
           + ` (${prev[moved.a].toFixed(2)} to ${o[moved.a].toFixed(2)}).`;
     }
     q.push({ say, faceTo: d, zoom: 0.34, wait: 30 });
@@ -3459,9 +3465,9 @@ function tour() {
   const first = os[0], last = os[os.length - 1];
   const shift = A.map(a => ({ a, d: last[a] - first[a] }))
     .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))[0];
-  q.push({ say: `Across the ten, what moved most is <b>${S.labels[shift.a].toLowerCase()}</b>:`
+  q.push({ say: `Across the ten, what moved most is ${S.labels[shift.a].toLowerCase()}:`
              + ` ${first[shift.a].toFixed(2)} to ${last[shift.a].toFixed(2)}, toward`
-             + ` <b>${S.ends[shift.a][shift.d > 0 ? 1 : 0]}</b>.`
+             + ` ${S.ends[shift.a][shift.d > 0 ? 1 : 0]}.`
              + ` Everything with a tick beside it is a bottle you bought.`,
            zoom: 0.18, wait: 0 });
   tourQ = q; tourWait = 0;

@@ -482,7 +482,7 @@ function draw() {
      measure's name along its line, a wine's name beside its glass -- is put
      where a panel already is */
   drawn.length = 0;
-  drawn.push([W/2, H - 26, W, 78], [W - 118, H - 118, 240, 240], [W - 112, 66, 236, 150]);
+  drawn.push([W/2, H - 26, W, 78], [W - 118, H - 118, 240, 240], [W - 26, 26, 60, 60]);
   ground(F);
 
   g.strokeStyle = INK(0.16); g.lineWidth = 1;
@@ -1034,7 +1034,7 @@ cv.addEventListener('wheel', e => {
 addEventListener('keydown', e => {
   if (!live || /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
   if (e.key === 'f' || e.key === 'F') { fill(); e.preventDefault(); return; }
-  if (e.key === '?') { help(); e.preventDefault(); return; }
+  if (e.key === 'h' || e.key === 'H' || e.key === '?') { help(); e.preventDefault(); return; }
   if (e.key === 'w' || e.key === 'ArrowUp') walk(0.3);
   else if (e.key === 's' || e.key === 'ArrowDown') walk(-0.3);
   else if (e.key === 'g' || e.key === 'G') toggleGlobe();
@@ -1510,6 +1510,8 @@ const orderMid = o => {
 function tour() {
   const os = (S.orders || []).filter(o => o.ids && o.ids.length);
   if (!os.length) return;
+  /* PLAIN TEXT. The chat escapes what it is given, as it must -- so tags came out
+     as tags. Emphasis is carried by the words. */
   const q = [];
   q.push({ say: `Ten orders, oldest to newest. I will stand you at each one in turn:`
              + ` where you are looking is the middle of the bottles it held.`,
@@ -1517,7 +1519,7 @@ function tour() {
   os.forEach((o, k) => {
     const d = orderMid(o);
     if (!d) return;
-    let say = `<b>Order ${o.n}</b> — ${o.ids.length} `
+    let say = `Order ${o.n} — ${o.ids.length} `
             + (o.ids.length === 1 ? 'bottle' : 'bottles') + '. ';
     if (k === 0) {
       say += A.map(a => `${S.labels[a].toLowerCase()} ${o[a].toFixed(2)}`).join(', ') + '.';
@@ -1528,7 +1530,7 @@ function tour() {
       say += Math.abs(moved.d) < 0.04
         ? 'much where the last one was.'
         : `${S.labels[moved.a].toLowerCase()} moved toward `
-          + `<b>${S.ends[moved.a][moved.d > 0 ? 1 : 0]}</b>`
+          + `${S.ends[moved.a][moved.d > 0 ? 1 : 0]}`
           + ` (${prev[moved.a].toFixed(2)} to ${o[moved.a].toFixed(2)}).`;
     }
     q.push({ say, faceTo: d, zoom: 0.34, wait: 30 });
@@ -1536,9 +1538,9 @@ function tour() {
   const first = os[0], last = os[os.length - 1];
   const shift = A.map(a => ({ a, d: last[a] - first[a] }))
     .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))[0];
-  q.push({ say: `Across the ten, what moved most is <b>${S.labels[shift.a].toLowerCase()}</b>:`
+  q.push({ say: `Across the ten, what moved most is ${S.labels[shift.a].toLowerCase()}:`
              + ` ${first[shift.a].toFixed(2)} to ${last[shift.a].toFixed(2)}, toward`
-             + ` <b>${S.ends[shift.a][shift.d > 0 ? 1 : 0]}</b>.`
+             + ` ${S.ends[shift.a][shift.d > 0 ? 1 : 0]}.`
              + ` Everything with a tick beside it is a bottle you bought.`,
            zoom: 0.18, wait: 0 });
   tourQ = q; tourWait = 0;
