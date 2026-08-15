@@ -520,11 +520,20 @@ function draw() {
     g.font = `${said ? '600 ' : feel ? '500 ' : ''}${sz.toFixed(1)}px ui-sans-serif,sans-serif`;
     const track = feel ? sz * 0.13 : 0;
     const w = Math.max(g.measureText(label).width + track * (label.length - 1), sz * 2.2);
-    const face = sz * (feel ? 1.5 : 1.15);          // room the mark needs above the word
+    const face = sz * (feel ? 1.5 : 1.15);
 
-    drawn.push([p.x, p.y, w, sz + face]);
+    /* THE NAME ON TOP, THE GLYPH BENEATH IT.
 
-    const my = p.y - sz * 0.75 - face * 0.42;       // where the face sits
+       The glyph used to sit above the word and the two overlapped every time --
+       not marginally, but by construction: the nose reaches 0.74 of its radius
+       below its own centre, and the gap allowed for it was smaller than that at
+       every size. Flipped, and the clearance is now computed from how far each
+       glyph actually hangs below its centre rather than from one shared guess,
+       because a ring, a nose and a leaf do not extend alike. */
+    const drop = feel ? face * 0.88 : face * 0.78;  // how far this glyph hangs down
+    const my = p.y + sz * 0.34 + drop;              // its centre, clear of the text
+
+    drawn.push([p.x, (p.y + my) / 2, w, sz + drop * 2.4]);
 
     if (feel) {
       /* a beacon: a lit ring with a soft core. Something you head toward. */

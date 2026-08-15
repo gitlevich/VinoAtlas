@@ -81,6 +81,24 @@ def test_a_weed_is_a_green_leaf_and_carries_no_colour_of_its_own(page, strains):
     assert "34 + 20 * t.lean" in page, "lightness no longer tracks commitment"
 
 
+def test_the_name_sits_above_the_glyph_and_clear_of_it(page):
+    """The glyph used to sit above the word and they overlapped every time --
+    not marginally but by construction. The nose reaches 0.74 of its radius
+    below its own centre while the gap allowed for it was smaller than that at
+    every size, so no font size could have escaped it.
+
+    Now the name is on top and the clearance comes from how far each glyph
+    actually hangs down, per kind, because a ring, a nose and a leaf do not
+    extend alike. The gap is sz * 0.34 against a descender of about sz * 0.22,
+    so it is positive at every size rather than at some of them.
+    """
+    assert "THE NAME ON TOP, THE GLYPH BENEATH IT" in page
+    assert "const my = p.y + sz * 0.34 + drop;" in page, "the glyph is above the word again"
+    assert "p.y - sz * 0.75 - face * 0.42" not in page, "the old overlapping layout is back"
+    assert "const drop = feel ? face * 0.88 : face * 0.78;" in page, \
+        "one shared guess is being used for glyphs that do not extend alike"
+
+
 def test_a_smell_is_a_nose(page):
     """Curls and strands were not readable -- the eye had nothing to catch, so
     the label had to be read, which is the failure. A nose is instantly what it
