@@ -978,7 +978,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='788bfb42';
+const BUILD='32ec4727';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -2314,6 +2314,44 @@ function draw() {
     shown.push({ m, q, a, R, asked });
   }
   shown.sort((x, y) => y.q.dist - x.q.dist);
+
+  /* NOTHING STANDS ON TOP OF ANYTHING ELSE. Two wines a hair apart in the shop
+     are a hundred pixels apart on the screen at nothing, and leaned in they land
+     on each other -- a bottle inside a glass reads as one strange object rather
+     than as two wines. So a mark that would cover one already placed steps to
+     the right by half its own width until it is clear.
+
+     It is a small lie about where a thing is and it is stated: the step is half a
+     width, never more than four of them, and the mark keeps its own size and
+     depth. Cheap enough to do every frame because the placed marks go into a
+     grid of the cell size, so each one is compared against its neighbours and
+     not against the five hundred others in view. */
+  /* Only where a mark is big enough for the stacking to be confusing. Zoomed
+     right out there are five hundred glasses in a view and they genuinely do
+     crowd; pushing them apart there would scatter the shop to hide a density
+     that is true. Six pixels is where a glass starts to look like an object. */
+  const CELL = 40, grid = new Map(), BIG = 6;
+  const key = (cx, cy) => ((cx * 46341) ^ cy);
+  for (const it of shown) {
+    if (it.R < BIG) continue;
+    for (let step = 0; step < 9; step++) {
+      const cx = Math.floor(it.q.x / CELL), cy = Math.floor(it.q.y / CELL);
+      let clash = false;
+      for (let dx = -1; dx <= 1 && !clash; dx++)
+        for (let dy = -1; dy <= 1 && !clash; dy++) {
+          const b = grid.get(key(cx + dx, cy + dy));
+          if (!b) continue;
+          for (const o of b) {
+            const w = (it.R + o.R) * 0.62, h = (it.R + o.R) * 1.05;
+            if (Math.abs(it.q.x - o.q.x) < w && Math.abs(it.q.y - o.q.y) < h) { clash = true; break; }
+          }
+        }
+      if (!clash) break;
+      it.q.x += it.R * 0.5;
+    }
+    const gx = Math.floor(it.q.x / CELL), gy = Math.floor(it.q.y / CELL), k = key(gx, gy);
+    const b = grid.get(k); if (b) b.push(it); else grid.set(k, [it]);
+  }
   for (const { m, q, a, R, asked } of shown) {
     /* THERE IS NO SMALL FORM ANY MORE. Below three pixels a wine used to become
        a plain triangle, and zoomed out that was nearly the whole shop: the colour

@@ -763,6 +763,37 @@
     ok(bottle.top < glass.top * 0.6, 'and the two are told apart at the top');
   });
 
+  await T('nothing stands on top of anything else once a mark is an object', () => {
+    /* Two wines a hair apart in the shop land on each other leaned in, and a
+       bottle inside a glass reads as one strange object rather than as two
+       wines. A mark that would cover one already placed steps right by half its
+       own width until it is clear -- but only where it is big enough for the
+       stacking to be confusing, since zoomed out the crowding is true. */
+    const clashes = min => {
+      const v = AT.WMARK.filter(m => m.node && m.node[2] >= min);
+      let n = 0;
+      for (let i = 0; i < v.length; i++)
+        for (let j = i + 1; j < v.length; j++) {
+          const a = v[i].node, b = v[j].node;
+          if (Math.abs(a[0]-b[0]) < (a[2]+b[2])*0.62 &&
+              Math.abs(a[1]-b[1]) < (a[2]+b[2])*1.05) n++;
+        }
+      return [v.length, n];
+    };
+    AT.STAND = [0, 0, 0]; AT.yaw = Math.PI; AT.pitch = 0;
+    AT.FOV = AT.WIDE * 0.12; AT.draw();
+    const close = clashes(6);
+    ok(close[0] > 6, 'something is in view leaned in');
+    eq(close[1], 0, 'leaned in, no mark covers another');
+    AT.FOV = AT.WIDE * 0.25; AT.draw();
+    eq(clashes(6)[1], 0, 'and none at a quarter of the field either');
+    /* and the wide view is left alone: the crowd out there is the shop */
+    AT.FOV = AT.WIDE; AT.draw();
+    ok(AT.WMARK.filter(m => m.node && m.node[2] >= 6).length === 0,
+       'nothing is object-sized at the full field, so nothing was moved');
+    AT.FOV = AT.OPEN; AT.draw();
+  });
+
   await T('a glass answers the pointer over the whole glass', async () => {
     AT.STAND = [0, 0, 0]; AT.draw();
     const big = AT.WMARK.filter(m => m.node).sort((a, b) => b.node[2] - a.node[2])[0];
