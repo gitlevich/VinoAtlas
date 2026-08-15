@@ -756,11 +756,16 @@ view.addEventListener('pointermove', e => {
 view.addEventListener('pointermove', e => {
   if (down) return;
   const r = c.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-  let best = null, bd = 90;
+  /* A leaf is hoverable over the whole leaf. The node is where the stem meets
+     the blades -- a point at the bottom of the mark -- so a fixed nine-pixel
+     radius around it caught only the accent and missed everything green above
+     it. The reach is the leaf's own drawn size. */
+  let best = null, bd = Infinity;
   for (const t of ST) {
     if (!t.node) continue;
-    const d = (t.node[0] - mx) ** 2 + (t.node[1] - my) ** 2;
-    if (d < bd) { bd = d; best = t; }
+    const rr = Math.max(10, t.node[2] * 1.25);
+    const d = (t.node[0] - mx) ** 2 + (t.node[1] - my - t.node[2] * 0.45) ** 2;
+    if (d < rr * rr && d < bd) { bd = d; best = t; }
   }
   const box = document.getElementById('names');
   if (best) {
@@ -1003,6 +1008,17 @@ mini.addEventListener('dblclick', e => e.stopPropagation());
 const gbar = document.getElementById('gbar');
 let wDown = false, wx = 0, wy = 0;
 gbar.addEventListener('pointerdown', e => {
+  /* The close button lives inside the drag handle, and this listener calls
+     setPointerCapture -- which retargets the pointerup to the bar, so down and
+     up land on different elements and the browser never synthesises a click on
+     the button. The X did nothing, and a synthetic click could not show it
+     because a synthetic click skips the capture entirely.
+
+     And the propagation must still be stopped. #view is the element the globe
+     sits inside and it captures the pointer too, so simply declining to drag
+     here handed the same problem one level up: the pointerup went to #view and
+     the button still never saw a click. */
+  if (e.target.closest('#gx')) { e.stopPropagation(); return; }
   wDown = true; wx = e.clientX; wy = e.clientY;
   const r = globe.getBoundingClientRect(), p = globe.parentElement.getBoundingClientRect();
   globe.style.left = (r.left - p.left) + 'px';

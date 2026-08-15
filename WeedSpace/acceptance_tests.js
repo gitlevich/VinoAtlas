@@ -643,6 +643,50 @@
     await frame();
   });
 
+  await T('the X closes the globe, and G brings it back', async () => {
+    /* The X sits inside the drag handle, inside #view, and BOTH call
+       setPointerCapture on pointerdown -- which retargets the pointerup away
+       from the button, so no click is ever synthesised and the X did nothing.
+       A synthetic click could not catch this: it skips the capture entirely.
+       So this fires the real sequence, down then up, and insists on the effect. */
+    const gx = document.getElementById('gx');
+    if (globe.style.display === 'none') { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' })); }
+    await frame();
+    ok(globe.style.display !== 'none', 'the globe would not open to begin with');
+
+    const r = gx.getBoundingClientRect();
+    const at = { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2,
+                 bubbles: true, cancelable: true, pointerId: 1, isPrimary: true };
+    gx.dispatchEvent(new PointerEvent('pointerdown', at));
+    gx.dispatchEvent(new PointerEvent('pointerup', at));
+    gx.dispatchEvent(new MouseEvent('click', at));
+    await frame();
+    ok(globe.style.display === 'none', 'the X did not close the globe');
+    ok(typeof wDown === 'undefined' || !wDown, 'pressing the X started a drag');
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' })); await frame();
+    ok(globe.style.display !== 'none', 'G did not bring the globe back');
+  });
+
+  await T('a leaf is hoverable over the whole leaf', () => {
+    /* The node is where the stem meets the blades, at the BOTTOM of the mark, so
+       a fixed nine-pixel radius around it caught only the accent and missed all
+       the green above it. */
+    const t = ST.filter(x => x.node).sort((a, b) => b.node[2] - a.node[2])[0];
+    ok(t && t.node[2] > 8, 'no leaf big enough to test');
+    const R = t.node[2], r = c.getBoundingClientRect();
+    const probe = (dx, dy) => {
+      view.dispatchEvent(new PointerEvent('pointermove',
+        { clientX: r.left + t.node[0] + dx, clientY: r.top + t.node[1] + dy, bubbles: true }));
+      const b = document.getElementById('names');
+      return b.style.display === 'block' && b.innerHTML.includes(t.n);
+    };
+    ok(probe(0, 0), 'the node itself is not hoverable');
+    ok(probe(0, -R * 0.7), 'the blades above the node are not hoverable');
+    ok(probe(-R * 0.75, -R * 0.35), 'the outer leaflets are not hoverable');
+    ok(!probe(0, -R * 3), 'the hotspot reaches far past the leaf');
+  });
+
   await T('the globe paints a feeling where the world puts it', async () => {
     /* one arrangement, two views of it: a colour on the globe has to be the
        colour of the feeling that lies in that direction */
