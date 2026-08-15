@@ -777,6 +777,35 @@
     ok(box.querySelector('.kind i'), 'with the wine\'s own colour beside it');
   });
 
+  await T('a bottle he bought says which order it came in', () => {
+    AT.STAND = [0, 0, 0]; AT.yaw = Math.PI; AT.pitch = 0; AT.draw();
+    const mine = AT.WMARK.filter(m => m.node && AT.MINE[m.i])
+      .sort((a, b) => b.node[2] - a.node[2]);
+    ok(mine.length, 'one of his is in view');
+    let checked = 0;
+    for (const m of mine) {
+      /* the pointer takes whatever mark is nearest it, which at this density is
+         often a neighbour -- so only judge the ones it actually landed on */
+      if (AT.hoverAt(m.node[0], m.node[1]) !== m) continue;
+      if (++checked > 6) break;
+      const txt = el('atlasName').textContent;
+      const hit = txt.match(/bought in order ([\d, and]+)/);
+      ok(hit, 'says so: ' + txt.slice(0, 70));
+      /* and the number is the order the catalogue actually puts it in */
+      const want = S.orders.map((o, k) => (o.ids || []).includes(S.wines[m.i].id) ? k + 1 : 0)
+        .filter(Boolean);
+      ok(want.length, S.wines[m.i].name + ' is in an order at all');
+      for (const n of want) ok(hit[1].includes(String(n)), 'order ' + n);
+    }
+    ok(checked > 0, 'the pointer landed on at least one of his');
+    /* and a wine the shop merely stocks says nothing of the kind */
+    const theirs = AT.WMARK.filter(m => m.node && !AT.MINE[m.i])
+      .sort((a, b) => b.node[2] - a.node[2])[0];
+    AT.hoverAt(theirs.node[0], theirs.node[1]);
+    ok(!/bought in order/.test(el('atlasName').textContent), 'not for the shop\'s');
+    AT.hoverAt(-900, -900);
+  });
+
   await T('ticking a word turns you to face the wines described that way', async () => {
     el('atlasClear').click();
     const t = AT.TERMS.find(x => x.w === 'tobacco');
@@ -929,6 +958,25 @@
     const rs = AT.WMARK.filter(m => m.node).map(m => m.node[2]);
     ok(rs.length && Math.min(...rs) > 0, 'every mark has a positive size');
     AT.FOV = AT.OPEN;
+  });
+
+  await T('the zoom handle drives the view, and the view drives the handle', () => {
+    const bar = el('atlasFov');
+    AT.STAND = [0, 0, 0]; AT.FOV = AT.OPEN; AT.readout();
+    const rest = +bar.value;
+    bar.value = '800'; bar.dispatchEvent(new Event('input'));
+    ok(AT.FOV < AT.OPEN * 0.4, 'the handle moved the view: ' + (AT.FOV*57.3).toFixed(1));
+    /* and back the other way: anything that changes the field moves the handle */
+    el('atlasWide').click(); frames(200); AT.readout();
+    near(+bar.value, rest, 'step back put the handle back');
+    /* a pinch past the rim narrows, so the handle must follow that too */
+    AT.STAND = [0, 0, 0];
+    for (let i = 0; i < 200; i++) AT.walk(0.3);
+    for (let i = 0; i < 25; i++) cvA.dispatchEvent(new WheelEvent('wheel',
+      { deltaY: -3, ctrlKey: true, bubbles: true, cancelable: true }));
+    frames(150); AT.readout();
+    ok(+bar.value > rest + 200, 'the pinch moved the handle: ' + bar.value);
+    AT.STAND = [0, 0, 0]; AT.FOV = AT.OPEN; AT.readout();
   });
 
   await T('the shop can fill the screen, and esc gives the page back', () => {

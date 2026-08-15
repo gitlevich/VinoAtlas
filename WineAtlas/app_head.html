@@ -314,6 +314,22 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 #atlasFacing .set.dim{color:var(--ink-3)}
 #atlasFacing .odds{color:var(--ink-3);font-size:12px;margin-top:6px;
   font-variant-numeric:tabular-nums}
+/* how close you are looking, as a thing you can grab. It reads the field of
+   view, so anything that changes it -- pinch, double-click, step back -- moves
+   the handle too. */
+#atlasZoom{position:absolute;left:14px;bottom:14px;z-index:4;display:flex;align-items:center;
+  gap:8px;padding:5px 9px;border-radius:8px;background:var(--panel);border:1px solid var(--rule);
+  opacity:.72;transition:opacity .12s}
+#atlasZoom:hover,#atlasZoom:focus-within{opacity:1}
+#atlasZoom .zl{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+#atlasFov{-webkit-appearance:none;appearance:none;width:150px;height:14px;background:none;cursor:pointer}
+#atlasFov::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:var(--track)}
+#atlasFov::-moz-range-track{height:3px;border-radius:2px;background:var(--track)}
+#atlasFov::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;margin-top:-5px;
+  border-radius:50%;background:var(--ink-2);border:0}
+#atlasFov::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--ink-2);border:0}
+#atlasFov:hover::-webkit-slider-thumb{background:var(--ink)}
+#atlasFov:focus-visible{outline:2px solid var(--mark);outline-offset:3px;border-radius:6px}
 #atlasGlobe{position:absolute;right:16px;bottom:16px;width:224px;z-index:3;overflow:hidden;
   border-radius:9px;border:1px solid var(--rule);background:var(--panel)}
 #atlasGbar{height:20px;display:flex;align-items:center;justify-content:flex-end;

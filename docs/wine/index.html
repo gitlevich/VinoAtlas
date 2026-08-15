@@ -314,6 +314,22 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 #atlasFacing .set.dim{color:var(--ink-3)}
 #atlasFacing .odds{color:var(--ink-3);font-size:12px;margin-top:6px;
   font-variant-numeric:tabular-nums}
+/* how close you are looking, as a thing you can grab. It reads the field of
+   view, so anything that changes it -- pinch, double-click, step back -- moves
+   the handle too. */
+#atlasZoom{position:absolute;left:14px;bottom:14px;z-index:4;display:flex;align-items:center;
+  gap:8px;padding:5px 9px;border-radius:8px;background:var(--panel);border:1px solid var(--rule);
+  opacity:.72;transition:opacity .12s}
+#atlasZoom:hover,#atlasZoom:focus-within{opacity:1}
+#atlasZoom .zl{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+#atlasFov{-webkit-appearance:none;appearance:none;width:150px;height:14px;background:none;cursor:pointer}
+#atlasFov::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:var(--track)}
+#atlasFov::-moz-range-track{height:3px;border-radius:2px;background:var(--track)}
+#atlasFov::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;margin-top:-5px;
+  border-radius:50%;background:var(--ink-2);border:0}
+#atlasFov::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--ink-2);border:0}
+#atlasFov:hover::-webkit-slider-thumb{background:var(--ink)}
+#atlasFov:focus-visible{outline:2px solid var(--mark);outline-offset:3px;border-radius:6px}
 #atlasGlobe{position:absolute;right:16px;bottom:16px;width:224px;z-index:3;overflow:hidden;
   border-radius:9px;border:1px solid var(--rule);background:var(--panel)}
 #atlasGbar{height:20px;display:flex;align-items:center;justify-content:flex-end;
@@ -638,6 +654,12 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
           The names in the sky are the five<br>
           measures, written at both ends.
         </div>
+        <div id="atlasZoom">
+          <span class="zl">wide</span>
+          <input type="range" id="atlasFov" min="0" max="1000" value="0"
+                 aria-label="How close you are looking">
+          <span class="zl">close</span>
+        </div>
         <div id="atlasFacing"></div>
         <div id="atlasGlobe">
           <div id="atlasGbar"><button id="atlasGx" aria-label="close the globe">&times;</button></div>
@@ -942,7 +964,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='9cc73acf';
+const BUILD='59d82c8a';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -1773,6 +1795,9 @@ const WPOS = D.pos, WLEAN = D.lean, WCOL = D.col, WACC = D.acc, WDIST = D.dist;
 const FIZZ = D.fizz;
 const N = WPOS.length;
 const MINE = S.wines.map(w => OWNED.has(w.id));
+/* which of the ten orders a bottle came in -- 45 of them came in more than one */
+const ORDERS = S.wines.map(w => (S.orders || [])
+  .map((o, k) => (o.ids || []).includes(w.id) ? k + 1 : 0).filter(Boolean));
 
 const cv = el('atlasCanvas'), g = cv.getContext('2d');
 const mini = el('atlasMini'), mg = mini.getContext('2d');
@@ -2087,30 +2112,40 @@ function ground(F) {
    distorted, the wine's own colour kept in both, and the two silhouettes -- a
    tall shouldered thing against a cup on a stem -- separate at three pixels. */
 function bottle(x, y, R, i, a) {
-  const w = R*0.62, h = R*1.9, top = y - h*0.55, bot = y + h*0.45, sh = top + h*0.34;
+  /* A BORDEAUX BOTTLE. The first one was as wide at the neck as half its body
+     and had its shoulder a third of the way down: that is a sauce bottle. A wine
+     bottle is a third neck, a short hard shoulder, and straight sides -- and the
+     neck is barely a third of the body's width. */
+  const H = R*2.3, W = R*0.60;
+  const top = y - H*0.54, bot = y + H*0.46;
+  const nk = W*0.165;                       // half the neck
+  const sh1 = top + H*0.33, sh2 = top + H*0.46;
   const wine = pour(i);
   g.beginPath();
-  g.moveTo(x - w*0.24, top); g.lineTo(x + w*0.24, top);
-  g.lineTo(x + w*0.24, sh - h*0.06);
-  g.quadraticCurveTo(x + w/2, sh, x + w/2, sh + h*0.10);
-  g.lineTo(x + w/2, bot); g.lineTo(x - w/2, bot); g.lineTo(x - w/2, sh + h*0.10);
-  g.quadraticCurveTo(x - w/2, sh, x - w*0.24, sh - h*0.06);
+  g.moveTo(x - nk, top);
+  g.lineTo(x + nk, top);
+  g.lineTo(x + nk, sh1);
+  g.bezierCurveTo(x + nk, sh1 + H*0.06, x + W/2, sh2 - H*0.07, x + W/2, sh2);
+  g.lineTo(x + W/2, bot);
+  g.lineTo(x - W/2, bot);
+  g.lineTo(x - W/2, sh2);
+  g.bezierCurveTo(x - W/2, sh2 - H*0.07, x - nk, sh1 + H*0.06, x - nk, sh1);
   g.closePath();
   const A1 = Math.min(1, a*1.3);
-  const lq = g.createLinearGradient(x - w/2, 0, x + w/2, 0);
-  lq.addColorStop(0,    `hsla(${wine[0]},${wine[1]+4}%,${Math.max(14, wine[2]-12)}%,${A1})`);
-  lq.addColorStop(0.34, `hsla(${wine[0]},${wine[1]-6}%,${Math.min(88, wine[2]+14)}%,${A1})`);
-  lq.addColorStop(0.62, `hsla(${wine[0]},${wine[1]}%,${wine[2]}%,${A1})`);
-  lq.addColorStop(1,    `hsla(${wine[0]+4},${wine[1]+4}%,${Math.max(12, wine[2]-16)}%,${A1})`);
+  const lq = g.createLinearGradient(x - W/2, 0, x + W/2, 0);
+  lq.addColorStop(0,    `hsla(${wine[0]},${wine[1]+4}%,${Math.max(12, wine[2]-14)}%,${A1})`);
+  lq.addColorStop(0.30, `hsla(${wine[0]},${wine[1]-8}%,${Math.min(88, wine[2]+16)}%,${A1})`);
+  lq.addColorStop(0.58, `hsla(${wine[0]},${wine[1]}%,${wine[2]}%,${A1})`);
+  lq.addColorStop(1,    `hsla(${wine[0]+4},${wine[1]+4}%,${Math.max(10, wine[2]-18)}%,${A1})`);
   g.fillStyle = lq;                    // glass turned to the light down one side
   g.fill();
   /* the capsule, in the colour of the ground it stands on -- the one thing the
      stem used to carry and the only place left to put it */
   g.fillStyle = near(hex2hsl(WACC[i]), a);
-  g.fillRect(x - w*0.26, top, w*0.52, h*0.13);
-  if (R >= 6.5) {                       // a label, once there is room for one
-    g.fillStyle = INK(a * (DARK ? 0.30 : 0.20));
-    g.fillRect(x - w/2, sh + h*0.20, w, h*0.20);
+  g.fillRect(x - nk*1.28, top, nk*2.56, H*0.085);
+  if (R >= 7) {                        // a label, once there is room for one
+    g.fillStyle = INK(a * (DARK ? 0.22 : 0.16));
+    g.fillRect(x - W/2, top + H*0.60, W, H*0.24);
   }
 }
 
@@ -2489,6 +2524,7 @@ function readout() {
     }
   }
   const one = it => `<span style="color:${vivid(it.hsl, 1, 6)}">${it.w}</span>`;
+  showZoom();
   el('atlasFacing').innerHTML = (poles.length || terms.length)
     ? `<div class="lead">${wide ? `open shelf &mdash; nearest is ${off}&deg; round` : 'this way'}</div>`
       + `<div class="set">` + poles.map(one).join(' &nbsp;')
@@ -2584,7 +2620,11 @@ function hoverAt(mx, my) {
     + `<div class="kind"><i style="background:hsl(${pour(best.i).slice(0,3).map((v,k)=>k?v+'%':v).join(',')})"></i>`
     + `${kind.join(' &middot; ')}</div>`
     + `<div class="sub">${[w.variety, w.region].filter(Boolean).join(' &middot; ')}</div>`
-    + (MINE[best.i] ? `<div class="yours">you have bought this</div>` : '')
+    + (MINE[best.i]
+        ? `<div class="yours">bought in order ${ORDERS[best.i].length > 1
+             ? ORDERS[best.i].slice(0, -1).join(', ') + ' and ' + ORDERS[best.i].slice(-1)
+             : (ORDERS[best.i][0] || '?')}</div>`
+        : '')
     + `<div class="mbars">` + A.map(a => {
         const v = w[a];
         return `<div class="mtrk"><i style="width:${Math.max(3, v*100)}%;background:${S.colors[a]}"></i></div>`
@@ -2626,6 +2666,27 @@ cv.addEventListener('dblclick', e => {
   lean(e.shiftKey ? 1/0.62 : 0.62, e.clientX - r.left, e.clientY - r.top);
 });
 el('atlasWide').onclick = () => lean(OPEN / fovWant);
+
+/* ---- how close you are looking, as a thing you can grab -------------------
+   The slider IS the field of view and nothing else. Walking is a separate act
+   and does not move it, which is right: walking is not zooming. Everything that
+   does change the field -- a pinch past the rim, a double-click, step back --
+   moves the handle, because the handle is read back out of FOV every paint.
+   Logarithmic, so a step of the handle is the same proportion of the view
+   wherever it is taken, which is how zoom is felt. */
+const FOVMIN = WIDE * 0.075;
+const LSPAN = Math.log(WIDE / FOVMIN);
+const fovBar = el('atlasFov');
+let fovGrab = false;
+const zOf = f => Math.round(1000 * Math.log(WIDE / f) / LSPAN);
+function showZoom() { if (!fovGrab) fovBar.value = String(zOf(FOV)); }
+fovBar.addEventListener('pointerdown', () => { fovGrab = true; });
+addEventListener('pointerup', () => { fovGrab = false; });
+fovBar.addEventListener('input', () => {
+  fovWant = FOV = WIDE * Math.exp(-(+fovBar.value / 1000) * LSPAN);
+  el('atlasWide').style.display = fovWant < OPEN * 0.99 ? '' : 'none';
+  nudge();
+});
 
 /* Two fingers LOOK AROUND -- the same act as dragging, at the same sense and
    scale, because scrolling is how a trackpad turns a view. A pinch MOVES YOU
@@ -2676,7 +2737,9 @@ addEventListener('keydown', e => {
    the disc, which makes dragging the globe the same act as turning your head. */
 const GS = 224, GR = 102, GC = 112;
 /* a light up and to the left, so the ball has a terminator and a limb */
-const LIGHT = (v => { const n = Math.hypot(...v); return v.map(x => x/n); })([-0.42, 0.52, 0.74]);
+const NORM = v => { const n = Math.hypot(...v); return v.map(x => x/n); };
+const LIGHT = NORM([-0.42, 0.52, 0.74]);      // the key
+const FILL  = NORM([0.55, -0.40, 0.73]);      // a second, weaker, from below right
 let showMini = true;
 const gimg = mg.createImageData(GS, GS);
 function hsl2rgb(h, s, l) {
@@ -2726,26 +2789,36 @@ function drawMini() {
          falling evenly to the rim -- which is what a disc looks like, not a
          sphere. A light off to one side gives it a terminator and a limb, and
          those are what say sphere without anything being written down. */
+      /* GLASS WITH WINE IN IT, NOT A PAINTED BALL.
+         The broad diffuse wash is what made it plastic -- a lambert term is how
+         chalk behaves, and a wide soft sheen on top of it is how plastic does.
+         Glass is three other things. It is DEEPEST WHERE IT IS THICKEST, so the
+         colour darkens toward the middle where the line of sight runs furthest
+         through the wine and thins at the silhouette. It carries a THIN BRIGHT
+         EDGE where the surface turns away and the light comes back out. And its
+         highlights are SMALL AND HARD, two of them, because a glass sphere
+         reflects both the front face and the back. */
       const lam = Math.max(0, u*LIGHT[0] + v*LIGHT[1] + w*LIGHT[2]);
-      const lit = 0.20 + 0.90 * Math.pow(lam, 0.75);
-      const limb = 0.55 + 0.45 * w;
-      const seen = 0.58 + 0.42 * vis;          // outside your field, quieter
-      /* LIQUID, NOT MATTE. Three things do it and none of them alone: a broad
-         sheen over the lit side, one tight highlight where the light lands, and
-         a rim that brightens as the surface turns away -- which is what light
-         does at the edge of anything wet or glazed and never on chalk. */
-      const sheen = 46 * Math.pow(lam, 3.2);
-      const spec = 150 * Math.pow(lam, 60);
-      const rim = 34 * Math.pow(1 - w, 3.4);
+      const lam2 = Math.max(0, u*FILL[0] + v*FILL[1] + w*FILL[2]);
+      /* Beer-Lambert, near enough: the line of sight through a sphere is longest
+         dead centre and shortest at the silhouette, so a ball of wine is DEEPEST
+         in the middle and thins to the edge. It was the other way round, which is
+         how a painted ball behaves and why it read as plastic. */
+      const thru = Math.exp(-1.05 * w);        // what gets out
+      const body = (0.40 + 0.55 * lam) * (0.42 + 1.55 * thru);
+      const seen = 0.60 + 0.40 * vis;          // outside your field, quieter
+      const wet = 120 * Math.pow(1 - w, 11);   // the bright line right at the limb
+      const s1 = 255 * Math.pow(lam, 150);
+      const s2 = 90 * Math.pow(lam2, 90);
       if (DARK) {
-        const f = lit * limb * seen;
-        px[k] = r*f + sheen + spec + rim*0.9;
-        px[k+1] = g2*f + sheen + spec + rim*0.6;
-        px[k+2] = b2*f + sheen*1.15 + spec + rim;
+        const f = body * seen;
+        px[k] = r*f + s1 + s2 + wet*0.92;
+        px[k+1] = g2*f + s1 + s2 + wet*0.86;
+        px[k+2] = b2*f + s1 + s2 + wet;
       } else {
-        const wash = (1 - lit*limb) * 0.5 + (1 - vis) * 0.22;
-        px[k] = r + (250-r)*wash + spec*0.5; px[k+1] = g2 + (250-g2)*wash + spec*0.5;
-        px[k+2] = b2 + (250-b2)*wash + spec*0.5;
+        const wash = (1 - Math.min(1, body)) * 0.45 + (1 - vis) * 0.20;
+        px[k] = r + (250-r)*wash + s1*0.6; px[k+1] = g2 + (250-g2)*wash + s1*0.6;
+        px[k+2] = b2 + (250-b2)*wash + s1*0.6;
       }
       px[k+3] = 255;
     }
@@ -2970,7 +3043,7 @@ return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, r
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },
          get FOV() { return FOV; }, set FOV(v) { FOV = fovWant = v; },
-         glide, easeStand,
+         glide, easeStand, showZoom, zOf, FOVMIN,
          get STAND() { return STAND; }, set STAND(v) { STAND = v; standWant = null; },
          get standWant() { return standWant; },
          get EYE() { return EYE; },
