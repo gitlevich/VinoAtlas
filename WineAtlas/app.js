@@ -11,19 +11,21 @@ TABS.forEach(t=>el('t-'+t).onclick=()=>{
 });
 
 /* ---------- find ---------- */
-/* a measure's colour is not a fact about wine, it is a property of the ground it
-   is read against: the page holds one per measure per theme, and JS names it */
-const AXC=a=>`var(--ax-${a})`;
+/* channels, not hexes: a measure's colour must be usable as a translucent tint
+   without colour-mix, which mixes toward black in some engines */
+const hexRGB=h=>{const n=parseInt(h.slice(1),16);return [(n>>16)&255,(n>>8)&255,n&255].join(',');};
+const ENDC={weight:['#d98f97','#c4485e'],grip:['#c9b183','#b0702f'],oak:['#b8ab94','#c98a3e'],
+  fruit:['#9ebf3b','#c9538f'],maturity:['#87a733','#96502a']};
 const TH_UP='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M1 21h4V9H1v12zM23 10c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.58 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>';
 const TH_DN='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>';
 el('axes').innerHTML=A.map(a=>`<div class="ax">
-  <div class="axtop"><span class="axname" style="color:${AXC(a)}">${S.labels[a]}</span><span class="axval" id="v-${a}"></span></div>
-  <div class="band-track" id="bt-${a}" style="--c:${AXC(a)}" aria-label="${S.labels[a]}">
+  <div class="axtop"><span class="axname" style="color:${S.colors[a]}">${S.labels[a]}</span><span class="axval" id="v-${a}"></span></div>
+  <div class="band-track" id="bt-${a}" style="--c:${S.colors[a]};--c-rgb:${hexRGB(S.colors[a])}" aria-label="${S.labels[a]}">
     <div class="band-bg bg-${a}"></div>
     <div class="band" id="b-${a}"><div class="bh left"></div><div class="bh right"></div></div>
     <div class="bmark" id="bm-${a}"></div>
   </div>
-  <div class="ends"><span>${S.ends[a][0]}</span><span>${S.ends[a][1]}</span></div></div>`).join('');
+  <div class="ends"><span style="color:${ENDC[a][0]}">${S.ends[a][0]}</span><span style="color:${ENDC[a][1]}">${S.ends[a][1]}</span></div></div>`).join('');
 
 let band=Object.fromEntries(A.map(a=>[a,[0,1]]));
 function drawAxis(a){
@@ -115,7 +117,7 @@ function drawRadar(){
     const anchor=c>0.3?'start':c<-0.3?'end':'middle';
     const [x,y]=rpt(i,anchor==='middle'?1.14:1.06);
     // the corner states its own number, so the drawing can be checked at a glance
-    return `<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="middle" font-size="10.5" font-weight="600" fill="${AXC(a)}">${S.short[a]} <tspan font-weight="500" fill-opacity="0.9">${point[a].toFixed(2)}</tspan></text>`;}).join('');
+    return `<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="middle" font-size="10.5" font-weight="600" fill="${S.colors[a]}">${S.short[a]} <tspan fill-opacity="0.62" font-weight="500">${point[a].toFixed(2)}</tspan></text>`;}).join('');
   // figure and ground: the world is neutral; YOUR PROFILE -- the dashed shape,
   // the wine you are asking for -- is filled. Inside it is you.
   const outside=`<polygon class="rout" points="${rpts(A.map(()=>1)).join(' ')}"/>`;
@@ -212,12 +214,12 @@ el('hv').onchange=e=>{hideVoted=e.target.checked;render();};
 function bars(w){
   const tip='This wine, bar by bar:\n'+A.map(a=>`${S.labels[a]}  ${w[a].toFixed(2)}  (${S.ends[a][w[a]<0.5?0:1]})`).join('\n');
   return `<div class="bars" title="${tip}">${A.map(a=>
-    `<div class="bar" style="height:${4+Math.round(w[a]*22)}px;background:${AXC(a)}"></div>`).join('')}</div>`;}
+    `<div class="bar" style="height:${4+Math.round(w[a]*22)}px;background:${S.colors[a]}"></div>`).join('')}</div>`;}
 function why(w){
   const s=A.map(a=>[a,Math.abs(w[a]-point[a])]).sort((x,y)=>x[1]-y[1]);
   const near=s[0][0], far=s[s.length-1];
   const dir=S.compare[far[0]][w[far[0]]>point[far[0]]?1:0];
-  const tint=(a,t)=>`<span style="color:${AXC(a)}">${t}</span>`;
+  const tint=(a,t)=>`<span style="color:${S.colors[a]}">${t}</span>`;
   const word=dir.replace(/\s+than$/,'');
   return `same ${tint(near,S.labels[near].toLowerCase())}, slightly ${tint(far[0],word)} than you asked`;
 }
@@ -229,7 +231,7 @@ function render(){
   const list=pool.map(w=>{let d=0;for(const a of A){const x=(w[a]-point[a])*C.weights[a]*A.length;d+=x*x;}
     return {w,d:Math.sqrt(d)};}).sort((x,y)=>x.d-y.d).slice(0,14);
   el('count').innerHTML=`${pool.length} wines considered &nbsp;·&nbsp; bars: `+
-    A.map(a=>`<span style="color:${AXC(a)};font-weight:600">${S.short[a]}</span>`).join(' ');
+    A.map(a=>`<span style="color:${S.colors[a]};font-weight:600">${S.short[a]}</span>`).join(' ');
   el('out').innerHTML=list.map(({w})=>`<div class="row" data-w="${w.id}">
       <div><div class="nm">${w.name}</div>
         <div class="meta">${[w.variety,w.region].filter(Boolean).join(' · ')||'&nbsp;'}</div>
@@ -368,7 +370,7 @@ function parseSpell(text){
     const low=text.slice(i).toLowerCase();
     const gk=GKEYS.find(k=>low.startsWith(k)&&!/[a-z]/i.test(text[i+k.length]||''));
     if(gk){
-      toks.push({s:i,e:i+gk.length,c:'tk-gw',st:'color:'+AXC(GROUND[gk][0])});
+      toks.push({s:i,e:i+gk.length,c:'tk-gw',st:'color:'+S.colors[GROUND[gk][0]]});
       gloss.push([gk,GROUND[gk][0],GROUND[gk][1]]);
       i+=gk.length; continue;}
     const m=text.slice(i).match(/^[^\s@!#"]+/);
@@ -887,7 +889,7 @@ el('palateBars').innerHTML=A.map(a=>{
       background:${mine?'var(--mark)':'var(--ink-3)'};opacity:${mine?1:.35}"></div>`;}).join('');
   return `<div style="margin-bottom:26px">
     <div class="axtop" style="margin-bottom:2px">
-      <span class="axname" style="color:${AXC(a)}">${S.labels[a]}</span></div>
+      <span class="axname" style="color:${S.colors[a]}">${S.labels[a]}</span></div>
     <div style="font-size:13px;color:var(--ink-2);margin-bottom:9px">
       Your wines are <b style="color:var(--mark)">${phrase} ${share}%</b> of what the shop stocks.</div>
     <div style="position:relative;height:64px">
@@ -918,7 +920,7 @@ function chart(series,labels,W=620,H=240,pad=34){
 const O=S.orders.filter(o=>o.weight!==undefined);
 (function(){
   let run=0; const yr=O.map(o=>{run=Math.max(run,o.not_before||0);return run;});
-  const MEAS=['oak','weight','fruit','grip','maturity'].map(k=>({k,n:S.short[k],c:AXC(k)}));
+  const MEAS=['oak','weight','fruit','grip','maturity'].map(k=>({k,n:S.short[k],c:S.colors[k]}));
   const W=640,H=272,pad=40,axisY=H-46,n=O.length;
   const x=i=>pad+i*(W-pad-130)/(n-1), y=v=>axisY-14-v*(axisY-14-(pad-6));
   let svg=`<svg id="mv" viewBox="0 0 ${W} ${H+30}" role="img" aria-label="Four measures of each order along one timeline">`;
@@ -1022,12 +1024,12 @@ const O=S.orders.filter(o=>o.weight!==undefined);
 (function(){
   const T=S.tenure;
   const ROWS=[
-    {n:'Notes that say “lovely, delicious, smooth”', v:T.praise.map(x=>x*100), u:'%', c:'var(--ax-fruit)', dir:'falls'},
-    {n:'Notes that name a fault — corked, oxidised', v:T.fault.map(x=>x*100), u:'%', c:'var(--ax-oak)', dir:'rises', d:1},
-    {n:'Age of the bottles they open', v:T.age, u:' yrs', c:'var(--ax-weight)', dir:'rises', d:1},
-    {n:'Buying Pinot, Riesling, Nebbiolo', v:T.late.map(x=>x*100), u:'%', c:'var(--ax-grip)', dir:'rises'},
-    {n:'Buying Cabernet, Merlot, Zinfandel', v:T.entry.map(x=>x*100), u:'%', c:'var(--ax-maturity)', dir:'falls'},
-    {n:'The score they give a wine', v:T.score, u:'', c:'var(--ink-2)', dir:'does not move', d:1},
+    {n:'Notes that say “lovely, delicious, smooth”', v:T.praise.map(x=>x*100), u:'%', c:'#d4537e', dir:'falls'},
+    {n:'Notes that name a fault — corked, oxidised', v:T.fault.map(x=>x*100), u:'%', c:'#c2802f', dir:'rises', d:1},
+    {n:'Age of the bottles they open', v:T.age, u:' yrs', c:'#8c6fe0', dir:'rises', d:1},
+    {n:'Buying Pinot, Riesling, Nebbiolo', v:T.late.map(x=>x*100), u:'%', c:'#4dc08a', dir:'rises'},
+    {n:'Buying Cabernet, Merlot, Zinfandel', v:T.entry.map(x=>x*100), u:'%', c:'#5b9bd5', dir:'falls'},
+    {n:'The score they give a wine', v:T.score, u:'', c:'#8a8492', dir:'does not move', d:1},
   ];
   const LBL=['year 1','years 2–3','years 4–6','years 7–10','years 11+'];
   const W=620, rowH=64, pad=8, x=i=>150+i*(W-150-60)/(LBL.length-1);
@@ -1072,7 +1074,7 @@ const DEF={weight:'How heavy the wine feels in your mouth — thin and quick lik
   fruit:'Which fruit the wine reminds you of, on one scale: citrus & apple at the left end, through peach and red berries, to dark berries — blackberry, plum, black currant — at the right. Read from the catalogue\'s tasting descriptions.',
   maturity:'Age, counted against the wine\'s own lifespan — a Beaujolais is old at five years, a Barolo is still young. Young means recently bottled for its kind; old means late in its life, possibly past it. From the vintage and the catalogue\'s Aging potential field.'};
 el('howAxes').innerHTML=A.map(a=>`<div style="margin-bottom:14px">
-  <div class="axname" style="color:${AXC(a)}">${S.labels[a]} <span class="axval">${S.ends[a][0]} → ${S.ends[a][1]}</span></div>
+  <div class="axname" style="color:${S.colors[a]}">${S.labels[a]} <span class="axval">${S.ends[a][0]} → ${S.ends[a][1]}</span></div>
   <p class="note" style="margin-top:4px">${DEF[a]}</p></div>`).join('');
 
 openOnLargestKind();

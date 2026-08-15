@@ -1,39 +1,30 @@
 <title>Cellar Compass — Mark's palate, mapped</title>
 <style id="cc-css">
-/* Every colour that carries a word is set against the darkest ground it can
-   land on -- --ground in light, --raise in dark -- and none of them reads
-   below 5.5:1 there. The floor is above WCAG AA on purpose: this page writes
-   at 10-14px, and the 4.5:1 minimum is written for text half again as large. */
 :root{
   color-scheme:light;
   --ground:#f6f6f7; --panel:#fff; --raise:#fafafb;
-  --ink:#151517; --ink-rgb:21,21,23; --ink-2:#4a4a50; --ink-3:#63636c;
-  --rule:#dcdce0; --track:#e2e2e6; --grid:#d2d2d6;
+  --ink:#151517; --ink-rgb:21,21,23; --ink-2:#4a4a50; --ink-3:#82828a;
+  --rule:#e3e3e5; --track:#e8e8ea; --grid:#dcdcdf;
   --mark:#6b4bc0; --mark-rgb:107,75,192; --me:#0a7d8f; --me-rgb:10,125,143; --mark-2:#8c6fe0; --rise:#a8641f; --rise-rgb:168,100,31; --good:#1d7a52; --bad:#a33b3b;
-  /* what is legible laid over a filled accent */
-  --on-accent:#fff;
-  /* one colour per measure, per ground: it tints the word and fills the mark */
-  --ax-weight:#6a45d7; --ax-grip:#1f6b48; --ax-oak:#86581f; --ax-fruit:#b42d5a; --ax-maturity:#23629b;
+ 
   --shadow:0 1px 2px rgba(0,0,0,.06);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;
   --ground:#000; --panel:#0d0d0d; --raise:#161616;
-  --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#9b9ba2;
-  --rule:#333338; --track:#35353a; --grid:#3d3d42;
+  --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#808080;
+  --rule:#242424; --track:#282828; --grid:#2e2e2e;
   --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a;
-  --on-accent:#0d0d0d;
-  --ax-weight:#9a82e6; --ax-grip:#4dc08a; --ax-oak:#cc8a38; --ax-fruit:#dd6f93; --ax-maturity:#6ba7dd;
+ 
   --shadow:none;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;
   --ground:#000; --panel:#0d0d0d; --raise:#161616;
-  --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#9b9ba2;
-  --rule:#333338; --track:#35353a; --grid:#3d3d42;
+  --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#808080;
+  --rule:#242424; --track:#282828; --grid:#2e2e2e;
   --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a;
-  --on-accent:#0d0d0d;
-  --ax-weight:#9a82e6; --ax-grip:#4dc08a; --ax-oak:#cc8a38; --ax-fruit:#dd6f93; --ax-maturity:#6ba7dd;
+ 
   --shadow:none;
 }
 *{box-sizing:border-box}
@@ -179,16 +170,14 @@ section{display:flex;flex-direction:column;gap:16px}
   border-radius:3px;background:var(--mark);border:1px solid var(--panel);box-sizing:border-box}
 .bmark{position:absolute;top:1px;width:3px;height:30px;margin-left:-1.5px;border-radius:1.5px;
   background:var(--ink);box-shadow:0 0 0 1px var(--panel);pointer-events:none}
-/* the bar underneath already shows pale against deep; these words only name the
-   ends, so they are read, not looked at, and take the reading colour */
-.ends{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.07em;
-  text-transform:uppercase;color:var(--ink-2);margin-top:1px}
+.ends{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-3);margin-top:1px}
 .help{font-size:12.5px;color:var(--ink-3);line-height:1.55;margin:16px 0 8px;
   padding-top:13px;border-top:1px solid var(--rule)}
 .btn{font:inherit;font-size:12.5px;padding:7px 12px;border-radius:8px;border:1px solid var(--rule);
   background:var(--raise);color:var(--ink-2);cursor:pointer;transition:.13s}
 .btn:hover{color:var(--ink);border-color:var(--mark)}
-.btn.on{background:var(--mark);border-color:var(--mark);color:var(--on-accent)}
+.btn.on{background:var(--mark);border-color:var(--mark);color:#fff}
 .btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
 /* each kind drawn from its own wines -- one faint outline per bottle, no mean */
 .pick{margin:0 0 8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;
@@ -196,8 +185,8 @@ section{display:flex;flex-direction:column;gap:16px}
 #modeBtns{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:0}
 .kindcard{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 3px 6px;text-align:center}
 .kindcard svg{width:100%;max-width:46px;display:block}
-.kindcard .kn{font-size:11px;font-weight:600;color:var(--ink);line-height:1.25}
-.kindcard .kc{font-size:10.5px;color:var(--ink-3)}
+.kindcard .kn{font-size:9.5px;font-weight:600;color:var(--ink);line-height:1.2}
+.kindcard .kc{font-size:9px;color:var(--ink-3)}
 .kindcard.on{border-color:var(--mark);background:rgba(var(--mark-rgb),.12)}
 .kindcard.on .kn{color:var(--ink)}
 .howto{margin-top:14px;padding-top:13px;border-top:1px solid var(--rule)}
@@ -222,8 +211,8 @@ section{display:flex;flex-direction:column;gap:16px}
 .vote button svg{width:14px;height:14px}
 .vote button.yes:hover{border-color:var(--good);color:var(--good)}
 .vote button.no:hover{border-color:var(--bad);color:var(--bad)}
-.vote button.yes.on{border-color:var(--good);background:var(--good);color:var(--on-accent)}
-.vote button.no.on{border-color:var(--bad);background:var(--bad);color:var(--on-accent)}
+.vote button.yes.on{border-color:var(--good);background:var(--good);color:#fff}
+.vote button.no.on{border-color:var(--bad);background:var(--bad);color:#fff}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px}
 .stat{background:var(--panel);border:1px solid var(--rule);border-radius:11px;padding:13px 14px}
 .stat .n{font-size:22px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
@@ -262,7 +251,7 @@ input[type=search]{width:100%;font:inherit;font-size:13px;padding:8px 10px;borde
 .mention .m{padding:8px 11px;cursor:pointer;font-size:13px;line-height:1.35}
 .mention .m .mm{font-size:11.5px;color:var(--ink-3)}
 .mention .m.sel{background:var(--mark)}
-.mention .m.sel,.mention .m.sel .mm{color:var(--on-accent)}
+.mention .m.sel,.mention .m.sel .mm{color:#fff}
 #keyRow{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 #keyRow select,#keyRow input{font:inherit;font-size:12.5px;padding:7px 9px;border-radius:8px;
   border:1px solid var(--rule);background:var(--raise);color:var(--ink)}
@@ -270,7 +259,7 @@ input[type=search]{width:100%;font:inherit;font-size:13px;padding:8px 10px;borde
 .chip{font-size:12px;padding:5px 9px;border-radius:14px;border:1px solid var(--rule);background:var(--raise);
   color:var(--ink-2);cursor:pointer;display:inline-block;margin:3px 3px 0 0}
 .chip:hover{border-color:var(--mark);color:var(--ink)}
-.chip.on{background:var(--mark);border-color:var(--mark);color:var(--on-accent)}
+.chip.on{background:var(--mark);border-color:var(--mark);color:#fff}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{text-align:left;padding:7px 8px 7px 0;border-bottom:1px solid var(--rule)}
 th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:600}
