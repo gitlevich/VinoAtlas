@@ -8,9 +8,7 @@ Three things live there, and they are three different kinds of thing.
 
 A POLE is a bearing and nothing else -- "older", "more oaked" is a direction you
 face, never a place you arrive at -- so the ten poles hang at infinity, fixed,
-unmoved by anything the reader does. Each measure is a straight line through the
-middle of the shop, so its trace on the sky is one great circle running from its
-low pole to its high one, and all five cross where the middle is.
+unmoved by anything the reader does.
 
 An AROMA is not a bearing. Cedar is something wines have, not a quality you can
 ask for on a slider, so it belongs among them at a real place -- the middle of
@@ -120,9 +118,6 @@ for a in AXES:
             'str': round(keep, 3),
             'col': ENDC[a][side],
         })
-AXIS_LINE = [{'ax': a, 'dir': [round(float(x), 4) for x in bearing(a)[0]],
-              'str': round(bearing(a)[1], 3),
-              'lo': ENDC[a][0], 'hi': ENDC[a][1]} for a in AXES]
 
 
 # ---------------------------------------------------------------- the aromas
@@ -226,25 +221,38 @@ WHITE_GRAPES = ('chardonnay', 'sauvignon blanc', 'chenin blanc', 'riesling',
                 'muscat', 'moscato', 'furmint', 'assyrtiko', 'garganega',
                 'trebbiano', 'marsanne', 'roussanne', 'melon de bourgogne',
                 'colombard', 'bordeaux blend white', 'white blend', 'blanc de blancs')
-ROSE_HINT = ('rosé', 'rose blend', 'rosato', 'provence rosé')
+ROSE = re.compile(r'\b(ros[ée]|rosato|rosado|chiaretto|blush)\b', re.I)
+# THE CATALOGUE'S OWN SPARKLING FLAG IS NOT USED, and here is why: it marks
+# Chateau Cheval Blanc 1928, Haut Brion 1937 and Ausone 2005 as sparkling. It is
+# right about Prosecco (12 of 13), Cava (6 of 6) and Cremant (5 of 5) and wrong
+# about first-growth Bordeaux, and there is no way to tell from the flag which
+# kind of answer you are holding. So a wine is sparkling when its own name,
+# grape or region says so -- every one of those can be checked by reading it.
+SPARKLE = re.compile(
+    r'\b(champagne|prosecco|cava|cr[ée]mant|franciacorta|spumante|frizzante|'
+    r'p[ée]tillant|pet[-\s]?nat|sparkling|blanc de blancs|blanc de noirs|brut|'
+    r'sekt|lambrusco|moscato d.asti|asti spumante|bubbles|spritz|glera|'
+    r'm[ée]thode champenoise|metodo classico)\b', re.I)
+
+
+def says(w):
+    return ' '.join(str(w.get(k) or '') for k in ('name', 'variety', 'region'))
 
 
 def colour(w):
-    """white, rose or red, read off the grape and checked against the measures."""
-    v = (w.get('variety') or '').lower()
-    if any(h in v for h in ROSE_HINT):
+    """red, rose or white, read off the grape and the wine's own name."""
+    txt, v = says(w), (w.get('variety') or '').lower()
+    if ROSE.search(txt):
         return 'rose'
     if v:
-        white = any(g in v for g in WHITE_GRAPES)
-        if white:
-            return 'white'
-        return 'red'
-    # no grape named: the measures still separate them cleanly, since a white in
-    # this catalogue is light and low on the fruit scale
+        return 'white' if any(g in v for g in WHITE_GRAPES) else 'red'
+    # no grape named: the measures still separate them, since a white in this
+    # catalogue is light and low on the fruit scale
     return 'white' if (w['weight'] < 0.55 and w['fruit'] < 0.45) else 'red'
 
 
 COLOUR = [colour(w) for w in WINES]
+FIZZ = [bool(SPARKLE.search(says(w))) for w in WINES]
 
 
 def accent(p):
@@ -265,7 +273,6 @@ def accent(p):
 DATA = {
     'axes': AXES,
     'poles': POLES,
-    'lines': AXIS_LINE,
     'terms': TERMS,
     'near': NEAR, 'far': FAR,
     'kept3': round(float(VAR[:3].sum()), 4),
@@ -273,6 +280,7 @@ DATA = {
     'pos': [[round(float(x), 3) for x in p] for p in POS * 0 + POS],
     'lean': [round(float(x), 3) for x in LEAN],
     'col': COLOUR,
+    'fizz': FIZZ,
     'acc': [accent(p) for p in POS],
 }
 # the wines fill the body of the ball rather than its surface, so the reader can
@@ -291,6 +299,7 @@ if __name__ == '__main__':
     print(f'aroma words: {len(KEPT)} point somewhere, {len(CUT)} do not')
     print('  strongest:', ', '.join(f"{r['w']}" for r in KEPT[:12]))
     print('  cut:      ', ', '.join(f"{r['w']}" for r in sorted(CUT, key=lambda r: -r['n'])[:14]))
-    print('colours:', dict(collections.Counter(COLOUR)))
+    print('colours:', dict(collections.Counter(COLOUR)),
+          '| sparkling:', sum(FIZZ))
     print('wines run', min(DATA['dist']), 'to', max(DATA['dist']), 'deep')
     print('wrote', out, out.stat().st_size, 'bytes')

@@ -25,8 +25,9 @@
    near and what is behind. */
 const ATLAS = (function () {
 const D = __ATLASDATA__;
-const POLES = D.poles, LINES = D.lines, TERMS = D.terms;
+const POLES = D.poles, TERMS = D.terms;
 const WPOS = D.pos, WLEAN = D.lean, WCOL = D.col, WACC = D.acc, WDIST = D.dist;
+const FIZZ = D.fizz;
 const N = WPOS.length;
 const MINE = S.wines.map(w => OWNED.has(w.id));
 
@@ -76,7 +77,6 @@ const readTheme = () => {
   DARK = (0.2126 * gr[0] + 0.7152 * gr[1] + 0.0722 * gr[2]) < 110;
 };
 for (const p of POLES) p.hsl = hex2hsl(p.col);
-for (const l of LINES) { l.loH = hex2hsl(l.lo); l.hiH = hex2hsl(l.hi); }
 for (const t of TERMS) t.hsl = hex2hsl(t.acc = accentAt(t.pos));
 
 /* the colour of the ground at a bearing: the poles it faces, blended, so a
@@ -101,20 +101,30 @@ function accentAt(p) {
    view is allowed to use these hues, so a glass is never mistaken for a place. */
 function pour(i) {
   const w = S.wines[i], m = w.maturity, body = w.weight;
-  if (WCOL[i] === 'white')
-    return [52 - 14 * m, 42 + 26 * m, (DARK ? 74 : 64) - 16 * m];
-  if (WCOL[i] === 'rose') return [348, 52, DARK ? 68 : 60];
-  return [330 + 38 * m, 62 + 8 * (1 - m), (DARK ? 40 : 36) + 13 * (1 - body) + 6 * m];
+  if (WCOL[i] === 'white')                     // pale straw to deep amber
+    return [54 - 16 * m, 48 + 32 * m, (DARK ? 76 : 62) - 16 * m];
+  if (WCOL[i] === 'rose')                      // salmon to onion skin
+    return [348 + 18 * m, 66 - 10 * m, (DARK ? 70 : 58) - 8 * m];
+  return [330 + 38 * m, 68 + 8 * (1 - m),      // purple through ruby to brick
+          (DARK ? 41 : 36) + 13 * (1 - body) + 6 * m];
 }
 
 /* ---- the view ---------------------------------------------------------- */
 let yaw = 0, pitch = 0, vYaw = 0, vPitch = 0, target = null;
 const WIDE = 120 * Math.PI / 180;          // binocular human field, near enough
+/* WHAT IT OPENS AT, which is not the same question. A hundred and twenty degrees
+   is what a head takes in, and cramming it into a thousand pixels puts 1,652
+   wines at about nine pixels to the degree: every glass five pixels across, and
+   the colour of the wine -- the first thing anyone reads about a bottle -- gone.
+   Opening at 74 leaves the same shop and the same walk, with each glass a quarter
+   larger and two and a half times fewer of them at once. Step back returns here;
+   the full field is still there for anyone who widens past it. */
+const OPEN = WIDE * 0.62;
 /* how far up and down you may look. Age stands eighty-two degrees off the
    horizon here, so a sixty-three degree limit would have put both of its names
    somewhere you could never turn to face. */
 const PIT = 1.45;
-let FOV = WIDE, fovWant = WIDE;
+let FOV = OPEN, fovWant = OPEN;
 
 function frame() {
   const cp = Math.cos(pitch), sp = Math.sin(pitch);
@@ -242,105 +252,19 @@ function ground(F) {
   }
 }
 
-/* ---- the five measures, written across the sky ----------------------------
-   A measure is a straight line through the middle of the shop. Seen from a point
-   off it, a line's image is half a great circle running from one vanishing point
-   to the other, so each measure draws as one arc from its low name to its high
-   one, in the gradient of its own slider. All five pass through the middle, so
-   all five arcs cross at the same place on the screen -- and that crossing is
-   where the middling wine is. Walk, and it moves: that is the shop telling you
-   where you are standing.
+/* THE FIVE MEASURES USED TO BE DRAWN AS LINES, and are not any more.
 
-   The arc is parametrised by angle rather than by distance along the line, so
-   both ends reach their pole exactly instead of being chased toward it. */
-function skyLine(l, F) {
-  const d = l.dir;
-  const at = u => arcDir(d, qh, (u - 0.5) * Math.PI * 0.996);
-  const along = dot(EYE, d);
-  const q = [EYE[0] - along*d[0], EYE[1] - along*d[1], EYE[2] - along*d[2]];
-  const h = len(q);
-  if (h < 1e-6) return;                        // standing on the line: no arc to draw
-  const qh = [q[0]/h, q[1]/h, q[2]/h];
-  const SEG = 46;
-  g.lineWidth = 2; g.lineCap = 'round';
-  for (let k = 0; k < SEG; k++) {
-    const f0 = k / SEG, f1 = (k + 1) / SEG;
-    const a0 = (f0 - 0.5) * Math.PI * 0.996, a1 = (f1 - 0.5) * Math.PI * 0.996;
-    const p0 = place(arcDir(d, qh, a0), F), p1 = place(arcDir(d, qh, a1), F);
-    if (!p0 || !p1 || Math.abs(p0.x - p1.x) > W * 0.5) continue;
-    const u = (f0 + f1) / 2;
-    const hsl = [l.loH[0] + shortWay(l.loH[0], l.hiH[0]) * u,
-                 l.loH[1] + (l.hiH[1] - l.loH[1]) * u,
-                 l.loH[2] + (l.hiH[2] - l.loH[2]) * u];
-    /* how much of the measure survived the drop to three dimensions is how
-       plainly its line is drawn: a measure the space could not keep is a faint
-       line, not a missing one */
-    g.strokeStyle = tone(hsl, (DARK ? 0.78 : 0.62) * l.str * Math.min(p0.edge, p1.edge));
-    g.beginPath(); g.moveTo(p0.x, p0.y); g.lineTo(p1.x, p1.y); g.stroke();
-  }
-  /* THE LINE CARRIES ITS OWN NAME, written along it the way a contour is
-     labelled. Ten poles fall into three clusters here -- body, oak, tannin and
-     fruit all point within fourteen degrees of one another, because that is how
-     the shop varies -- so from most headings only one or two of the names at the
-     ends are in view. The line nearly always is, and a line you can read is a
-     frame; a line you cannot is decoration.
+   Each measure is a straight line through the middle of the shop, so its image
+   from a point off it is half a great circle from one pole to the other, and all
+   five cross where the middle is. It was true, it was well founded, and it read
+   as a starburst laid over the shop -- five bright arcs converging on a point in
+   the middle of the view, competing with the thing they were meant to frame. The
+   weed space has nothing of the kind and does not miss it.
 
-     Where the name goes is found rather than assumed. A line runs from one pole,
-     through the point nearest the eye, to the other pole, and that middle stretch
-     is BEHIND you: the shop's middle sits a neck's length back however you turn.
-     So the visible runs are what get labelled, one name each, and a line with no
-     run in view is simply not named this frame. */
-  const on = [];
-  let run = null;
-  for (let k = 0; k <= 60; k++) {
-    const u = k / 60, q2 = place(at(u), F);
-    const ok = q2 && q2.x > 46 && q2.x < W - 46 && q2.y > 16 && q2.y < H - 16;
-    if (ok) { if (!run) run = [u, u]; else run[1] = u; }
-    else if (run) { on.push(run); run = null; }
-  }
-  if (run) on.push(run);
-  g.font = '600 10.5px ui-sans-serif,system-ui,sans-serif';
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  for (const [u0, u1] of on) {
-    if (u1 - u0 < 0.02) continue;
-    const u = (u0 + u1) / 2;
-    const a0 = place(at(Math.max(u0, u - 0.012)), F), a1 = place(at(Math.min(u1, u + 0.012)), F);
-    if (!a0 || !a1) continue;
-    const x = (a0.x + a1.x) / 2, y = (a0.y + a1.y) / 2;
-    if (Math.hypot(a1.x - a0.x, a1.y - a0.y) > W * 0.3) continue;
-    const nm = S.labels[l.ax], tw = g.measureText(nm).width;
-    if (drawn.some(b => Math.abs(x - b[0]) < b[2]/2 + tw/2 + 6
-                     && Math.abs(y - b[1]) < b[3]/2 + 11)) continue;
-    drawn.push([x, y, tw + 14, 18]);
-    let th = Math.atan2(a1.y - a0.y, a1.x - a0.x);   // never written upside down
-    if (th > Math.PI/2) th -= Math.PI; else if (th < -Math.PI/2) th += Math.PI;
-    const uu = Math.max(0, Math.min(1, u));
-    const hsl = [l.loH[0] + shortWay(l.loH[0], l.hiH[0]) * uu,
-                 (l.loH[1] + l.hiH[1]) / 2, (l.loH[2] + l.hiH[2]) / 2];
-    g.save();
-    g.translate(x, y); g.rotate(th);
-    g.fillStyle = DARK ? 'rgba(0,0,0,.66)' : 'rgba(255,255,255,.74)';
-    g.fillRect(-tw/2 - 5, -8, tw + 10, 16);
-    g.fillStyle = tone(hsl, 0.95 * l.str, 8);
-    g.fillText(nm, 0, 0);
-    g.restore();
-  }
-  g.textBaseline = 'alphabetic'; g.textAlign = 'left';
-}
-const shortWay = (a, b) => ((b - a + 540) % 360) - 180;
-const arcDir = (d, qh, a) => {
-  const s = Math.sin(a), c = Math.cos(a);
-  return [s*d[0] - c*qh[0], s*d[1] - c*qh[1], s*d[2] - c*qh[2]];
-};
-
-/* the middle of the shop, where every measure is middling and every line crosses */
-function middle(F) {
-  const p = place(here([0, 0, 0]), F);
-  if (!p) return;
-  g.strokeStyle = INK(0.34 * p.edge); g.lineWidth = 1.2;
-  g.beginPath(); g.arc(p.x, p.y, 5.5, 0, 6.2832); g.stroke();
-  g.beginPath(); g.arc(p.x, p.y, 1.6, 0, 6.2832); g.fillStyle = INK(0.5 * p.edge); g.fill();
-}
+   What they were carrying was the measure NAMES, since four of the ten poles lie
+   within fourteen degrees of each other and only one or two are ever in view.
+   The globe carries that instead: it shows every name on the near face, and it
+   is the only view that shows what is behind you. */
 
 /* ---- a wine is a glass ----------------------------------------------------
    Drawn as the thing everyone already knows: bowl, stem, foot, and wine in it to
@@ -350,7 +274,9 @@ function middle(F) {
    Bottles on the reader's own account carry a ring behind them, in the purple
    this page uses for him everywhere else. */
 function glass(x, y, R, i, a, mine) {
-  const rw = R*0.50, top = y - R*0.84, bot = y + R*0.12, dep = bot - top;
+  const fz = FIZZ[i];
+  const rw = R*(fz ? 0.30 : 0.50), top = y - R*(fz ? 0.98 : 0.84);
+  const bot = y + R*(fz ? 0.20 : 0.12), dep = bot - top;
   const wine = pour(i);
   /* Most of the shop is drawn a handful of pixels across, and at that size a
      white rim and a highlight take more of the mark than the wine does -- which
@@ -359,6 +285,16 @@ function glass(x, y, R, i, a, mine) {
      the mark is its colour; big, it is poured to a level and the glass appears
      around it. Nothing changes shape between the two, only how much is there. */
   const fine = R >= 6.5;
+  /* A SPARKLING WINE IS A FLUTE. Narrow, tall, filled higher, with the bubbles
+     drawn once there is room for them -- a silhouette anyone tells from a bowl
+     across a room, which a colour cannot do because half of these are white and
+     half are red.
+
+     The catalogue's own sparkling flag is not what decides this: it marks Cheval
+     Blanc 1928 and Haut Brion 1937 as sparkling. A wine is a flute here when its
+     own name, grape or region says so, and every one of those can be checked by
+     reading it. */
+  const fizz = fz;
   if (mine) {
     const halo = g.createRadialGradient(x, y, 0, x, y, R*1.3);
     halo.addColorStop(0, `rgba(${MARKRGB},${a*0.24})`);
@@ -370,13 +306,16 @@ function glass(x, y, R, i, a, mine) {
   const bowl = () => {
     g.beginPath();
     g.moveTo(x - rw, top);
-    g.bezierCurveTo(x - rw, top + dep*0.66, x - rw*0.44, bot, x, bot);
-    g.bezierCurveTo(x + rw*0.44, bot, x + rw, top + dep*0.66, x + rw, top);
+    g.bezierCurveTo(x - rw, top + dep*(fizz ? 0.90 : 0.66), x - rw*0.44, bot, x, bot);
+    g.bezierCurveTo(x + rw*0.44, bot, x + rw, top + dep*(fizz ? 0.90 : 0.66), x + rw, top);
   };
   bowl(); g.closePath();
   g.save(); g.clip();
-  const line = fine ? top + dep*0.42 : top - 1;
-  g.fillStyle = `hsla(${wine[0]},${wine[1]}%,${wine[2]}%,${a})`;
+  const line = fine ? top + dep*(fizz ? 0.22 : 0.42) : top - 1;
+  /* THE COLOUR IS THE POINT and is drawn past the strength of the rest of the
+     mark, because what colour a wine is is the first thing anybody reads about a
+     bottle and it is carried by three or four pixels. */
+  g.fillStyle = `hsla(${wine[0]},${wine[1]}%,${wine[2]}%,${Math.min(1, a * 1.3)})`;
   g.fillRect(x - rw - 1, line, rw*2 + 2, bot - line + 1);
   if (fine) {
     g.fillStyle = INK(a * (DARK ? 0.10 : 0.07));
@@ -385,6 +324,15 @@ function glass(x, y, R, i, a, mine) {
        glass rather than as a filled shape */
     g.fillStyle = INK(a * (DARK ? 0.32 : 0.18));
     g.fillRect(x - rw*0.86, top + dep*0.14, Math.max(1, R*0.07), dep*0.60);
+    if (fizz) {                                  // the bubbles, once they can be seen
+      g.fillStyle = INK(a * (DARK ? 0.55 : 0.30));
+      for (const [bx, by, br] of [[-0.22, 0.68, 0.055], [0.20, 0.52, 0.045],
+                                  [-0.05, 0.36, 0.05], [0.24, 0.80, 0.04]]) {
+        g.beginPath();
+        g.arc(x + rw*bx*2, top + dep*by, Math.max(0.6, R*br), 0, 6.2832);
+        g.fill();
+      }
+    }
   }
   g.restore();
   if (fine) {
@@ -415,8 +363,6 @@ function draw() {
   drawn.length = 0;
   drawn.push([W/2, H - 26, W, 78], [W - 118, H - 118, 240, 240], [W - 112, 66, 236, 150]);
   ground(F);
-  for (const l of LINES) skyLine(l, F);
-  middle(F);
 
   g.strokeStyle = INK(0.16); g.lineWidth = 1;
   g.beginPath(); g.arc(W/2, H/2, 34, 0, 6.284); g.stroke();
@@ -457,26 +403,28 @@ function draw() {
        plainly it is drawn instead. */
     let a = Math.max(DARK ? 0.55 : 0.72, Math.min(1, 0.32 + 1.6 * m.lean) * q.edge * attend);
     if (held && !held.has(m)) a *= 0.34;
-    shown.push({ m, q, a,
-      R: Math.max(1.8, (54 * m.lean / q.dist) * Math.pow(WIDE/FOV, 0.5)) * q.edge });
+    let R = Math.max(1.8, (54 * m.lean / q.dist) * Math.pow(WIDE/FOV, 0.5)) * q.edge;
+    const asked = !onlyThese || onlyThese.has(m.i);
+    if (!asked) { a = Math.max(0.13, a * 0.22); R *= 0.6; }
+    shown.push({ m, q, a, R, asked });
   }
   shown.sort((x, y) => y.q.dist - x.q.dist);
-  for (const { m, q, a, R } of shown) {
+  for (const { m, q, a, R, asked } of shown) {
     if (R < 3.0) {
       /* far off, a wine is a small filled bowl on a foot -- still a glass in
          outline, never a soft dot, which would read as an aroma */
-      const wine = pour(m.i);
+      const wine = pour(m.i), fz = FIZZ[m.i];
       g.beginPath();
-      g.moveTo(q.x - R*0.62, q.y - R*0.7);
-      g.lineTo(q.x + R*0.62, q.y - R*0.7);
-      g.lineTo(q.x, q.y + R*0.55);
+      g.moveTo(q.x - R*(fz ? 0.36 : 0.62), q.y - R*(fz ? 0.85 : 0.70));
+      g.lineTo(q.x + R*(fz ? 0.36 : 0.62), q.y - R*(fz ? 0.85 : 0.70));
+      g.lineTo(q.x, q.y + R*(fz ? 0.75 : 0.55));
       g.closePath();
       g.fillStyle = `hsla(${wine[0]},${wine[1]}%,${wine[2]}%,${a})`; g.fill();
-      if (MINE[m.i]) {
+      if (MINE[m.i] && asked) {
         g.strokeStyle = `rgba(${MARKRGB},${a*0.85})`; g.lineWidth = 1; g.stroke();
       }
     } else {
-      glass(q.x, q.y, R, m.i, a, MINE[m.i]);
+      glass(q.x, q.y, R, m.i, a, MINE[m.i] && asked);
     }
     m.node = [q.x, q.y, R, a];
   }
@@ -508,6 +456,10 @@ function draw() {
     let a = sky ? Math.max(DARK ? 0.62 : 0.78, Math.min(1, 0.40 + 0.60 * it.str) * p.edge)
                 : Math.max(DARK ? 0.58 : 0.76, Math.min(1, 10 * it.str / p.dist) * p.edge);
     if (!sky && held && m && !held.has(m)) a *= 0.34;
+    /* the rule applies to the words too, or the question ends up brighter than
+       the answer: ask for truffle and every other word goes on shouting while
+       the seventy-one wines it lit sit quietly behind them */
+    if (!sky && onlyThese && !said) a *= 0.5;
 
     const label = sky ? it.w.toUpperCase() : it.w;
     g.font = `${said ? '600 ' : sky ? '500 ' : ''}${sz.toFixed(1)}px ui-sans-serif,system-ui,sans-serif`;
@@ -601,8 +553,11 @@ function draw() {
 
   /* Names arrive by themselves: leaning in spreads the glasses apart, so more of
      them have room for a name beside them. */
-  if (FOV < WIDE * 0.82) {
-    const lit = shown.filter(s => s.R >= 5).sort((a, b) => b.R - a.R).slice(0, 40);
+  /* Names arrive by leaning in, so the gate is on the field it OPENS at rather
+     than on the widest one available -- against the full field, opening at 74
+     degrees is already past the threshold and every name appeared at rest. */
+  if (FOV < OPEN * 0.84) {
+    const lit = shown.filter(s => s.asked && s.R >= 5).sort((a, b) => b.R - a.R).slice(0, 40);
     const fs = Math.max(9, Math.min(13, 10 * Math.pow(WIDE/FOV, 0.45)));
     g.font = `${fs.toFixed(1)}px ui-sans-serif,system-ui,sans-serif`;
     g.textAlign = 'left';
@@ -622,6 +577,23 @@ function draw() {
 /* ---- what lies this way -------------------------------------------------- */
 const ATTEND = 0.84;
 const state = new Set();
+
+/* TICKING A WORD LIGHTS ITS WINES AND QUIETS THE REST, which is the only handle
+   on the crowd that is made of the reader's own question rather than of a number
+   somebody chose. Four fifths of this shop is red and its whole vocabulary points
+   the same way, so the red half of the sky is a wall; tick "cedar" and 173 wines
+   stay lit out of 1,652. The rest do not go away -- a shop you cannot see past is
+   still the shop -- they go quiet, and walking still carries you among them. */
+let onlyThese = null;
+function refilter() {
+  if (!state.size) { onlyThese = null; return; }
+  let keep = null;
+  for (const w of state) {
+    const s = new Set(TERMS.find(t => t.w === w).in);
+    keep = keep === null ? s : new Set([...keep].filter(i => s.has(i)));
+  }
+  onlyThese = keep;
+}
 
 function bundle(F) {
   /* Something is always ahead. If nothing sits straight in front, the cone opens
@@ -691,6 +663,7 @@ for (const t of TERMS) {
     if (state.has(t.w)) { state.delete(t.w); row.setAttribute('aria-checked', 'off'); }
     else { state.add(t.w); row.setAttribute('aria-checked', 'yes'); }
     paintRow(row, t);
+    refilter();
     if (state.size) {
       const v = [0, 0, 0];
       for (const w of state) { const u = unit(TERMS.find(x => x.w === w).pos);
@@ -714,6 +687,7 @@ el('atlasClear').onclick = () => {
   state.clear();
   [...wordList.children].forEach(r => { r.setAttribute('aria-checked', 'off');
                                         r.querySelector('i').style.background = ''; });
+  refilter();
   nudge();
 };
 
@@ -757,7 +731,12 @@ function hoverAt(mx, my) {
   box.style.display = 'block';
   box.style.left = Math.min(mx + 14, W - 250) + 'px';
   box.style.top = Math.max(my - 8, 8) + 'px';
+  const kind = [{ red: 'Red', white: 'White', rose: 'Rosé' }[WCOL[best.i]],
+                FIZZ[best.i] ? 'sparkling' : null,
+                w.vintage ? String(Math.round(w.vintage)) : null].filter(Boolean);
   box.innerHTML = `<b>${w.name}</b>`
+    + `<div class="kind"><i style="background:hsl(${pour(best.i).slice(0,3).map((v,k)=>k?v+'%':v).join(',')})"></i>`
+    + `${kind.join(' &middot; ')}</div>`
     + `<div class="sub">${[w.variety, w.region].filter(Boolean).join(' &middot; ')}</div>`
     + (MINE[best.i] ? `<div class="yours">you have bought this</div>` : '')
     + `<div class="mbars">` + A.map(a => {
@@ -794,13 +773,13 @@ function lean(factor, towardX, towardY) {
             F.f[1]*ct*cp + F.r[1]*st + F.u[1]*sp,
             F.f[2]*ct*cp + F.r[2]*st + F.u[2]*sp]);
   }
-  el('atlasWide').style.display = fovWant < WIDE * 0.99 ? '' : 'none';
+  el('atlasWide').style.display = fovWant < OPEN * 0.99 ? '' : 'none';
 }
 cv.addEventListener('dblclick', e => {
   const r = cv.getBoundingClientRect();
   lean(e.shiftKey ? 1/0.62 : 0.62, e.clientX - r.left, e.clientY - r.top);
 });
-el('atlasWide').onclick = () => lean(WIDE / fovWant);
+el('atlasWide').onclick = () => lean(OPEN / fovWant);
 
 /* Two fingers LOOK AROUND -- the same act as dragging, at the same sense and
    scale, because scrolling is how a trackpad turns a view. A pinch MOVES YOU
@@ -815,7 +794,7 @@ cv.addEventListener('wheel', e => {
        then walks back. Last-in-first-out, so the two directions retrace the same
        path -- and so that zooming out always does something. */
     const out = e.deltaY > 0;
-    if (out) { if (fovWant < WIDE * 0.995) lean(1.09); else walk(-0.16); }
+    if (out) { if (fovWant < OPEN * 0.995) lean(1.09); else walk(-0.16); }
     else { if (len(STAND) >= ROAM - 1e-6) lean(0.92); else walk(0.16); }
   } else if (e.shiftKey) {
     lean(e.deltaY > 0 ? 1.07 : 0.935);
@@ -832,6 +811,7 @@ cv.addEventListener('wheel', e => {
 
 addEventListener('keydown', e => {
   if (!live || /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+  if (e.key === 'f' || e.key === 'F') { fill(); e.preventDefault(); return; }
   if (e.key === 'w' || e.key === 'ArrowUp') walk(0.3);
   else if (e.key === 's' || e.key === 'ArrowDown') walk(-0.3);
   else if (e.key === 'g' || e.key === 'G') toggleGlobe();
@@ -1027,6 +1007,26 @@ function toggleGlobe(on) {
 }
 el('atlasGx').onclick = e => { e.stopPropagation(); toggleGlobe(false); };
 
+/* ---- filling the screen ---------------------------------------------------
+   Not the browser's own full screen: this page is served both from a domain and
+   from inside a cross-origin frame, and a frame without allowfullscreen simply
+   refuses. A fixed overlay is the same result and it never refuses. The canvas
+   is watched for its size already, so it measures and repaints itself on the way
+   in and on the way out. */
+const view = el('atlasCanvas').parentElement;
+function fill(on) {
+  const want = on === undefined ? !view.classList.contains('big') : on;
+  view.classList.toggle('big', want);
+  document.body.style.overflow = want ? 'hidden' : '';
+  el('atlasBig').setAttribute('aria-label',
+    want ? 'Return the shop to the page' : 'Fill the screen with the shop');
+  refit();
+}
+el('atlasBig').onclick = e => { e.stopPropagation(); fill(); };
+addEventListener('keydown', e => {
+  if (e.key === 'Escape' && view.classList.contains('big')) { fill(false); e.preventDefault(); }
+});
+
 /* ---- size, theme, and the loop ------------------------------------------- */
 function size() {
   const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -1086,12 +1086,14 @@ function step() {
 
 function show(on) {
   live = on;
-  if (on) refit();
+  if (!on) fill(false);
+  else refit();
 }
 
 return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, readout, step,
          drawMini, walk, faceTo, lean, beginApproach, hoverAt, toggleGlobe, place, frame,
-         here, unit, dot, len, pour, accentAt, skyLine, bundle, glass, size, theme,
+         here, unit, dot, len, pour, accentAt, bundle, glass, size, theme, fill, refilter,
+         OPEN, get onlyThese() { return onlyThese; },
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },
          get FOV() { return FOV; }, set FOV(v) { FOV = fovWant = v; },

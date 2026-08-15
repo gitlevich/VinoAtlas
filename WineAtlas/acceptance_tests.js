@@ -586,29 +586,37 @@
   });
 
   await T('turning your head slides near glasses past far ones, and not the sky', () => {
-    AT.STAND = [0, 0, 0]; AT.yaw = 0.4; AT.pitch = 0; AT.draw();
-    const seen = AT.WMARK.filter(m => m.node && Math.abs(m.node[0] - AT.W / 2) < AT.W * 0.2);
-    const close = seen.sort((a, b) => a.dist - b.dist)[0];
-    const far = seen[seen.length - 1];
+    AT.STAND = [0, 0, 0]; AT.FOV = AT.OPEN; AT.yaw = 0.4; AT.pitch = 0; AT.draw();
+    const was = new Map();
+    for (const m of AT.WMARK) if (m.node) was.set(m, [m.node[0], AT.len(AT.here(m.pos))]);
     const sky = AT.POLES.filter(p => p.hit)[0];
-    ok(close && far && sky, 'something near, something far and a name in view');
-    const was = [close.node[0], far.node[0], sky.hit[0]];
+    ok(sky && was.size > 60, 'a name in the sky and a field under it');
+    const s0 = sky.hit[0];
     AT.yaw = 0.4 + 0.04; AT.draw();
-    const now = [close.node[0], far.node[0], sky.hit[0]];
-    const move = was.map((x, i) => Math.abs(now[i] - x));
-    /* WITH A THRESHOLD, and here is why. Written as a bare inequality this test
-       passed with the neck set to a ten-thousandth -- a camera on its own pivot,
-       which is precisely the thing the neck exists to avoid. It passed because a
-       neck of 1e-4 still yields a parallax, of eight thousandths of a pixel. So
-       the bar is a ratio and it is set from the measurement: over a 2.3 degree
-       turn a glass at 4.0 slides 42.3 pixels, one at 11.0 slides 25.8, and the
-       sky slides 20.4. Take the neck away and all three read 20.436. */
-    ok(move[0] > move[1] * 1.3,
-       `near ${move[0].toFixed(1)} must plainly outrun far ${move[1].toFixed(1)}`);
-    ok(move[1] > move[2] * 1.15,
-       `far ${move[1].toFixed(1)} must plainly outrun the sky ${move[2].toFixed(1)}`);
-    /* the sky moved by exactly the angle turned, which is what makes it a frame */
-    near(Math.round(move[2] * 100) / 100, Math.round(AT.W / AT.FOV * 0.04 * 100) / 100);
+    const rows = [];
+    for (const [m, [x0, d]] of was) if (m.node) rows.push([d, Math.abs(m.node[0] - x0)]);
+    rows.sort((a, b) => a[0] - b[0]);
+    const skyMove = Math.abs(sky.hit[0] - s0);
+
+    /* THE SKY MOVED BY EXACTLY THE ANGLE TURNED, which is what makes it a frame:
+       it is at infinity and a step sideways cannot shift it. */
+    near(Math.round(skyMove * 100) / 100, Math.round(AT.W / AT.FOV * 0.04 * 100) / 100);
+
+    /* AND EVERYTHING IN THE FIELD OUTRAN IT, by more the nearer it is. Stated as
+       the EXCESS over the sky, because that quantity is exactly zero for a camera
+       turning on its own optical centre -- which is what this used to be tested
+       against, and a bare `near > far` passed with the neck set to a
+       ten-thousandth. Measured over a 2.3 degree turn: the nearest quarter of the
+       field averages 4.9 away and slides 47.5 pixels, the farthest quarter
+       averages 8.0 and slides 41.8, and the sky slides 33.0. Take the neck away
+       and all three read 33.0 and both excesses are nil. */
+    const cut = Math.floor(rows.length / 4);
+    const mean = r => r.reduce((s, x) => s + x[1], 0) / r.length;
+    const nearX = mean(rows.slice(0, cut)) - skyMove;
+    const farX = mean(rows.slice(-cut)) - skyMove;
+    ok(farX > 4, `even the far quarter must outrun the sky, got ${farX.toFixed(1)}px`);
+    ok(nearX > farX * 1.4,
+       `near quarter ${nearX.toFixed(1)}px against far quarter ${farX.toFixed(1)}px`);
   });
 
   await T('walking moves the shop and leaves the sky where it was', () => {
@@ -648,22 +656,21 @@
     ok(rim < middle, `sparsest heading: ${rim} at the rim against ${middle} in the middle`);
   });
 
-  await T('each measure is one line through the middle, named at both ends', () => {
-    AT.STAND = [0, 0, 0]; AT.draw();
-    eq(ATD.lines.length, 5);
-    for (const l of ATD.lines) {
-      const along = AT.dot(AT.EYE, l.dir);
-      const q = l.dir.map((d, i) => AT.EYE[i] - along * d);
-      const n = AT.unit([q[1]*l.dir[2] - q[2]*l.dir[1],
-                         q[2]*l.dir[0] - q[0]*l.dir[2],
-                         q[0]*l.dir[1] - q[1]*l.dir[0]]);
-      /* the middle of the shop lies in the plane every one of these arcs sweeps,
-         so all five cross there and nowhere else */
-      ok(Math.abs(AT.dot(n, AT.unit(AT.EYE))) < 1e-9, l.ax + ' misses the middle');
-      const ends = AT.POLES.filter(p => p.ax === l.ax);
+  await T('every measure is named at both ends, and the ends are opposite', () => {
+    eq(AT.POLES.length, 10);
+    for (const a of A) {
+      const ends = AT.POLES.filter(p => p.ax === a);
       eq(ends.length, 2);
-      ok(AT.dot(ends[0].dir, ends[1].dir) < -0.9999, l.ax + ' ends are not opposite');
+      eq([ends[0].w, ends[1].w], S.ends[a], a);
+      ok(AT.dot(ends[0].dir, ends[1].dir) < -0.9999, a + ' ends are not opposite');
     }
+  });
+
+  await T('the measures are no longer drawn as arcs across the shop', () => {
+    /* Five great circles crossing at the middle of the view read as a starburst
+       laid over the thing they were framing. Gone, and their data with them. */
+    ok(!ATD.lines, 'the arcs\' own field is not shipped either');
+    ok(!AT.skyLine, 'nor is the routine that drew them');
   });
 
   await T('you can turn to face age, which stands overhead', () => {
@@ -716,6 +723,12 @@
     const w = S.wines[big.i];
     A.forEach(a => ok(txt.includes(S.ends[a][w[a] >= 0.5 ? 1 : 0]), a + ' end named'));
     ok(box.innerHTML.includes(S.colors[A[0]]), 'each bar in its own measure\'s colour');
+    /* what it IS comes before anything measured: the colour of the wine is the
+       first thing anybody reads about a bottle */
+    ok(/Red|White|Ros/.test(txt), 'red, white or pink: ' + txt.slice(0, 60));
+    if (ATD.fizz[big.i]) ok(txt.includes('sparkling'), 'and says so when it sparkles');
+    if (w.vintage) ok(txt.includes(String(Math.round(w.vintage))), 'and the year');
+    ok(box.querySelector('.kind i'), 'with the wine\'s own colour beside it');
   });
 
   await T('ticking a word turns you to face the wines described that way', async () => {
@@ -799,13 +812,109 @@
     ok(el('atlasGlobe').style.display !== 'none', 'G brings it back');
   });
 
-  await T('leaning in narrows the view and step back undoes it', () => {
-    const wide = AT.WIDE;
-    AT.FOV = wide;
+  await T('it opens narrower than a head, because 1,652 glasses need the room', () => {
+    /* A hundred and twenty degrees is what a head takes in; putting it in a
+       thousand pixels leaves each glass five across and the colour of the wine
+       -- the first thing anybody reads about a bottle -- gone. */
+    ok(AT.OPEN < AT.WIDE * 0.7, 'opens well inside the full field');
+    ok(AT.OPEN > AT.WIDE * 0.5, 'and is still a wide view, not a telescope');
+    AT.FOV = AT.OPEN; AT.STAND = [0, 0, 0]; AT.yaw = 0; AT.pitch = 0;
+    const near = AT.draw() || AT.WMARK.filter(m => m.node).length;
+    AT.FOV = AT.WIDE; AT.draw();
+    const all = AT.WMARK.filter(m => m.node).length;
+    ok(all > near * 1.4, `the full field crowds in ${all} against ${near}`);
+    AT.FOV = AT.OPEN;
+  });
+
+  await T('leaning in narrows the view and step back returns to where it opened', () => {
+    AT.FOV = AT.OPEN;
     cvA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, clientX: 0, clientY: 0 }));
     ok(el('atlasWide').style.display === '', 'the way back appears');
     el('atlasWide').click();
+    frames(60);
     ok(el('atlasWide').style.display === 'none', 'and goes again');
+    ok(Math.abs(AT.FOV - AT.OPEN) < 0.02, 'back at the field it opened at');
+  });
+
+  await T('the shop can fill the screen, and esc gives the page back', () => {
+    const box = cvA.parentElement;
+    const small = cvA.getBoundingClientRect().width;
+    el('atlasBig').click();
+    ok(box.classList.contains('big'), 'expanded');
+    const big = cvA.getBoundingClientRect().width;
+    ok(big > small * 1.15, `${Math.round(big)} against ${Math.round(small)}`);
+    eq(AT.W, Math.round(big), 'and it measured itself on the way in');
+    eq(document.body.style.overflow, 'hidden', 'the page behind does not scroll');
+    dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    ok(!box.classList.contains('big'), 'esc gives it back');
+    eq(document.body.style.overflow, '', 'and the page scrolls again');
+  });
+
+  await T('leaving the tab puts the screen back', () => {
+    el('atlasBig').click();
+    ok(cvA.parentElement.classList.contains('big'));
+    el('t-find').click();
+    ok(!cvA.parentElement.classList.contains('big'), 'no overlay left behind');
+    el('t-atlas').click();
+  });
+
+  await T('a word lights the wines described that way and quiets the rest', () => {
+    el('atlasClear').click();
+    ok(!AT.onlyThese, 'nothing asked for, nothing quieted');
+    AT.STAND = [0, 0, 0]; AT.yaw = Math.PI; AT.pitch = 0; AT.draw();
+    const before = AT.WMARK.filter(m => m.node).map(m => m.node[3]);
+    const bright = before.filter(a => a > 0.4).length;
+    [...el('atlasWords').children].find(r => r.dataset.w === 'cedar').click();
+    eq(AT.onlyThese.size, AT.TERMS.find(t => t.w === 'cedar').n, '173 cedar wines');
+    AT.draw();
+    const seen = AT.WMARK.filter(m => m.node);
+    const lit = seen.filter(m => AT.onlyThese.has(m.i));
+    const quiet = seen.filter(m => !AT.onlyThese.has(m.i));
+    ok(lit.length && quiet.length, 'both kinds are in view');
+    const avg = xs => xs.reduce((s, m) => s + m.node[3], 0) / xs.length;
+    ok(avg(lit) > avg(quiet) * 2, `lit ${avg(lit).toFixed(2)} against quiet ${avg(quiet).toFixed(2)}`);
+    /* the rest go quiet, they do not go away: a shop you cannot see past is
+       still the shop, and walking still carries you among them */
+    ok(quiet.every(m => m.node[3] > 0.1), 'nothing fades to nothing');
+    ok(AT.WMARK.filter(m => m.node).length > bright * 0.5, 'the shop is still there');
+    el('atlasClear').click();
+    ok(!AT.onlyThese, 'clear puts the whole shop back');
+  });
+
+  await T('a sparkling wine is a flute, and the catalogue\'s own flag is not asked', () => {
+    const fizz = ATD.fizz;
+    eq(fizz.length, S.wines.length);
+    const named = S.wines.filter((w, i) => fizz[i]);
+    ok(named.length > 40 && named.length < 110, named.length + ' sparkling');
+    for (const w of named)
+      ok(/champagne|prosecco|cava|cr[ée]mant|franciacorta|spumante|frizzante|p[ée]tillant|pet[-\s]?nat|sparkling|blanc de |brut|sekt|lambrusco|asti|bubbles|spritz|glera|champenoise|classico/i
+         .test(w.name + ' ' + (w.variety || '') + ' ' + (w.region || '')), w.name);
+    /* the flag says Cheval Blanc 1928 is sparkling. It is not. */
+    const cb = S.wines.findIndex(w => w.name === 'Chateau Cheval Blanc 1928');
+    ok(cb >= 0 && S.wines[cb].sparkling === true, 'the flag really does say so');
+    ok(!fizz[cb], 'and the page really does not');
+    /* The SILHOUETTE is what carries it, since half of these are white and half
+       are red and a colour cannot say both things at once. Measured: one glass
+       of each drawn alone on the canvas, and the flute's bowl must be plainly
+       the narrower of the two at the rim. */
+    const ctx = cvA.getContext('2d');
+    const dpr = cvA.width / AT.W;
+    const rimWidth = k => {
+      ctx.clearRect(0, 0, AT.W, AT.H);
+      AT.glass(AT.W / 2, AT.H / 2, 24, k, 1, false);
+      const y = Math.round((AT.H / 2 - 24 * 0.75) * dpr);
+      const row = ctx.getImageData(0, y, cvA.width, 1).data;
+      let lo = -1, hi = -1;
+      for (let x = 0; x < cvA.width; x++) {
+        if (row[x * 4 + 3] > 24) { if (lo < 0) lo = x; hi = x; }
+      }
+      return (hi - lo) / dpr;
+    };
+    const flute = rimWidth(S.wines.findIndex((w, i) => fizz[i]));
+    const bowl = rimWidth(S.wines.findIndex((w, i) => !fizz[i]));
+    AT.draw();
+    ok(flute > 2 && bowl > 2, `both were drawn: ${flute.toFixed(1)} / ${bowl.toFixed(1)}`);
+    ok(bowl > flute * 1.4, `a bowl ${bowl.toFixed(1)} against a flute ${flute.toFixed(1)}`);
   });
 
   await T('the atlas reads the same whatever the window is', async () => {

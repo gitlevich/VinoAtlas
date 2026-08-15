@@ -120,17 +120,15 @@ def test_a_pole_wears_the_colour_of_its_own_end_of_its_own_slider(out):
             'maturity': ['#87a733', '#96502a']}
     for p in out['poles']:
         assert p['col'] == ends[p['ax']][p['end']]
-    for l in out['lines']:
-        assert [l['lo'], l['hi']] == ends[l['ax']]
 
 
-def test_each_measure_is_one_line_and_it_runs_through_its_own_two_poles(out):
-    for l in out['lines']:
-        lo, hi = [p for p in out['poles'] if p['ax'] == l['ax']]
-        d = np.array(l['dir'])
-        assert np.allclose(d, np.array(hi['dir']), atol=1e-4)
-        assert np.allclose(-d, np.array(lo['dir']), atol=1e-4)
-        assert l['str'] == hi['str']
+def test_nothing_is_shipped_that_the_page_does_not_read(out):
+    """The five measures were once drawn as arcs across the sky and are not any
+    more -- they read as a starburst over the shop. The arcs are gone, so their
+    field goes with them: a carried field is eventually stated by accident."""
+    assert 'lines' not in out
+    assert set(out) == {'axes', 'poles', 'terms', 'near', 'far', 'kept3', 'var',
+                        'pos', 'lean', 'col', 'fizz', 'acc', 'dist'}
 
 
 # ---------------------------------------------------------------- the wines
@@ -172,7 +170,7 @@ def test_the_middling_wine_is_the_near_one_and_the_committed_one_is_far(src, out
 
 def test_every_shipped_field_is_one_per_wine_and_in_the_catalogue_order(src, out):
     n = len(src['wines'])
-    for k in ('pos', 'lean', 'col', 'acc', 'dist'):
+    for k in ('pos', 'lean', 'col', 'acc', 'dist', 'fizz'):
         assert len(out[k]) == n, k
     # order: the reddest and the palest wine in the catalogue must land on the
     # colour the same index carries
@@ -197,9 +195,45 @@ WHITE_GRAPES = ('chardonnay', 'sauvignon blanc', 'chenin blanc', 'riesling',
 def test_a_white_grape_makes_a_white_wine(src, out):
     for w, c in zip(src['wines'], out['col']):
         v = (w.get('variety') or '').lower()
-        if not v or 'ros' in v:
+        txt = ' '.join(str(w.get(k) or '') for k in ('name', 'variety', 'region'))
+        if not v or re.search(r'\b(ros[ée]|rosato|rosado|chiaretto|blush)\b', txt, re.I):
             continue
         assert c == ('white' if any(g in v for g in WHITE_GRAPES) else 'red'), (v, c)
+
+
+def test_a_wine_is_pink_when_it_says_it_is(src, out):
+    pink = [w for w, c in zip(src['wines'], out['col']) if c == 'rose']
+    assert 20 < len(pink) < 60, len(pink)
+    for w in pink:
+        txt = ' '.join(str(w.get(k) or '') for k in ('name', 'variety', 'region'))
+        assert re.search(r'\b(ros[ée]|rosato|rosado|chiaretto|blush)\b', txt, re.I), w['name']
+    # and the word must not be caught inside another: Gruaud Larose is a red
+    assert not any('Larose' in w['name'] or 'Montrose' in w['name'] for w in pink)
+
+
+def test_the_catalogues_sparkling_flag_is_not_what_decides_a_flute(src, out):
+    """It marks Chateau Cheval Blanc 1928, Haut Brion 1937 and Ausone 2005 as
+    sparkling. It is right about Prosecco and Cava and wrong about first-growth
+    Bordeaux, and nothing in the flag says which kind of answer you are holding.
+    So a wine sparkles here when its own name, grape or region says so, and every
+    one of those can be checked by reading it."""
+    flag = {w['name'] for w in src['wines'] if w.get('sparkling')}
+    fizz = {w['name'] for w, f in zip(src['wines'], out['fizz']) if f}
+    for wrong in ('Chateau Cheval Blanc 1928', 'Chateau Haut Brion 1937'):
+        assert wrong in flag, 'the flag really does say this'
+        assert wrong not in fizz, 'and the page really does not'
+    assert 40 < len(fizz) < 110, len(fizz)
+    for name in fizz:
+        assert re.search(r'champagne|prosecco|cava|cr[ée]mant|franciacorta|spumante|'
+                         r'frizzante|p[ée]tillant|pet[-\s]?nat|sparkling|blanc de |brut|'
+                         r'sekt|lambrusco|asti|bubbles|spritz|glera|champenoise|classico',
+                         name + ' ' + ' '.join(
+                             str(w.get(k) or '') for w in src['wines'] if w['name'] == name
+                             for k in ('variety', 'region')), re.I), name
+    # every Prosecco in the shop is one, because Glera is only made sparkling
+    proseccos = {w['name'] for w in src['wines']
+                 if re.search(r'prosecco|glera', w['name'] + ' ' + (w.get('variety') or ''), re.I)}
+    assert proseccos <= fizz, proseccos - fizz
 
 
 def test_the_measures_are_asked_only_when_no_grape_is_named(src, out):
