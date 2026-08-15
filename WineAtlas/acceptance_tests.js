@@ -1053,6 +1053,31 @@
     el('atlasBig').click();
   });
 
+  await T('the sommelier is shown everything the reader is shown', () => {
+    /* It had the shop as name, grape, region and five numbers -- and nothing
+       else, which is why it could say what his earliest order was LIKE and not
+       which bottle it was. */
+    const st = lensSystem(parseSpell('')).stat;
+    const o1 = S.orders.find(o => o.ids && o.ids.length);
+    const w1 = S.wines.find(w => w.id === o1.ids[0]);
+    ok(st.includes('Order ' + o1.n + ' ('), 'the ten orders are there');
+    ok(st.includes(w1.name), 'by the bottles they actually held: ' + w1.name);
+    /* which are his */
+    const mine = S.wines.find(w => OWNED.has(w.id));
+    const line = st.split('\n').find(l => l.startsWith(mine.name + ' |'));
+    ok(line && line.includes('| HIS'), 'his own are marked: ' + mine.name);
+    const theirs = S.wines.find(w => !OWNED.has(w.id));
+    const l2 = st.split('\n').find(l => l.startsWith(theirs.name + ' |'));
+    ok(l2 && !l2.includes('| HIS'), 'and the shop\'s are not');
+    /* and what the Atlas says about them, in the same words the list offers */
+    const t = AT.TERMS[0];
+    const k = t.in[0];
+    const l3 = st.split('\n').find(l => l.startsWith(S.wines[k].name + ' |'));
+    ok(l3 && l3.includes(t.w), `the words are there: ${t.w} on ${S.wines[k].name}`);
+    eq(catalogText().split('\n').filter(l => l.includes(' | HIS')).length,
+       S.wines.filter(w => OWNED.has(w.id)).length, 'all of them, none invented');
+  });
+
   await T('everything the reader can do in the space, the sommelier can do', () => {
     /* Parity. It turns, walks, changes the field, ticks a word, folds a panel,
        fills the screen and points at a bottle. It cannot mark a wine right or

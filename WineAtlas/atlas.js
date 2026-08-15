@@ -1487,6 +1487,9 @@ function act(a) {
     showZoom();
   }
   if (typeof a.walk === 'number') glide(a.walk);
+  if (a.globe !== undefined) toggleGlobe(!!a.globe);
+  if (a.help !== undefined) help(!!a.help);
+  if (a.approach) beginApproach();     // and see what holds frame on the way
   if (a.point) {
     const i = S.wines.findIndex(w => w.name.toLowerCase() === String(a.point).toLowerCase());
     if (i >= 0) { pointWant = i; pointTries = 0; }

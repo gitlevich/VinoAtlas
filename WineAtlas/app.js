@@ -556,8 +556,28 @@ Held on his radar: ${pin||'nothing'}.
 Wines he has marked so far: ${marks}.
 Hiding wines he already bought: ${hideOwned?'yes':'no'}. Hiding ones he already marked: ${hideVoted?'yes':'no'}.`;
 }
-const CATALOG_TEXT=S.wines.map(w=>
-  `${w.name} | ${[w.variety,w.region].filter(Boolean).join(', ')||'-'} | `+A.map(a=>w[a].toFixed(2)).join(' ')).join('\n');
+/* WHAT THE SOMMELIER IS GIVEN. It had the shop as name, grape, region and five
+   numbers -- and nothing else, which is why it could say what his earliest order
+   was LIKE and not which bottle it was. It now sees what he sees: which wines are
+   his, what year, what the Atlas words say about each, and what was actually in
+   each of the ten orders. Built at send time, since the Atlas words come from
+   the Atlas and it is assembled after this. */
+function catalogText(){
+  const words=[];
+  try{ for(const t of ATLAS.D.terms) for(const i of t.in) (words[i]=words[i]||[]).push(t.w); }catch(_){}
+  return S.wines.map((w,i)=>
+    `${w.name} | ${w.vintage?Math.round(w.vintage):'NV'} | `
+    +`${[w.variety,w.region].filter(Boolean).join(', ')||'-'} | `
+    +A.map(a=>w[a].toFixed(2)).join(' ')
+    +(OWNED.has(w.id)?' | HIS':'')
+    +(words[i]&&words[i].length?' | '+words[i].join(' '):'')).join('\n');
+}
+function ordersText(){
+  const o=S.orders.filter(x=>x.ids&&x.ids.length);
+  return o.map(x=>`Order ${x.n} (${x.ids.length}): `
+    +x.ids.map(id=>{const w=S.wines.find(y=>y.id===id);return w?w.name:'#'+id;}).join('; ')
+    +' -- '+A.map(a=>`${a}=${x[a].toFixed(2)}`).join(' ')).join('\n');
+}
 function lensSystem(sp){
   const axes=A.map(a=>`${a}: ${S.labels[a]}, 0 = ${S.ends[a][0]}, 1 = ${S.ends[a][1]}`).join('\n');
   const rw=sp.wines.map(w=>`"${w.name}" (${[w.variety,w.region].filter(Boolean).join(', ')}): `+
@@ -580,12 +600,16 @@ The user may name a measure with #weight #grip #oak #fruit #age; "more #oak" mea
 Answer with JSON only, nothing else:
 {"say":"one short plain sentence answering the user","point":{"weight":n,"grip":n,"oak":n,"fruit":n,"maturity":n},"hold":{"oak":[0,0.3]},"act":{"tab":"find","kind":0,"heading":true,"hideOwned":false,"hideVoted":false,"pin":"exact wine name","show":"sigil","like":["exact wine name"],"writeTaste":true}}
 "say" is required: one short plain sentence for the user. Send "point" only when the user's words move the point; send "hold" only for a stated hard requirement, as [low, high] on 0..1.
-"atlas" drives the space in the Atlas tab, and it opens that tab first: {"face":"a pole, a word in the list, or a wine by name"} turns him to face it, {"faceTo":[x,y,z]} turns him to a bearing, {"zoom":0..1} sets how close he is looking (0 the whole field, 1 the closest), {"walk":0.5} steps him forward and a negative number back, {"tick":["cedar"],"untick":["citrus"]} light the wines described that way, {"clear":true} unticks everything, {"point":"a wine by name"} turns to it and opens its card, {"words":false} and {"sommelier":false} fold the side panels, {"screen":true} fills the window. "tour" takes him through his ten orders in that space, oldest to newest, saying what moved between each -- offer it when he asks how his buying has changed, or how to read the Atlas.
+"atlas" drives the space in the Atlas tab, and it opens that tab first: {"face":"a pole, a word in the list, or a wine by name"} turns him to face it, {"faceTo":[x,y,z]} turns him to a bearing, {"zoom":0..1} sets how close he is looking (0 the whole field, 1 the closest), {"walk":0.5} steps him forward and a negative number back, {"tick":["cedar"],"untick":["citrus"]} light the wines described that way, {"clear":true} unticks everything, {"point":"a wine by name"} turns to it and opens its card, {"globe":false} hides the globe, {"help":true} opens what-you-can-do, {"approach":true} carries him toward what he is facing and marks what stayed in frame on the way, {"words":false} and {"sommelier":false} fold the side panels, {"screen":true} fills the window. "tour" takes him through his ten orders in that space, oldest to newest, saying what moved between each -- offer it when he asks how his buying has changed, or how to read the Atlas.
 "act" drives the page itself -- everything the user can click except his marks and Reset. Each field is optional: "tab" opens a section (find = the finder; palate = his wines against the shelf; move = how his buying changed; pop = what happens to a drinker's first decade; how = what the words mean), "kind" presses one of his four kind buttons (0 to 3, the order listed above), "heading" sets the point to where his buying is heading, "hideOwned"/"hideVoted" set the finder's filters, "pin" holds a named wine's shape on his radar (null releases it), "show" brings one part of the page into view and rings it -- one of: sigil (the whole taste card), measures (the five band sliders), shape (the five-cornered drawing of his taste), list (the wines found), ask (this sommelier panel), kinds (his four buying kinds), filters (the two hiding switches), marks (the button that downloads his marks). "like" sets the point to the middle of the named wines, exactly as if he had named them himself; "writeTaste" measures the bands his own buying stays inside and writes them into this box for him to correct. Use "act" when his words ask to see, learn, or do something, never to decorate. Everything he can do here, you can do -- except marking a wine right or wrong, and Reset. Those are his: his marks are the measurement, and you must never cast them.
 In "say", the only measure names allowed are: body, tannin grip, oak, fruit character, age. The JSON key for age is "maturity"; in speech it is always age. The interface calls the point "the wine you are asking for" -- use that phrase when you refer to it, never "the point".
 
-The shop's list -- every wine the tool can surface, as: name | grape, region | ${A.join(' ')}:
-${CATALOG_TEXT}`;
+His ten orders, oldest to newest, with what was actually in each:
+${ordersText()}
+
+The shop's list -- every wine the tool can surface, as:
+name | vintage | grape, region | ${A.join(' ')} | HIS if it is on his account | the words the shop's notes use for it:
+${catalogText()}`;
   const dyn=`${observeApp()}
 ${rw?`Wines the user pointed at with @ (measured coordinates -- trust these over anything you know about the wine):\n${rw}\n`:''}${gl?`The measured lexicon grounds the user's loose words: ${gl} -- trust these mappings.`:''}`.trim();
   return {stat,dyn};
