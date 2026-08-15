@@ -1043,10 +1043,12 @@
     const box = id => el(id).getBoundingClientRect();
     const over = (a, b) => a.left < b.right && a.right > b.left
                         && a.top < b.bottom && a.bottom > b.top;
-    const [big, list, ask] = ['atlasBig', 'atlasList', 'atlasAsk'].map(box);
+    const [big, list, somm, ask] = ['atlasBig', 'atlasList', 'atlasSomm', 'atlasAsk'].map(box);
     ok(!over(big, list), '"back to the page  esc" is wide and the words button sat on its tail');
-    ok(!over(list, ask), 'and the question mark on that');
-    ok(big.right <= list.left && list.right <= ask.left, 'in order, left to right');
+    ok(!over(list, somm), 'and the sommelier on that');
+    ok(!over(somm, ask), 'and the question mark on that');
+    ok(big.right <= list.left && list.right <= somm.left && somm.right <= ask.left,
+       'in order, left to right');
     /* and how close you are looking is docked to where you are looking */
     ok(el('atlasGlobe').contains(el('atlasZoom')), 'the handle lives in the globe');
     ok(box('atlasZoom').top >= box('atlasMini').bottom - 1, 'under the ball, not beside it');
@@ -1212,6 +1214,43 @@
     el('atlasBig').click();
     ok(!cvA.parentElement.contains(sd), 'and back to its own column on the way out');
     ok(getComputedStyle(sd).display !== 'none', 'still there');
+  });
+
+  await T('the sommelier follows the shop onto the full screen too, and folds away', () => {
+    /* Both panels are equally useful in here: the words are what the view is
+       written in, and the sommelier can drive every control in it. So both
+       travel, each keeps the side it holds on the page, and each folds by its
+       own toggle -- the two standing side by side, because they are peers. */
+    const ch = document.querySelector('.chat'), sd = document.querySelector('.atlas-side');
+    const box = n => n.getBoundingClientRect();
+    el('atlasBig').click();
+    ok(cvA.parentElement.contains(ch), 'the sommelier came with it');
+    ok(getComputedStyle(ch).display !== 'none', 'and is showing');
+    /* the same height as the words, on the other side */
+    const c = box(ch), s = box(sd);
+    ok(Math.abs(c.top - s.top) < 2 && Math.abs(c.bottom - s.bottom) < 2,
+       'the two drawers stand the same height');
+    ok(s.right < c.left, 'words left, sommelier right, as on the page');
+    ok(box(cvA).right - c.right < 20, 'against the right edge');
+    /* and it is usable, not merely readable: what he types stays in view */
+    ok(box(ask).bottom < c.bottom, 'the box he types in is inside the drawer');
+    ok(box(el('msgs')).bottom <= box(ask).top + 1, 'with what was said above it');
+    /* the ball is a reference and must not be sat on */
+    const g = box(el('atlasGlobe'));
+    ok(g.right <= c.left, 'the globe stands aside for it');
+    el('atlasSomm').click();
+    eq(getComputedStyle(ch).display, 'none', 'folded away');
+    ok(box(el('atlasGlobe')).right > c.left, 'and the globe takes the corner back');
+    el('atlasSomm').click();
+    ok(getComputedStyle(ch).display !== 'none', 'and back');
+    /* the two fold independently */
+    el('atlasList').click();
+    eq(getComputedStyle(sd).display, 'none', 'the words alone');
+    ok(getComputedStyle(ch).display !== 'none', 'the sommelier stays');
+    el('atlasList').click();
+    el('atlasBig').click();
+    ok(!cvA.parentElement.contains(ch), 'and back to its own column on the way out');
+    ok(getComputedStyle(ch).display !== 'none', 'still there');
   });
 
   await T('leaving the tab puts the screen back', () => {

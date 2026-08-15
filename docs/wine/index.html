@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>Cellar Compass</title></head><body><title>Cellar Compass — Mark's palate, mapped</title>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3ClinearGradient%20id%3D%22gw%22%20gradientUnits%3D%22userSpaceOnUse%22%20x1%3D%220%22%20y1%3D%228.01%22%20x2%3D%220%22%20y2%3D%2218.37%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22hsl%284%2C65%25%2C58%25%29%22/%3E%3Cstop%20offset%3D%22.35%22%20stop-color%3D%22hsl%284%2C71%25%2C45%25%29%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22hsl%288%2C75%25%2C31%25%29%22/%3E%3C/linearGradient%3E%3CclipPath%20id%3D%22gb%22%3E%3Cpath%20d%3D%22M6.69%200.50C6.69%2012.30%2011.90%2018.37%2016.00%2018.37C20.10%2018.37%2025.31%2012.30%2025.31%200.50Z%22/%3E%3C/clipPath%3E%3Cg%20clip-path%3D%22url%28%23gb%29%22%3E%3Crect%20x%3D%226.69%22%20y%3D%220.50%22%20width%3D%2218.62%22%20height%3D%227.51%22%20fill%3D%22%238e8e96%22%20fill-opacity%3D%22.16%22/%3E%3Crect%20x%3D%226.69%22%20y%3D%228.01%22%20width%3D%2218.62%22%20height%3D%2210.37%22%20fill%3D%22url%28%23gw%29%22/%3E%3Crect%20x%3D%227.99%22%20y%3D%223.00%22%20width%3D%221.30%22%20height%3D%2210.72%22%20fill%3D%22%23fff%22%20fill-opacity%3D%22.34%22/%3E%3C/g%3E%3Cpath%20d%3D%22M6.69%200.50C6.69%2012.30%2011.90%2018.37%2016.00%2018.37C20.10%2018.37%2025.31%2012.30%2025.31%200.50%22%20fill%3D%22none%22%20stroke%3D%22%238e8e96%22%20stroke-width%3D%221.10%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M16.00%2018.37L16.00%2029.55%22%20stroke%3D%22%238e8e96%22%20stroke-width%3D%221.58%22/%3E%3Cpath%20d%3D%22M9.67%2029.92L22.33%2029.92%22%20stroke%3D%22%238e8e96%22%20stroke-width%3D%222.53%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E"><title>Cellar Compass</title></head><body><title>Cellar Compass — Mark's palate, mapped</title>
 <style id="cc-css">
 :root{
   color-scheme:light;
@@ -322,7 +322,10 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-shut:hover{color:var(--ink);background:var(--raise)}
 .atlas-shut:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 .atlas-shut svg{width:15px;height:15px;display:block}
-.atlas-view.big .atlas-side .panelhead .atlas-shut{display:none}
+/* on the full screen each panel is folded by its own toggle in the bar, so the
+   chevron inside its head would be a second way to do the one thing */
+.atlas-view.big .atlas-side .panelhead .atlas-shut,
+.atlas-view.big>.chat .chathead .atlas-shut{display:none}
 /* the sommelier is text, and text is read and copied */
 .atlas .chat{-webkit-user-select:text;user-select:text}
 @media(max-width:1250px){.atlas,.atlas.nowords{grid-template-columns:236px minmax(0,1fr)}
@@ -435,26 +438,44 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-grow svg{width:15px;height:15px;display:block}
 .atlas-grow .in{display:none}
 .atlas-grow span::after{content:"fill the screen"}
-/* the words follow the shop onto the full screen. They are referenced by
-   everything the view says, so losing them there loses half the tab. */
-.atlas-list{display:none;align-items:center;
+/* BOTH PANELS FOLLOW THE SHOP ONTO THE FULL SCREEN. The words are referenced by
+   everything the view says and the sommelier can drive every one of these
+   controls, so leaving either behind loses half the tab. Peers, so their two
+   toggles stand side by side in the one bar, and each panel keeps the side it
+   holds on the page. */
+.atlas-tab{display:none;align-items:center;
   gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;font:inherit;font-size:11.5px;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
   transition:opacity .12s,color .12s}
-.atlas-list{display:none}
-.atlas-view.big .atlas-list{display:flex}
-.atlas-list[aria-pressed="false"]{opacity:.55}
-.atlas-list[aria-pressed="true"]{opacity:1;color:var(--ink);border-color:var(--ink-3)}
-.atlas-list:hover{opacity:1;color:var(--ink)}
-.atlas-list:focus-visible{outline:2px solid var(--mark);outline-offset:2px;opacity:1}
-.atlas-list svg{width:14px;height:14px;display:block}
-.atlas-view.big .atlas-side{position:absolute;left:12px;top:50px;bottom:58px;width:262px;z-index:6;
-  padding:13px 14px;border-radius:10px;background:var(--panel);border:1px solid var(--rule);
+.atlas-view.big .atlas-tab{display:flex}
+.atlas-tab[aria-pressed="false"]{opacity:.55}
+.atlas-tab[aria-pressed="true"]{opacity:1;color:var(--ink);border-color:var(--ink-3)}
+.atlas-tab:hover{opacity:1;color:var(--ink)}
+.atlas-tab:focus-visible{outline:2px solid var(--mark);outline-offset:2px;opacity:1}
+.atlas-tab svg{width:14px;height:14px;display:block}
+.atlas-view.big .atlas-side,
+.atlas-view.big>.chat{position:absolute;top:50px;bottom:58px;z-index:6;
   box-shadow:0 10px 34px rgba(0,0,0,.45)}
-.atlas-view.big.nowords .atlas-side{display:none}
+.atlas-view.big .atlas-side{left:12px;width:262px;padding:13px 14px;
+  border-radius:10px;background:var(--panel);border:1px solid var(--rule)}
+/* the sommelier is already a card and brings its own ground; it is only put
+   where it goes. What was said grows into the height it is given and scrolls
+   there -- the card itself must not scroll, or the box you type in goes below
+   the fold and the panel is something to read rather than something to use. */
+.atlas-view.big>.chat{right:12px;width:330px;margin:0;overflow:hidden}
+.atlas-view.big>.chat .msgswrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.atlas-view.big>.chat #msgs{height:auto;flex:1 1 auto;min-height:0;resize:none}
+.atlas-view.big.nowords .atlas-side,
+.atlas-view.big.nochat>.chat{display:none}
 .atlas-view.big .atlas-side h2{margin-bottom:8px}
 .atlas-view.big .awlist{max-height:none}
-.atlas-view.big #atlasHelp{right:12px;top:50px}
+/* the ball is a reference and must not be sat on: it stands aside for the
+   sommelier, unless the reader has dragged it somewhere himself */
+.atlas-view.big:not(.nochat) #atlasGlobe{right:354px}
+.atlas-view.big:not(.nochat) #atlasFacing{padding:0 594px 0 26px}
+/* what-you-can-do is asked for and then dismissed, so it stands over the panel
+   it lands on rather than moving it */
+.atlas-view.big #atlasHelp{right:12px;top:50px;z-index:8}
 .atlas-ask{position:absolute;right:12px;top:12px;z-index:5;width:26px;height:26px;padding:0;
   border-radius:50%;cursor:pointer;font:inherit;font-size:12px;font-weight:600;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
@@ -490,7 +511,15 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   #atlasMini{width:158px;height:158px}
   #atlasFacing{padding:0 172px 0 14px;bottom:44px}
   #atlasHelp{width:auto;left:10px;right:10px}
-  .atlas-ask{left:146px}
+  /* the bar now carries a toggle for each panel, so the question mark keeps to
+     its own corner rather than being tucked in beside them */
+  /* On the full screen both drawers float over the shop, and at this width two
+     of them at their own size leave a slot instead of a room. They give way
+     rather than the shop doing so; either one folds and it opens right up. */
+  .atlas-view.big .atlas-side{width:176px;padding:11px 12px}
+  .atlas-view.big>.chat{width:268px}   /* narrower and what he types runs under the tally */
+  .atlas-view.big:not(.nochat) #atlasGlobe{right:292px}
+  .atlas-view.big:not(.nochat) #atlasFacing{padding:0 304px 0 14px}
 }
 </style>
 <div class="wrap">
@@ -775,11 +804,17 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
           </svg>
           <span></span>
         </button>
-        <button id="atlasList" class="atlas-list" aria-label="Show or hide the words">
+        <button id="atlasList" class="atlas-tab" aria-label="Show or hide the words">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h10"/></svg>
           <span>the words</span>
+        </button>
+        <button id="atlasSomm" class="atlas-tab" aria-label="Show or hide the sommelier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 5h16v11H9l-5 4z"/></svg>
+          <span>sommelier</span>
         </button>
         </div>
         <button id="atlasAsk" class="atlas-ask" aria-label="What you can do here — H">?</button>
@@ -1120,7 +1155,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='dd3b6e9c';
+const BUILD='bd63129e';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -3437,51 +3472,62 @@ el('atlasGx').onclick = e => { e.stopPropagation(); toggleGlobe(false); };
 const view = el('atlasCanvas').parentElement;
 const side = document.querySelector('.atlas-side');
 const sideHome = side.parentElement;
-/* THE SOMMELIER COMES WITH IT. It is the same one wine, the same five measures
-   and the same shop whichever tab you are on, so it moves in beside the space
-   rather than being left behind in the Find tab. It goes back on the way out,
-   and it stands aside for the full screen, where the shop wants the whole
-   window. Moved rather than copied: two of it would be two conversations. */
+/* THE SOMMELIER COMES WITH IT, ALL THE WAY. It is the same one wine, the same
+   five measures and the same shop whichever tab you are on, so it moves in
+   beside the space rather than being left behind in the Find tab -- and it
+   follows the space onto the full screen too, where it can drive every control
+   in view. It has three homes and is MOVED between them, never copied: two of
+   it would be two conversations. */
 const chat = document.querySelector('.chat');
 const chatHome = chat.parentElement;
-function chatHere(on) {
-  if (on) { if (!sideHome.contains(chat)) sideHome.appendChild(chat); }
-  else if (!chatHome.contains(chat)) chatHome.appendChild(chat);
-}
+const chatAt = where => {
+  const home = where === 'find' ? chatHome : where === 'screen' ? view : sideHome;
+  /* the parent, not an ancestor: the full screen is a child of the grid, so
+     "already there" asked deeply is true of the one place it must leave */
+  if (chat.parentElement !== home) home.appendChild(chat);
+};
+function chatHere(on) { chatAt(on ? 'atlas' : 'find'); }
 function fill(on) {
   const want = on === undefined ? !view.classList.contains('big') : on;
-  /* the word list travels with the view: on the full screen it becomes a drawer
-     inside it, and it goes back to its column on the way out */
+  /* both panels travel with the view: on the full screen each becomes a drawer
+     inside it, on the side it holds on the page, and both go back to their own
+     columns on the way out */
   if (want) view.appendChild(side); else sideHome.insertBefore(side, sideHome.firstChild);
-  chatHere(!want && live);
+  chatAt(want ? 'screen' : live ? 'atlas' : 'find');
   view.classList.toggle('big', want);
   view.classList.toggle('words', want && !atlasGrid.classList.contains('nowords'));
   view.classList.toggle('nowords', atlasGrid.classList.contains('nowords'));
+  view.classList.toggle('nochat', atlasGrid.classList.contains('nochat'));
   document.body.style.overflow = want ? 'hidden' : '';
   el('atlasBig').setAttribute('aria-label',
     want ? 'Return the shop to the page' : 'Fill the screen with the shop');
   refit();
 }
 el('atlasBig').onclick = e => { e.stopPropagation(); fill(); };
-/* Either side folds away. In the page they are columns of the grid; on the full
-   screen the words are a drawer over the view and the sommelier is not there at
-   all -- the shop wants the whole window. One button each, in the same row. */
+/* Either side folds away, and each is folded the same way wherever it stands.
+   In the page they are columns of the grid, closed by the chevron in their own
+   head and opened again by the rail left behind. On the full screen they are
+   drawers over the view, and both toggles stand side by side in the one bar:
+   peers, so one affordance, twice. */
 const atlasGrid = document.querySelector('.atlas');
+const FOLDER = { nowords: 'atlasList', nochat: 'atlasSomm' };
 function fold(which, hide) {
   atlasGrid.classList.toggle(which, hide);
   view.classList.toggle(which, hide);
   if (which === 'nowords') view.classList.toggle('words', !hide);
-  if (which === 'nowords')
-    el('atlasList').setAttribute('aria-pressed', hide ? 'false' : 'true');
+  el(FOLDER[which]).setAttribute('aria-pressed', hide ? 'false' : 'true');
   refit();
 }
-el('atlasList').onclick = e => { e.stopPropagation();
-  fold('nowords', !atlasGrid.classList.contains('nowords')); };
+const toggle = which => e => { e.stopPropagation();
+  fold(which, !atlasGrid.classList.contains(which)); };
+el('atlasList').onclick = toggle('nowords');
+el('atlasSomm').onclick = toggle('nochat');
 el('atlasWordsShut').onclick = e => { e.stopPropagation(); fold('nowords', true); };
 el('atlasWordsTab').onclick = e => { e.stopPropagation(); fold('nowords', false); };
 el('atlasChatShut').onclick = e => { e.stopPropagation(); fold('nochat', true); };
 el('atlasChatTab').onclick = e => { e.stopPropagation(); fold('nochat', false); };
 el('atlasList').setAttribute('aria-pressed', 'true');
+el('atlasSomm').setAttribute('aria-pressed', 'true');
 
 /* WHAT YOU CAN DO HERE, said as what and not as how. It is a space and a space
    does not announce itself; the one thing a reader needs is the list of acts
@@ -3741,9 +3787,8 @@ Words lit: ${[...state].join(', ') || 'none, so the whole shop is shown'}.${held
 function show(on) {
   live = on;
   el('atlasOffer').hidden = !on;          // offered where it means something
-  chatHere(on && !view.classList.contains('big'));
-  if (!on) fill(false);
-  else refit();
+  if (!on) fill(false);            // which sends both panels back where they live
+  else { chatHere(true); refit(); }
 }
 
 return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, readout, step,

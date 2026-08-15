@@ -322,7 +322,10 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-shut:hover{color:var(--ink);background:var(--raise)}
 .atlas-shut:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 .atlas-shut svg{width:15px;height:15px;display:block}
-.atlas-view.big .atlas-side .panelhead .atlas-shut{display:none}
+/* on the full screen each panel is folded by its own toggle in the bar, so the
+   chevron inside its head would be a second way to do the one thing */
+.atlas-view.big .atlas-side .panelhead .atlas-shut,
+.atlas-view.big>.chat .chathead .atlas-shut{display:none}
 /* the sommelier is text, and text is read and copied */
 .atlas .chat{-webkit-user-select:text;user-select:text}
 @media(max-width:1250px){.atlas,.atlas.nowords{grid-template-columns:236px minmax(0,1fr)}
@@ -435,26 +438,44 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-grow svg{width:15px;height:15px;display:block}
 .atlas-grow .in{display:none}
 .atlas-grow span::after{content:"fill the screen"}
-/* the words follow the shop onto the full screen. They are referenced by
-   everything the view says, so losing them there loses half the tab. */
-.atlas-list{display:none;align-items:center;
+/* BOTH PANELS FOLLOW THE SHOP ONTO THE FULL SCREEN. The words are referenced by
+   everything the view says and the sommelier can drive every one of these
+   controls, so leaving either behind loses half the tab. Peers, so their two
+   toggles stand side by side in the one bar, and each panel keeps the side it
+   holds on the page. */
+.atlas-tab{display:none;align-items:center;
   gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;font:inherit;font-size:11.5px;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
   transition:opacity .12s,color .12s}
-.atlas-list{display:none}
-.atlas-view.big .atlas-list{display:flex}
-.atlas-list[aria-pressed="false"]{opacity:.55}
-.atlas-list[aria-pressed="true"]{opacity:1;color:var(--ink);border-color:var(--ink-3)}
-.atlas-list:hover{opacity:1;color:var(--ink)}
-.atlas-list:focus-visible{outline:2px solid var(--mark);outline-offset:2px;opacity:1}
-.atlas-list svg{width:14px;height:14px;display:block}
-.atlas-view.big .atlas-side{position:absolute;left:12px;top:50px;bottom:58px;width:262px;z-index:6;
-  padding:13px 14px;border-radius:10px;background:var(--panel);border:1px solid var(--rule);
+.atlas-view.big .atlas-tab{display:flex}
+.atlas-tab[aria-pressed="false"]{opacity:.55}
+.atlas-tab[aria-pressed="true"]{opacity:1;color:var(--ink);border-color:var(--ink-3)}
+.atlas-tab:hover{opacity:1;color:var(--ink)}
+.atlas-tab:focus-visible{outline:2px solid var(--mark);outline-offset:2px;opacity:1}
+.atlas-tab svg{width:14px;height:14px;display:block}
+.atlas-view.big .atlas-side,
+.atlas-view.big>.chat{position:absolute;top:50px;bottom:58px;z-index:6;
   box-shadow:0 10px 34px rgba(0,0,0,.45)}
-.atlas-view.big.nowords .atlas-side{display:none}
+.atlas-view.big .atlas-side{left:12px;width:262px;padding:13px 14px;
+  border-radius:10px;background:var(--panel);border:1px solid var(--rule)}
+/* the sommelier is already a card and brings its own ground; it is only put
+   where it goes. What was said grows into the height it is given and scrolls
+   there -- the card itself must not scroll, or the box you type in goes below
+   the fold and the panel is something to read rather than something to use. */
+.atlas-view.big>.chat{right:12px;width:330px;margin:0;overflow:hidden}
+.atlas-view.big>.chat .msgswrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.atlas-view.big>.chat #msgs{height:auto;flex:1 1 auto;min-height:0;resize:none}
+.atlas-view.big.nowords .atlas-side,
+.atlas-view.big.nochat>.chat{display:none}
 .atlas-view.big .atlas-side h2{margin-bottom:8px}
 .atlas-view.big .awlist{max-height:none}
-.atlas-view.big #atlasHelp{right:12px;top:50px}
+/* the ball is a reference and must not be sat on: it stands aside for the
+   sommelier, unless the reader has dragged it somewhere himself */
+.atlas-view.big:not(.nochat) #atlasGlobe{right:354px}
+.atlas-view.big:not(.nochat) #atlasFacing{padding:0 594px 0 26px}
+/* what-you-can-do is asked for and then dismissed, so it stands over the panel
+   it lands on rather than moving it */
+.atlas-view.big #atlasHelp{right:12px;top:50px;z-index:8}
 .atlas-ask{position:absolute;right:12px;top:12px;z-index:5;width:26px;height:26px;padding:0;
   border-radius:50%;cursor:pointer;font:inherit;font-size:12px;font-weight:600;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
@@ -490,6 +511,14 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   #atlasMini{width:158px;height:158px}
   #atlasFacing{padding:0 172px 0 14px;bottom:44px}
   #atlasHelp{width:auto;left:10px;right:10px}
-  .atlas-ask{left:146px}
+  /* the bar now carries a toggle for each panel, so the question mark keeps to
+     its own corner rather than being tucked in beside them */
+  /* On the full screen both drawers float over the shop, and at this width two
+     of them at their own size leave a slot instead of a room. They give way
+     rather than the shop doing so; either one folds and it opens right up. */
+  .atlas-view.big .atlas-side{width:176px;padding:11px 12px}
+  .atlas-view.big>.chat{width:268px}   /* narrower and what he types runs under the tally */
+  .atlas-view.big:not(.nochat) #atlasGlobe{right:292px}
+  .atlas-view.big:not(.nochat) #atlasFacing{padding:0 304px 0 14px}
 }
 </style>

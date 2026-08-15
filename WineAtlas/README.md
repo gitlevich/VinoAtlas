@@ -62,6 +62,13 @@ it calls a control, the page answers with what it then shows, and only when it
 stops calling does it have the last word. A move it merely described is not
 possible, because there is nothing to describe until the call has been made.
 
+**Both panels come with it.** The words are what the view is written in and the
+sommelier can drive every control in it, so neither is left behind on the full
+screen: each becomes a drawer on the side it holds on the page, both stand the
+same height, and each folds by its own toggle — the two side by side in the bar,
+because they are peers. The globe stands aside for the sommelier rather than
+being sat on, unless the reader has dragged it somewhere himself.
+
 **On the crowd.** 1,652 glasses is a lot to be standing among, and three things
 answer it. The view **opens at 74°** rather than the 120° a head takes in, which
 is two and a half times fewer marks at once and a quarter more size on each — and
@@ -103,6 +110,21 @@ Writes three copies of the same page: `cellar_compass.html` (bare),
 `docs/wine/index.html` — the one GitHub Pages serves at
 `agent.farm/VinoAtlas/wine`. The first two are ignored by git; the published
 one is committed, because Pages serves what is in the repo.
+
+The wrapped copies carry a tab icon: the shop's own glass, poured to the line,
+built by `favicon()` from the same ratios `glass()` draws every wine with. The
+ratios are copied into `GLASS` in build.py rather than shared — atlas.js is
+handed to the browser, not to Python — so `test_the_tab_icon_is_the_glass_the_
+shop_is_drawn_with` holds the copy against the original and names the ratio if
+one moves. It is an SVG in the page itself, so there is no second file to lose
+and no request to make. The two things a glass takes from where it stands — the
+wine's own colour and the ground under it — an icon for the whole shop cannot
+have, so it wears a red from the middle of the range `pour()` spans and a
+neutral for the vessel.
+
+`glass_svg()` draws one at any size anywhere, which is how the landing page sets
+a glass beside the weed space's leaf — `scripts/landing_icon.py`, tested in
+`scripts/test_landing_icon.py`.
 
 ## Publish
 
@@ -147,12 +169,12 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **111 of 111 pass.**
+Every test name states an acceptance criterion. **112 of 112 pass.**
 
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from
 the catalogue by a second route and checks every claim the page makes about it:
 
-    .venv/bin/python -m pytest WineAtlas/test_atlas.py -q      # 29 pass
+    .venv/bin/python -m pytest WineAtlas/test_atlas.py -q      # 32 pass
 
 ## Settled
 

@@ -1311,51 +1311,62 @@ el('atlasGx').onclick = e => { e.stopPropagation(); toggleGlobe(false); };
 const view = el('atlasCanvas').parentElement;
 const side = document.querySelector('.atlas-side');
 const sideHome = side.parentElement;
-/* THE SOMMELIER COMES WITH IT. It is the same one wine, the same five measures
-   and the same shop whichever tab you are on, so it moves in beside the space
-   rather than being left behind in the Find tab. It goes back on the way out,
-   and it stands aside for the full screen, where the shop wants the whole
-   window. Moved rather than copied: two of it would be two conversations. */
+/* THE SOMMELIER COMES WITH IT, ALL THE WAY. It is the same one wine, the same
+   five measures and the same shop whichever tab you are on, so it moves in
+   beside the space rather than being left behind in the Find tab -- and it
+   follows the space onto the full screen too, where it can drive every control
+   in view. It has three homes and is MOVED between them, never copied: two of
+   it would be two conversations. */
 const chat = document.querySelector('.chat');
 const chatHome = chat.parentElement;
-function chatHere(on) {
-  if (on) { if (!sideHome.contains(chat)) sideHome.appendChild(chat); }
-  else if (!chatHome.contains(chat)) chatHome.appendChild(chat);
-}
+const chatAt = where => {
+  const home = where === 'find' ? chatHome : where === 'screen' ? view : sideHome;
+  /* the parent, not an ancestor: the full screen is a child of the grid, so
+     "already there" asked deeply is true of the one place it must leave */
+  if (chat.parentElement !== home) home.appendChild(chat);
+};
+function chatHere(on) { chatAt(on ? 'atlas' : 'find'); }
 function fill(on) {
   const want = on === undefined ? !view.classList.contains('big') : on;
-  /* the word list travels with the view: on the full screen it becomes a drawer
-     inside it, and it goes back to its column on the way out */
+  /* both panels travel with the view: on the full screen each becomes a drawer
+     inside it, on the side it holds on the page, and both go back to their own
+     columns on the way out */
   if (want) view.appendChild(side); else sideHome.insertBefore(side, sideHome.firstChild);
-  chatHere(!want && live);
+  chatAt(want ? 'screen' : live ? 'atlas' : 'find');
   view.classList.toggle('big', want);
   view.classList.toggle('words', want && !atlasGrid.classList.contains('nowords'));
   view.classList.toggle('nowords', atlasGrid.classList.contains('nowords'));
+  view.classList.toggle('nochat', atlasGrid.classList.contains('nochat'));
   document.body.style.overflow = want ? 'hidden' : '';
   el('atlasBig').setAttribute('aria-label',
     want ? 'Return the shop to the page' : 'Fill the screen with the shop');
   refit();
 }
 el('atlasBig').onclick = e => { e.stopPropagation(); fill(); };
-/* Either side folds away. In the page they are columns of the grid; on the full
-   screen the words are a drawer over the view and the sommelier is not there at
-   all -- the shop wants the whole window. One button each, in the same row. */
+/* Either side folds away, and each is folded the same way wherever it stands.
+   In the page they are columns of the grid, closed by the chevron in their own
+   head and opened again by the rail left behind. On the full screen they are
+   drawers over the view, and both toggles stand side by side in the one bar:
+   peers, so one affordance, twice. */
 const atlasGrid = document.querySelector('.atlas');
+const FOLDER = { nowords: 'atlasList', nochat: 'atlasSomm' };
 function fold(which, hide) {
   atlasGrid.classList.toggle(which, hide);
   view.classList.toggle(which, hide);
   if (which === 'nowords') view.classList.toggle('words', !hide);
-  if (which === 'nowords')
-    el('atlasList').setAttribute('aria-pressed', hide ? 'false' : 'true');
+  el(FOLDER[which]).setAttribute('aria-pressed', hide ? 'false' : 'true');
   refit();
 }
-el('atlasList').onclick = e => { e.stopPropagation();
-  fold('nowords', !atlasGrid.classList.contains('nowords')); };
+const toggle = which => e => { e.stopPropagation();
+  fold(which, !atlasGrid.classList.contains(which)); };
+el('atlasList').onclick = toggle('nowords');
+el('atlasSomm').onclick = toggle('nochat');
 el('atlasWordsShut').onclick = e => { e.stopPropagation(); fold('nowords', true); };
 el('atlasWordsTab').onclick = e => { e.stopPropagation(); fold('nowords', false); };
 el('atlasChatShut').onclick = e => { e.stopPropagation(); fold('nochat', true); };
 el('atlasChatTab').onclick = e => { e.stopPropagation(); fold('nochat', false); };
 el('atlasList').setAttribute('aria-pressed', 'true');
+el('atlasSomm').setAttribute('aria-pressed', 'true');
 
 /* WHAT YOU CAN DO HERE, said as what and not as how. It is a space and a space
    does not announce itself; the one thing a reader needs is the list of acts
@@ -1615,9 +1626,8 @@ Words lit: ${[...state].join(', ') || 'none, so the whole shop is shown'}.${held
 function show(on) {
   live = on;
   el('atlasOffer').hidden = !on;          // offered where it means something
-  chatHere(on && !view.classList.contains('big'));
-  if (!on) fill(false);
-  else refit();
+  if (!on) fill(false);            // which sends both panels back where they live
+  else { chatHere(true); refit(); }
 }
 
 return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, readout, step,

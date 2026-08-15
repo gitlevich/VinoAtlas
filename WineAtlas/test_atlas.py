@@ -14,6 +14,7 @@ import json
 import math
 import pathlib
 import re
+import urllib.parse
 
 import numpy as np
 import pytest
@@ -417,3 +418,61 @@ def test_the_arrangement_reproduces_from_the_catalogue_byte_for_byte(tmp_path):
     subprocess.run([sys.executable, str(HERE / 'atlas.py')], check=True,
                    capture_output=True)
     assert (HERE / 'atlas_data.json').read_bytes() == before
+
+
+def test_the_tab_icon_is_the_glass_the_shop_is_drawn_with():
+    """The favicon is built from GLASS in build.py, which is a copy of the
+    numbers glass() draws every wine with. A copy drifts unless something holds
+    it, so this is what holds it: change the glass and this fails, naming the
+    ratio that moved. The icon is then a drawing OF the mark until it is fixed.
+    """
+    import build
+
+    js = (HERE / 'atlas.js').read_text()
+    glass = js[js.index('function glass('):js.index('/* ---- the paint')]
+    # the ratio, and the line of atlas.js it has to still be sitting in
+    for name, ratio, where in [
+        ('rw', 0.50, 'R*(fz ? 0.30 : 0.50)'),
+        ('top', 0.84, 'y - R*(fz ? 0.98 : 0.84)'),
+        ('bot', 0.12, 'y + R*(fz ? 0.20 : 0.12)'),
+        ('waist', 0.66, 'dep*(fizz ? 0.90 : 0.66)'),
+        ('tuck', 0.44, 'rw*0.44'),
+        ('fill', 0.42, 'dep*(fizz ? 0.22 : 0.42)'),
+        ('stem', 0.72, 'y + R*0.72'),
+        ('foot', 0.74, 'y + R*0.74'),
+        ('footR', 0.34, 'R*0.34'),
+        ('wire', 0.085, 'R*0.085'),
+    ]:
+        assert abs(build.GLASS[name]) == ratio, (name, build.GLASS[name], ratio)
+        assert where in glass, (
+            f'the glass no longer draws {name} at {ratio}; the tab icon still does')
+
+
+def test_the_tab_icon_pours_a_red_from_the_range_the_shop_pours():
+    """Not any colour: the hue and saturation are what pour() gives a red at
+    middling maturity, and the lightness sits between the two themes' -- a tab
+    strip follows the reader's system, not the page's."""
+    import build
+
+    js = (HERE / 'atlas.js').read_text()
+    assert '[348 + 32 * m, 74 - 6 * m,' in js, 'the reds are no longer poured this way'
+    h, s, ln = (float(v.rstrip('%')) for v in
+                build.WINE[4:-1].split(','))
+    assert h == 348 + 32 * 0.5 - 360, h        # 4, the wheel come round
+    assert s == 74 - 6 * 0.5, s                # 71
+    light, dark = 32 + 9 * 0.5 + 4 * 0.5, 46 + 9 * 0.5 + 4 * 0.5
+    assert light < ln < dark, (light, ln, dark)
+
+
+def test_the_tab_icon_is_one_self_contained_picture():
+    """It travels in the page itself, so it cannot go missing and cannot be
+    fetched from anywhere: no request, no second file, nothing to lose."""
+    import build
+
+    icon = build.favicon()
+    assert icon.startswith('data:image/svg+xml,')
+    svg = urllib.parse.unquote(icon.split(',', 1)[1])
+    assert 'http' not in svg.replace('http://www.w3.org/2000/svg', ''), 'it reaches out'
+    assert svg.count('<svg') == 1 and svg.endswith('</svg>')
+    published = (HERE.parent / 'docs' / 'wine' / 'index.html').read_text()
+    assert f'<link rel="icon" href="{icon}">' in published, 'the page carries no icon'
