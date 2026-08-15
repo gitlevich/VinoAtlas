@@ -275,8 +275,12 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
    copied -- every word is somewhere you look or something you tick -- and
    dragging is the main gesture, so a drag that selects the list behind it would
    turn half the panel blue. */
-.atlas{display:grid;grid-template-columns:236px minmax(0,1fr);gap:14px;align-items:stretch;
-  -webkit-user-select:none;user-select:none}
+.atlas{display:grid;grid-template-columns:236px minmax(0,1fr) 330px;gap:14px;
+  align-items:stretch;-webkit-user-select:none;user-select:none}
+/* the sommelier is text, and text is read and copied */
+.atlas .chat{-webkit-user-select:text;user-select:text}
+@media(max-width:1250px){.atlas{grid-template-columns:236px minmax(0,1fr)}
+  .atlas .chat{grid-column:1/-1}}
 /* stacked, the view comes first: the words are what you do to it, and a column
    of fifty-four of them above it puts the shop below the fold */
 .atlas-side{display:flex;flex-direction:column;min-height:0}

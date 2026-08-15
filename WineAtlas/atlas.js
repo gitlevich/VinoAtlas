@@ -566,7 +566,8 @@ function draw() {
   const key = (cx, cy) => ((cx * 46341) ^ cy);
   for (const it of shown) {
     if (it.R < BIG) continue;
-    for (let step = 0; step < 9; step++) {
+    const x0 = it.q.x;
+    for (let step = 0; step < 15; step++) {
       const cx = Math.floor(it.q.x / CELL), cy = Math.floor(it.q.y / CELL);
       let clash = false;
       for (let dx = -1; dx <= 1 && !clash; dx++)
@@ -579,7 +580,10 @@ function draw() {
           }
         }
       if (!clash) break;
-      it.q.x += it.R * 0.5;
+      /* right, then left, then further right: a cluster spreads both ways rather
+         than growing one train off to one side */
+      const n = step + 1;
+      it.q.x = x0 + (n % 2 ? 1 : -1) * Math.ceil(n / 2) * it.R * 0.55;
     }
     const gx = Math.floor(it.q.x / CELL), gy = Math.floor(it.q.y / CELL), k = key(gx, gy);
     const b = grid.get(k); if (b) b.push(it); else grid.set(k, [it]);
@@ -1301,11 +1305,23 @@ el('atlasGx').onclick = e => { e.stopPropagation(); toggleGlobe(false); };
 const view = el('atlasCanvas').parentElement;
 const side = document.querySelector('.atlas-side');
 const sideHome = side.parentElement;
+/* THE SOMMELIER COMES WITH IT. It is the same one wine, the same five measures
+   and the same shop whichever tab you are on, so it moves in beside the space
+   rather than being left behind in the Find tab. It goes back on the way out,
+   and it stands aside for the full screen, where the shop wants the whole
+   window. Moved rather than copied: two of it would be two conversations. */
+const chat = document.querySelector('.chat');
+const chatHome = chat.parentElement;
+function chatHere(on) {
+  if (on) { if (!sideHome.contains(chat)) sideHome.appendChild(chat); }
+  else if (!chatHome.contains(chat)) chatHome.appendChild(chat);
+}
 function fill(on) {
   const want = on === undefined ? !view.classList.contains('big') : on;
   /* the word list travels with the view: on the full screen it becomes a drawer
      inside it, and it goes back to its column on the way out */
   if (want) view.appendChild(side); else sideHome.insertBefore(side, sideHome.firstChild);
+  chatHere(!want && live);
   view.classList.toggle('big', want);
   view.classList.toggle('words', want && !view.classList.contains('nowords'));
   document.body.style.overflow = want ? 'hidden' : '';
@@ -1409,6 +1425,7 @@ function step() {
 
 function show(on) {
   live = on;
+  chatHere(on && !view.classList.contains('big'));
   if (!on) fill(false);
   else refit();
 }

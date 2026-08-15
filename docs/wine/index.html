@@ -275,8 +275,12 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
    copied -- every word is somewhere you look or something you tick -- and
    dragging is the main gesture, so a drag that selects the list behind it would
    turn half the panel blue. */
-.atlas{display:grid;grid-template-columns:236px minmax(0,1fr);gap:14px;align-items:stretch;
-  -webkit-user-select:none;user-select:none}
+.atlas{display:grid;grid-template-columns:236px minmax(0,1fr) 330px;gap:14px;
+  align-items:stretch;-webkit-user-select:none;user-select:none}
+/* the sommelier is text, and text is read and copied */
+.atlas .chat{-webkit-user-select:text;user-select:text}
+@media(max-width:1250px){.atlas{grid-template-columns:236px minmax(0,1fr)}
+  .atlas .chat{grid-column:1/-1}}
 /* stacked, the view comes first: the words are what you do to it, and a column
    of fifty-four of them above it puts the shop below the fold */
 .atlas-side{display:flex;flex-direction:column;min-height:0}
@@ -1053,7 +1057,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='4d7bb273';
+const BUILD='76e84796';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -2420,7 +2424,8 @@ function draw() {
   const key = (cx, cy) => ((cx * 46341) ^ cy);
   for (const it of shown) {
     if (it.R < BIG) continue;
-    for (let step = 0; step < 9; step++) {
+    const x0 = it.q.x;
+    for (let step = 0; step < 15; step++) {
       const cx = Math.floor(it.q.x / CELL), cy = Math.floor(it.q.y / CELL);
       let clash = false;
       for (let dx = -1; dx <= 1 && !clash; dx++)
@@ -2433,7 +2438,10 @@ function draw() {
           }
         }
       if (!clash) break;
-      it.q.x += it.R * 0.5;
+      /* right, then left, then further right: a cluster spreads both ways rather
+         than growing one train off to one side */
+      const n = step + 1;
+      it.q.x = x0 + (n % 2 ? 1 : -1) * Math.ceil(n / 2) * it.R * 0.55;
     }
     const gx = Math.floor(it.q.x / CELL), gy = Math.floor(it.q.y / CELL), k = key(gx, gy);
     const b = grid.get(k); if (b) b.push(it); else grid.set(k, [it]);
@@ -3155,11 +3163,23 @@ el('atlasGx').onclick = e => { e.stopPropagation(); toggleGlobe(false); };
 const view = el('atlasCanvas').parentElement;
 const side = document.querySelector('.atlas-side');
 const sideHome = side.parentElement;
+/* THE SOMMELIER COMES WITH IT. It is the same one wine, the same five measures
+   and the same shop whichever tab you are on, so it moves in beside the space
+   rather than being left behind in the Find tab. It goes back on the way out,
+   and it stands aside for the full screen, where the shop wants the whole
+   window. Moved rather than copied: two of it would be two conversations. */
+const chat = document.querySelector('.chat');
+const chatHome = chat.parentElement;
+function chatHere(on) {
+  if (on) { if (!sideHome.contains(chat)) sideHome.appendChild(chat); }
+  else if (!chatHome.contains(chat)) chatHome.appendChild(chat);
+}
 function fill(on) {
   const want = on === undefined ? !view.classList.contains('big') : on;
   /* the word list travels with the view: on the full screen it becomes a drawer
      inside it, and it goes back to its column on the way out */
   if (want) view.appendChild(side); else sideHome.insertBefore(side, sideHome.firstChild);
+  chatHere(!want && live);
   view.classList.toggle('big', want);
   view.classList.toggle('words', want && !view.classList.contains('nowords'));
   document.body.style.overflow = want ? 'hidden' : '';
@@ -3263,6 +3283,7 @@ function step() {
 
 function show(on) {
   live = on;
+  chatHere(on && !view.classList.contains('big'));
   if (!on) fill(false);
   else refit();
 }
