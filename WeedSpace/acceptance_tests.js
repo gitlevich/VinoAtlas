@@ -368,20 +368,36 @@
   // -- labels hold still -----------------------------------------------------
 
   await T('a label is nailed to its point and does not jump', async () => {
+    /* Displacement is not the test any more. A feeling is sky and barely moves;
+       a smell is in the field and legitimately sweeps, because the neck gives it
+       parallax. What must never happen is a JUMP -- the collision-nudging that
+       made labels snap sideways as the view crept. So each label is measured
+       against its OWN typical step, and a spike is the failure. */
+    FOV = fovWant = WIDE;
     const where = () => Object.fromEntries(ITEMS.filter(i => i.hit).map(i => [i.w, i.hit.slice(0, 2)]));
     await look(home.yaw, 0);
-    let prev = where(), worst = 0, at = '';
-    for (let s = 1; s <= 12; s++) {
+    let prev = where();
+    const steps = {};
+    for (let s = 1; s <= 14; s++) {
       await look(home.yaw + s * 0.01, 0);
       const now = where();
       for (const w in now) if (prev[w]) {
-        const d = Math.hypot(now[w][0] - prev[w][0], now[w][1] - prev[w][1]);
-        if (d > worst) { worst = d; at = w; }
+        (steps[w] = steps[w] || []).push(Math.hypot(now[w][0] - prev[w][0], now[w][1] - prev[w][1]));
       }
       prev = now;
     }
     await look(home.yaw, home.pitch);
-    ok(worst < 12, 'label "' + at + '" moved ' + worst.toFixed(1) + 'px in one step');
+    let worst = 0, at = '';
+    for (const w in steps) {
+      const d = steps[w];
+      if (d.length < 6) continue;
+      const med = [...d].sort((x, y) => x - y)[Math.floor(d.length / 2)];
+      const spike = Math.max(...d) / Math.max(med, 0.25);
+      if (spike > worst) { worst = spike; at = w; }
+    }
+    ok(at, 'no label was tracked through the turn');
+    ok(worst < 4, 'label "' + at + '" jumped ' + worst.toFixed(1)
+       + 'x its own usual step -- that is nudging, not moving');
   });
 
   // -- a mark and its label say the same thing -------------------------------

@@ -501,24 +501,48 @@ function draw() {
         k ? g.lineTo(x, y) : g.moveTo(x, y);
       }
       g.closePath();
-      g.fillStyle = `hsla(${t.h},68%,${t.l - 5}%,${a * 0.8})`; g.fill();
-      g.strokeStyle = `hsla(${t.h},75%,${t.l}%,${a})`; g.lineWidth = 1; g.stroke();
+      /* SOLID. At this size the only thing that separates a weed from a smell
+         is that one is filled and compact and the other is an upright hairline.
+         A hollow chip out here read as vapour. */
+      g.fillStyle = `hsla(${t.h},70%,${t.l}%,${a})`; g.fill();
+      g.strokeStyle = `hsla(${t.h},75%,${t.l + 8}%,${a})`; g.lineWidth = 1; g.stroke();
     } else {
-      /* the profile itself: one spoke per feeling, so two strains that do the
-         same thing carry the same shape */
+      /* A LEAF, and still the profile. A cannabis leaf is palmate -- narrow
+         pointed leaflets fanning from one point -- which is the same object as
+         a spoke diagram drawn over part of a circle instead of all of it. So
+         the thirteen spokes become thirteen leaflets, each as long as that
+         effect is strong, and the shape people already recognise costs nothing:
+         two weeds that do the same thing still carry the same outline.
+
+         Colour is NOT green. It stays the colour of the ground the weed stands
+         on, because in this space colour means direction and a field of
+         identically green leaves would throw that away. */
+      const N = t.r.length;
+      const SPAN = 3.15;                        // radians the fan covers, leaving a stem gap
+      const lobe = [];
+      for (let i = 0; i < N; i++) {
+        const th = -1.5708 + (i / (N - 1) - 0.5) * SPAN;
+        lobe.push({ th, rr: R * (0.30 + 0.70 * t.r[i] / 9) });
+      }
       g.beginPath();
-      for (let i = 0; i < t.r.length; i++) {
-        const th = (i / t.r.length) * 6.2832 - 1.5708;
-        const rr = R * (0.24 + 0.76 * t.r[i] / 9);
-        const x = q.x + Math.cos(th) * rr, y = q.y + Math.sin(th) * rr;
-        i ? g.lineTo(x, y) : g.moveTo(x, y);
+      g.moveTo(q.x, q.y);
+      for (const { th, rr } of lobe) {
+        const wob = 0.075;                      // how wide a leaflet is at its base
+        g.quadraticCurveTo(q.x + Math.cos(th - wob) * rr * 0.55,
+                           q.y + Math.sin(th - wob) * rr * 0.55,
+                           q.x + Math.cos(th) * rr, q.y + Math.sin(th) * rr);
+        g.quadraticCurveTo(q.x + Math.cos(th + wob) * rr * 0.55,
+                           q.y + Math.sin(th + wob) * rr * 0.55, q.x, q.y);
       }
       g.closePath();
-      g.fillStyle = `hsla(${t.h},68%,${t.l}%,${a * 0.30})`; g.fill();
+      g.fillStyle = `hsla(${t.h},68%,${t.l}%,${a * 0.34})`; g.fill();
       g.strokeStyle = `hsla(${t.h},72%,${t.l}%,${a})`;
       g.lineWidth = Math.max(1, R * 0.07); g.stroke();
-      g.beginPath(); g.arc(q.x, q.y, Math.max(1, R * 0.1), 0, 6.284);
-      g.fillStyle = `hsla(${t.h},75%,${t.l + 12}%,${a})`; g.fill();
+      /* the stem, which is what makes it read as a leaf rather than a burst */
+      g.beginPath();
+      g.moveTo(q.x, q.y);
+      g.lineTo(q.x, q.y + R * 0.62);
+      g.lineWidth = Math.max(1, R * 0.09); g.stroke();
     }
     t.node = [q.x, q.y, R, a];
   }
@@ -557,8 +581,12 @@ function draw() {
     /* A star holds a fixed size: infinitely far, nothing resolves it into a
        disc. A smell is a thing at a distance and so it recedes, by the same
        rule the weeds obey -- its own sharpness over how far off it is. */
+    /* The multiplier here used to be 40, against a str/dist that never exceeds
+       0.24 -- so the max(8.5, ...) floor caught every single smell and they all
+       drew at one size, near and far alike. A distance encoding that is entirely
+       clamped is not an encoding. */
     const sz = feel ? 10.5 + 6.5 * it.str
-                    : Math.max(8.5, Math.min(19, 40 * it.str / p.dist)) + 6.5;
+                    : Math.max(7.5, Math.min(21, 78 * it.str / p.dist)) + 5.5;
     const a = feel ? Math.max(0.34, Math.min(1, 0.14 + 0.86 * it.str) * p.edge)
                    : Math.max(0.70, Math.min(1, 12 * it.str / p.dist) * p.edge);
 
@@ -586,15 +614,37 @@ function draw() {
       g.beginPath(); g.arc(p.x, my, R * 0.24, 0, 6.2832);
       g.fillStyle = `hsla(${it.hue},90%,${it.lit + 26}%,${a})`; g.fill();
     } else {
-      /* a breath: a low soft lens, wider than tall, drifting off to one side */
-      const R = face * 0.44;
-      g.strokeStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a * 0.9})`;
-      g.lineWidth = Math.max(0.9, R * 0.13);
-      g.beginPath(); g.ellipse(p.x, my, R * 1.35, R * 0.52, -0.18, 0, 6.2832); g.stroke();
-      g.beginPath(); g.ellipse(p.x + R * 0.55, my - R * 0.34, R * 0.62, R * 0.26, -0.34, 0, 6.2832);
-      g.strokeStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a * 0.5})`; g.stroke();
-      g.fillStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a * 0.13})`;
-      g.beginPath(); g.ellipse(p.x, my, R * 1.35, R * 0.52, -0.18, 0, 6.2832); g.fill();
+      /* A SMELL RISES. The other two marks are closed shapes -- a feeling is a
+         ring with a lit core, a weed is a faceted polygon -- so the one thing
+         guaranteed to read as neither is a shape that never closes. Three open
+         strands leaving a source and going up.
+
+         The strands also say something true. How far they spread apart is how
+         weakly the word holds its direction: a sharp smell rises as a tight
+         column, a vague one disperses on the way up. That is the same number
+         driving its size and brightness, said a third way. */
+      const R = face * 0.66;
+      const spread = 0.10 + 0.34 * (1 - it.str);        // vague words come apart
+      g.lineCap = 'round';
+      g.lineWidth = Math.max(1.4, R * 0.19);
+      /* Below this the three strands overlap into a smudge that looks exactly
+         like a small leaf. One upright stroke survives to a couple of pixels and
+         a leaf never does, because a leaf is compact and filled. */
+      const strands = R < 7 ? [0] : [-1, 0, 1];
+      for (const k of strands) {
+        const lean = k * R * 0.20 * spread;
+        const sway = R * 0.16 * (k === 0 ? -1 : k);     // middle strand curls the other way
+        g.strokeStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a * (k ? 0.66 : 1)})`;
+        g.beginPath();
+        g.moveTo(p.x + lean * 0.18, my + R * 1.15);
+        g.bezierCurveTo(p.x + lean * 0.5 - sway, my + R * 0.30,
+                        p.x + lean * 0.9 + sway, my - R * 0.30,
+                        p.x + lean * 1.9,        my - R * 1.35);
+        g.stroke();
+      }
+      /* the source it leaves from, so a strand is coming OFF something */
+      g.fillStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a})`;
+      g.beginPath(); g.ellipse(p.x, my + R * 1.24, R * 0.34, R * 0.11, 0, 0, 6.2832); g.fill();
     }
 
     if (said) {

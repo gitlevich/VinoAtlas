@@ -169,7 +169,7 @@ def test_a_vague_word_is_a_faint_star_and_not_a_far_one(page, items):
     brightness therefore have to be read off strength, never off distance --
     otherwise walking would change what a word means."""
     assert "10.5 + 6.5 * it.str" in page, "a star's size no longer comes from its magnitude"
-    assert "40 * it.str / p.dist" in page, "a smell no longer recedes with distance"
+    assert "78 * it.str / p.dist" in page, "a smell no longer recedes with distance"
     assert "Math.max(0.70," in page, "the smell brightness floor was lowered again"
     assert "/ p.dist) * p.ppr" not in page, "a word's size is being read off distance again"
     assert "p.ppr * 0.0165" not in page, "a star swells again when the view narrows"
