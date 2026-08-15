@@ -545,24 +545,43 @@ function draw() {
        clearance is now computed from how far each glyph actually reaches from
        its own centre, per kind, rather than from one shared guess. A ring, a
        leaf and three rising waves do not extend alike. */
-    const reach = feel ? face * 0.88 : face * 0.95;
+    const reach = feel ? face * 1.15 : face * 0.95;
     const my = p.y - sz * 0.86 - reach;             // its centre, clear above the text
 
     drawn.push([p.x, (p.y + my) / 2, w, sz + reach * 2.4]);
 
     if (feel) {
-      /* a beacon: a lit ring with a soft core. Something you head toward. */
-      const R = face * 0.46;
-      const glow = g.createRadialGradient(p.x, my, 0, p.x, my, R * 1.9);
-      glow.addColorStop(0, `hsla(${it.hue},85%,${it.lit + 14}%,${a * 0.42})`);
-      glow.addColorStop(1, `hsla(${it.hue},85%,${it.lit}%,0)`);
-      g.fillStyle = glow;
-      g.beginPath(); g.arc(p.x, my, R * 1.9, 0, 6.2832); g.fill();
-      g.strokeStyle = `hsla(${it.hue},${it.sat + 6}%,${it.lit + 16}%,${a})`;
-      g.lineWidth = Math.max(1.1, R * 0.17);
-      g.beginPath(); g.arc(p.x, my, R, 0, 6.2832); g.stroke();
-      g.beginPath(); g.arc(p.x, my, R * 0.24, 0, 6.2832);
-      g.fillStyle = `hsla(${it.hue},90%,${it.lit + 26}%,${a})`; g.fill();
+      /* A NEBULA, NOT A STAR.
+
+         A star is a point, and a feeling is not one. The region a word actually
+         picks out spans 0.83 to 1.04 of the whole cloud -- naming it shifts
+         where you land without narrowing it -- so a hard little ring claimed a
+         precision the measurement does not have. A diffuse extended thing says
+         what is true: a broad region lies that way.
+
+         The extent is real too. How sharply a word marks its bearing sets how
+         CONCENTRATED the nebula is, not how big: a sharp feeling holds a tight
+         bright heart, a vague one is the same size and smeared. Three offset
+         lobes rather than one disc, so it reads as a cloud and not as a blur. */
+      const NR = face * 2.15;
+      const conc = 0.16 + 0.30 * it.str;
+      for (const [ox, oy, rr] of [[0, 0, 1.0], [0.32, -0.22, 0.74], [-0.30, 0.20, 0.66]]) {
+        const cx = p.x + ox * NR, cy = my + oy * NR, R2 = NR * rr;
+        const gd = g.createRadialGradient(cx, cy, 0, cx, cy, R2);
+        gd.addColorStop(0,    `hsla(${it.hue},92%,${Math.min(90, it.lit + 12)}%,${a * 0.34})`);
+        gd.addColorStop(conc, `hsla(${it.hue},86%,${it.lit}%,${a * 0.17})`);
+        gd.addColorStop(1,    `hsla(${it.hue},80%,${it.lit}%,0)`);
+        g.fillStyle = gd;
+        g.beginPath(); g.arc(cx, cy, R2, 0, 6.2832); g.fill();
+      }
+      /* the heart, which is what keeps it a place rather than a haze */
+      const hr = NR * 0.26;
+      const gh = g.createRadialGradient(p.x, my, 0, p.x, my, hr);
+      gh.addColorStop(0,   `hsla(${it.hue},96%,${Math.min(96, it.lit + 28)}%,${a})`);
+      gh.addColorStop(0.45, `hsla(${it.hue},92%,${Math.min(92, it.lit + 14)}%,${a * 0.55})`);
+      gh.addColorStop(1,   `hsla(${it.hue},90%,${it.lit}%,0)`);
+      g.fillStyle = gh;
+      g.beginPath(); g.arc(p.x, my, hr, 0, 6.2832); g.fill();
     } else {
       /* A SMELL IS RISING WAVES. The nose was worse than the thing it replaced,
          so it is gone and only the waves are left -- stood upright, because

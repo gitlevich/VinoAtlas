@@ -114,6 +114,27 @@ def test_the_accent_actually_tells_the_countries_apart(strains, baked):
     assert len({round(s["a"] / 10) for s in strains}) >= 16, "the accents have collapsed"
 
 
+def test_a_feeling_is_a_nebula_not_a_star(page):
+    """A star is a point and a feeling is not one. The region a word actually
+    picks out spans 0.83 to 1.04 of the whole cloud, so a hard ring claimed a
+    precision the measurement does not have.
+
+    The extent carries something real: how sharply a word marks its bearing sets
+    how CONCENTRATED the cloud is, not how large. A sharp feeling holds a tight
+    bright heart, a vague one is the same size and smeared."""
+    assert "A NEBULA, NOT A STAR" in page
+    assert "a beacon: a lit ring" not in page, "the ring is back"
+    body = page[page.index("A NEBULA, NOT A STAR"):]
+    body = body[:body.index("} else {")]
+    assert "createRadialGradient" in body, "the cloud has no falloff"
+    assert body.count("[0, 0, 1.0], [0.32, -0.22, 0.74], [-0.30, 0.20, 0.66]") == 1, \
+        "the three offset lobes are gone -- one disc reads as a blur, not a cloud"
+    assert "const conc = 0.16 + 0.30 * it.str;" in body, \
+        "concentration no longer comes from how sharply the word marks its bearing"
+    assert "const NR = face * 2.15;" in body, "the nebula shrank"
+    assert "the heart, which is what keeps it a place rather than a haze" in body
+
+
 def test_a_smell_is_rising_waves(page):
     """The nose was worse than the thing it replaced, so only the waves remain,
     stood upright -- rising is what a smell does. Two tones kept: the middle wave

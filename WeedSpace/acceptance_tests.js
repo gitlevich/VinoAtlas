@@ -36,6 +36,22 @@
   let DRAWS = 0;
   const realDraw = draw;
   draw = function (...a) { DRAWS++; return realDraw.apply(this, a); };
+  /* A COUNT IS NOT A PROPERTY OF THE PAGE IF IT DEPENDS ON THE WINDOW.
+     Four tests here count how many marks are in view, and they were calibrated
+     against one browser size -- at 800x1025 they passed, at 1073x720 four of
+     them failed, and nothing about the page had changed. So any test that
+     counts runs at a fixed logical viewport and puts the real one back.
+
+     The size is not arbitrary. ppr = W / FOV, so a WIDER viewport magnifies
+     everything and fits LESS in vertically: at 1200x900 only three feelings
+     survive a narrowed view and 42 weeds track through a step, against six and
+     61 at 900x1100. Tall-ish is the representative case, and it is the one the
+     thresholds below were measured at. */
+  const atSize = async (w, h, fn) => {
+    const w0 = W, h0 = H;
+    try { W = w; H = h; return await fn(); }
+    finally { W = w0; H = h0; draw(); }
+  };
   const home = { yaw, pitch, fov: fovWant };
   const look = async (y, p) => { yaw = y; pitch = p || 0; vYaw = vPitch = 0; await frame(); };
   const hueGap = (a, b) => Math.abs((a - b + 180) % 360 - 180);
@@ -176,6 +192,7 @@
        pixels-per-radian put letters two hundred tall on things meant to read as
        unreachable. */
     const size = () => Object.fromEntries(FEELS.filter(i => i.hit).map(i => [i.w, i.hit[3]]));
+    return atSize(900, 1100, async () => {
     /* Face the most populated quarter and narrow only as far as still leaves
        several feelings up. There are thirteen in the whole sky, so at 0.14 you
        see one or two and the comparison proves nothing either way. */
@@ -189,6 +206,7 @@
     both.forEach(k => ok(Math.abs(tight[k] - wide[k]) < 1e-6,
       k + ' grew ' + (tight[k] / wide[k]).toFixed(1) + 'x when the view narrowed'));
     ok(Math.max(...Object.values(wide)) < 60, 'a star label is larger than a star should be');
+    });
   });
 
   await T('a bright star is brighter, not bigger', async () => {
@@ -271,6 +289,7 @@
     /* the instrument: how much a weed slides against the fixed sky is how near
        it is, and it is the only depth cue turning your head can never give */
     const snap = () => Object.fromEntries(ST.filter(t => t.node).map(t => [t.n, [t.node[0], t.dist]]));
+    return atSize(900, 1100, async () => {
     STAND = [0, 0, 0]; await frame();
     const a = snap();
     walk(1.2); await frame();
@@ -285,6 +304,7 @@
     ok(m.length > 60, 'too few weeds tracked through the step: ' + m.length);
     ok(near > far * 1.3, 'near weeds sweep ' + near.toFixed(1)
        + 'px, far ones ' + far.toFixed(1) + 'px -- that is not parallax');
+    });
   });
 
   await T('the field surrounds you wherever you can get to', async () => {
@@ -295,14 +315,17 @@
     for (let i = 0; i < 60; i++) walk(0.5);           // press on at the rim
     await frame();
     ok(len(EYE) <= 5.0 + 1e-6, 'your eye left the field, reaching ' + len(EYE).toFixed(2));
-    const y0 = yaw;
-    let worst = 1e9, at = 0;
-    for (let k = 0; k < 12; k++) {                    // look every thirty degrees
-      yaw = y0 + k * Math.PI / 6; await frame();
-      const n = ST.filter(t => t.node).length;
-      if (n < worst) { worst = n; at = k * 30; }
+    /* Counted in the SPACE, not on the screen. How many marks a draw puts up
+       depends on the window; how many weeds lie in a thirty-degree sector
+       around where you stand does not. The screen version passed at one browser
+       size and failed at another with nothing changed. */
+    const bins = new Array(12).fill(0);
+    for (const t of ST) {
+      const ang = Math.atan2(t.pos[2] - STAND[2], t.pos[0] - STAND[0]);
+      bins[((Math.floor(((ang + Math.PI) / 6.2832) * 12) % 12) + 12) % 12]++;
     }
-    yaw = y0; STAND = [0, 0, 0]; await frame();
+    const worst = Math.min(...bins), at = bins.indexOf(worst) * 30;
+    STAND = [0, 0, 0]; await frame();
     /* Lowered from 55. The rim moved out to buy a walk worth taking, and the
        cost was stated rather than hidden: out there the sparsest direction holds
        a few weeds instead of twenty. What must still be true is that it is never
@@ -339,7 +362,7 @@
       while (approaching > 0 && guard-- > 0) { stepApproach(); draw(); }
       return new Set([...held].filter(m => m.kind === 'smell').map(m => m.w));
     };
-    const f = go('focused'), r = go('relaxed');
+    const [f, r] = await atSize(900, 1100, async () => [go('focused'), go('relaxed')]);
     STAND = [0, 0, 0]; held = null; await frame();
 
     ok(f.size && r.size, 'nothing held either approach');
