@@ -277,9 +277,40 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
    turn half the panel blue. */
 .atlas{display:grid;grid-template-columns:236px minmax(0,1fr) 330px;gap:14px;
   align-items:stretch;-webkit-user-select:none;user-select:none}
+/* either side folds away, so the shop can have the width without going full
+   screen for it */
+/* A DRAWER, WITH A HANDLE LEFT BEHIND. Closed, the column narrows to a rail that
+   still carries the panel's name, so the way back is the thing you are looking
+   at rather than a button somewhere else. */
+#atlasWordsTab,.atlas-side{grid-column:1}
+.atlas-view{grid-column:2}
+.chat,#atlasChatTab{grid-column:3}
+.atlas.nowords{grid-template-columns:34px minmax(0,1fr) 330px}
+.atlas.nochat{grid-template-columns:236px minmax(0,1fr) 34px}
+.atlas.nowords.nochat{grid-template-columns:34px minmax(0,1fr) 34px}
+.atlas.nowords>.atlas-side{display:none}
+.atlas.nochat>.chat{display:none}
+.atlas-rail{display:none;flex-direction:column;align-items:center;justify-content:flex-start;
+  gap:10px;padding:12px 0;cursor:pointer;font:inherit;border-radius:13px;
+  border:1px solid var(--rule);background:var(--panel);color:var(--ink-3);transition:.12s}
+.atlas.nowords>#atlasWordsTab,.atlas.nochat>#atlasChatTab{display:flex}
+.atlas-rail:hover{color:var(--ink);border-color:var(--ink-3)}
+.atlas-rail:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.atlas-rail svg{width:16px;height:16px;flex:none}
+.atlas-rail b{writing-mode:vertical-rl;font-size:11px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase}
+.three .atlas-shut{display:none}
+.atlas-shut{display:flex;align-items:center;justify-content:center;width:24px;height:24px;
+  flex:none;padding:0;border:0;border-radius:6px;background:none;color:var(--ink-3);cursor:pointer}
+.atlas-shut:hover{color:var(--ink);background:var(--raise)}
+.atlas-shut:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.atlas-shut svg{width:15px;height:15px;display:block}
+.atlas-view.big .atlas-side .panelhead .atlas-shut{display:none}
 /* the sommelier is text, and text is read and copied */
 .atlas .chat{-webkit-user-select:text;user-select:text}
-@media(max-width:1250px){.atlas{grid-template-columns:236px minmax(0,1fr)}
+@media(max-width:1250px){.atlas,.atlas.nowords{grid-template-columns:236px minmax(0,1fr)}
+  .atlas.nochat,.atlas.nowords.nochat{grid-template-columns:minmax(0,1fr)}
+  .atlas.nowords{grid-template-columns:minmax(0,1fr)}
   .atlas .chat{grid-column:1/-1}}
 /* stacked, the view comes first: the words are what you do to it, and a column
    of fifty-four of them above it puts the shop below the fold */
@@ -392,6 +423,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;font:inherit;font-size:11.5px;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
   transition:opacity .12s,color .12s}
+.atlas-list{display:none}
 .atlas-view.big .atlas-list{display:flex}
 .atlas-list[aria-pressed="false"]{opacity:.55}
 .atlas-list[aria-pressed="true"]{opacity:1;color:var(--ink);border-color:var(--ink-3)}

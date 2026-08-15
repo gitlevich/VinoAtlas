@@ -1323,21 +1323,32 @@ function fill(on) {
   if (want) view.appendChild(side); else sideHome.insertBefore(side, sideHome.firstChild);
   chatHere(!want && live);
   view.classList.toggle('big', want);
-  view.classList.toggle('words', want && !view.classList.contains('nowords'));
+  view.classList.toggle('words', want && !atlasGrid.classList.contains('nowords'));
+  view.classList.toggle('nowords', atlasGrid.classList.contains('nowords'));
   document.body.style.overflow = want ? 'hidden' : '';
   el('atlasBig').setAttribute('aria-label',
     want ? 'Return the shop to the page' : 'Fill the screen with the shop');
   refit();
 }
 el('atlasBig').onclick = e => { e.stopPropagation(); fill(); };
-el('atlasList').onclick = e => {
-  e.stopPropagation();
-  const hide = !view.classList.contains('nowords');
-  view.classList.toggle('nowords', hide);
-  view.classList.toggle('words', !hide);
-  el('atlasList').setAttribute('aria-pressed', hide ? 'false' : 'true');
+/* Either side folds away. In the page they are columns of the grid; on the full
+   screen the words are a drawer over the view and the sommelier is not there at
+   all -- the shop wants the whole window. One button each, in the same row. */
+const atlasGrid = document.querySelector('.atlas');
+function fold(which, hide) {
+  atlasGrid.classList.toggle(which, hide);
+  view.classList.toggle(which, hide);
+  if (which === 'nowords') view.classList.toggle('words', !hide);
+  if (which === 'nowords')
+    el('atlasList').setAttribute('aria-pressed', hide ? 'false' : 'true');
   refit();
-};
+}
+el('atlasList').onclick = e => { e.stopPropagation();
+  fold('nowords', !atlasGrid.classList.contains('nowords')); };
+el('atlasWordsShut').onclick = e => { e.stopPropagation(); fold('nowords', true); };
+el('atlasWordsTab').onclick = e => { e.stopPropagation(); fold('nowords', false); };
+el('atlasChatShut').onclick = e => { e.stopPropagation(); fold('nochat', true); };
+el('atlasChatTab').onclick = e => { e.stopPropagation(); fold('nochat', false); };
 el('atlasList').setAttribute('aria-pressed', 'true');
 
 /* WHAT YOU CAN DO HERE, said as what and not as how. It is a space and a space

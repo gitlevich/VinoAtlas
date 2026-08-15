@@ -84,6 +84,11 @@
       <div class="chathead">
         <h2 style="margin:0">Sommelier</h2>
         <span style="display:flex;gap:2px;align-items:center">
+        <button class="atlas-shut" id="atlasChatShut" aria-label="Close the sommelier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 6l6 6-6 6"/></svg>
+        </button>
         <button class="panel-reset" id="resetChat" aria-label="Discard this conversation"
           title="Discard what has been said and start again. Your key and its setup stay.">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -233,8 +238,21 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
 <section id="s-atlas" hidden>
   <div class="card">
     <div class="atlas">
+      <button class="atlas-rail" id="atlasWordsTab" aria-label="Open the words">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6"/></svg>
+        <b>the words</b>
+      </button>
       <div class="atlas-side">
-        <h2>What do you want it to taste of?</h2>
+        <div class="panelhead">
+          <h2>What do you want it to taste of?</h2>
+          <button class="atlas-shut" id="atlasWordsShut" aria-label="Close the words">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+        </div>
         <p class="note">Tick a word and you are turned to face the wines the shop
         describes that way. Or just drag the view and look around.</p>
         <div class="awhead"><span>In the shop’s notes</span><span>wines</span></div>
@@ -244,6 +262,12 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
           <button id="atlasWide" style="display:none">step back</button>
         </div>
       </div>
+      <button class="atlas-rail" id="atlasChatTab" aria-label="Open the sommelier">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 6l-6 6 6 6"/></svg>
+        <b>sommelier</b>
+      </button>
       <div class="atlas-view">
         <canvas id="atlasCanvas"></canvas>
         <div class="atlas-bar">
@@ -268,7 +292,9 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
           <p>Every glass is a wine the shop has. A bottle is one on your account.
           The names in the sky are the five measures, written at both ends.</p>
           <dl>
-            <dt>Look around</dt><dd>drag the view, or two fingers on the trackpad</dd>
+            <dt>Look around</dt><dd>drag the view, or two fingers on the trackpad.
+              Near glasses slide past far ones while the names in the sky hold
+              still — that sliding is what tells you how far off a wine is.</dd>
             <dt>Walk in, and back out</dt><dd>pinch, or the handle under the globe</dd>
             <dt>Turn right round</dt><dd>the globe shows what is behind you — double-click
               anywhere on it to face that way. <b>G</b> hides and shows it.</dd>
@@ -301,14 +327,6 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
         <div id="atlasName"></div>
       </div>
     </div>
-    <p class="note" style="margin-top:12px">Drag to look around; pinch to walk in.
-    As you move, near glasses slide past far ones while the names in the sky hold
-    still — that sliding is what tells you how far off a wine is and what stands
-    behind what. Point at a glass to read the bottle, click a name to be carried
-    toward it, and press <b>G</b> for the globe, which is the only view that shows
-    what is behind you. The shop holds 1,652 bottles and you are standing among
-    all of them: <b>fill the screen</b> with the arrows at the top left, and tick
-    a word to leave only the wines described that way lit.</p>
   </div>
 </section>
 </div>

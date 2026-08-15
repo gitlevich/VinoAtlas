@@ -277,9 +277,40 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
    turn half the panel blue. */
 .atlas{display:grid;grid-template-columns:236px minmax(0,1fr) 330px;gap:14px;
   align-items:stretch;-webkit-user-select:none;user-select:none}
+/* either side folds away, so the shop can have the width without going full
+   screen for it */
+/* A DRAWER, WITH A HANDLE LEFT BEHIND. Closed, the column narrows to a rail that
+   still carries the panel's name, so the way back is the thing you are looking
+   at rather than a button somewhere else. */
+#atlasWordsTab,.atlas-side{grid-column:1}
+.atlas-view{grid-column:2}
+.chat,#atlasChatTab{grid-column:3}
+.atlas.nowords{grid-template-columns:34px minmax(0,1fr) 330px}
+.atlas.nochat{grid-template-columns:236px minmax(0,1fr) 34px}
+.atlas.nowords.nochat{grid-template-columns:34px minmax(0,1fr) 34px}
+.atlas.nowords>.atlas-side{display:none}
+.atlas.nochat>.chat{display:none}
+.atlas-rail{display:none;flex-direction:column;align-items:center;justify-content:flex-start;
+  gap:10px;padding:12px 0;cursor:pointer;font:inherit;border-radius:13px;
+  border:1px solid var(--rule);background:var(--panel);color:var(--ink-3);transition:.12s}
+.atlas.nowords>#atlasWordsTab,.atlas.nochat>#atlasChatTab{display:flex}
+.atlas-rail:hover{color:var(--ink);border-color:var(--ink-3)}
+.atlas-rail:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.atlas-rail svg{width:16px;height:16px;flex:none}
+.atlas-rail b{writing-mode:vertical-rl;font-size:11px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase}
+.three .atlas-shut{display:none}
+.atlas-shut{display:flex;align-items:center;justify-content:center;width:24px;height:24px;
+  flex:none;padding:0;border:0;border-radius:6px;background:none;color:var(--ink-3);cursor:pointer}
+.atlas-shut:hover{color:var(--ink);background:var(--raise)}
+.atlas-shut:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.atlas-shut svg{width:15px;height:15px;display:block}
+.atlas-view.big .atlas-side .panelhead .atlas-shut{display:none}
 /* the sommelier is text, and text is read and copied */
 .atlas .chat{-webkit-user-select:text;user-select:text}
-@media(max-width:1250px){.atlas{grid-template-columns:236px minmax(0,1fr)}
+@media(max-width:1250px){.atlas,.atlas.nowords{grid-template-columns:236px minmax(0,1fr)}
+  .atlas.nochat,.atlas.nowords.nochat{grid-template-columns:minmax(0,1fr)}
+  .atlas.nowords{grid-template-columns:minmax(0,1fr)}
   .atlas .chat{grid-column:1/-1}}
 /* stacked, the view comes first: the words are what you do to it, and a column
    of fifty-four of them above it puts the shop below the fold */
@@ -392,6 +423,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;font:inherit;font-size:11.5px;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
   transition:opacity .12s,color .12s}
+.atlas-list{display:none}
 .atlas-view.big .atlas-list{display:flex}
 .atlas-list[aria-pressed="false"]{opacity:.55}
 .atlas-list[aria-pressed="true"]{opacity:1;color:var(--ink);border-color:var(--ink-3)}
@@ -530,6 +562,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
       <div class="chathead">
         <h2 style="margin:0">Sommelier</h2>
         <span style="display:flex;gap:2px;align-items:center">
+        <button class="atlas-shut" id="atlasChatShut" aria-label="Close the sommelier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 6l6 6-6 6"/></svg>
+        </button>
         <button class="panel-reset" id="resetChat" aria-label="Discard this conversation"
           title="Discard what has been said and start again. Your key and its setup stay.">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -679,8 +716,21 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
 <section id="s-atlas" hidden>
   <div class="card">
     <div class="atlas">
+      <button class="atlas-rail" id="atlasWordsTab" aria-label="Open the words">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6"/></svg>
+        <b>the words</b>
+      </button>
       <div class="atlas-side">
-        <h2>What do you want it to taste of?</h2>
+        <div class="panelhead">
+          <h2>What do you want it to taste of?</h2>
+          <button class="atlas-shut" id="atlasWordsShut" aria-label="Close the words">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 6l-6 6 6 6"/></svg>
+          </button>
+        </div>
         <p class="note">Tick a word and you are turned to face the wines the shop
         describes that way. Or just drag the view and look around.</p>
         <div class="awhead"><span>In the shop’s notes</span><span>wines</span></div>
@@ -690,6 +740,12 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
           <button id="atlasWide" style="display:none">step back</button>
         </div>
       </div>
+      <button class="atlas-rail" id="atlasChatTab" aria-label="Open the sommelier">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 6l-6 6 6 6"/></svg>
+        <b>sommelier</b>
+      </button>
       <div class="atlas-view">
         <canvas id="atlasCanvas"></canvas>
         <div class="atlas-bar">
@@ -714,7 +770,9 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
           <p>Every glass is a wine the shop has. A bottle is one on your account.
           The names in the sky are the five measures, written at both ends.</p>
           <dl>
-            <dt>Look around</dt><dd>drag the view, or two fingers on the trackpad</dd>
+            <dt>Look around</dt><dd>drag the view, or two fingers on the trackpad.
+              Near glasses slide past far ones while the names in the sky hold
+              still — that sliding is what tells you how far off a wine is.</dd>
             <dt>Walk in, and back out</dt><dd>pinch, or the handle under the globe</dd>
             <dt>Turn right round</dt><dd>the globe shows what is behind you — double-click
               anywhere on it to face that way. <b>G</b> hides and shows it.</dd>
@@ -747,14 +805,6 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
         <div id="atlasName"></div>
       </div>
     </div>
-    <p class="note" style="margin-top:12px">Drag to look around; pinch to walk in.
-    As you move, near glasses slide past far ones while the names in the sky hold
-    still — that sliding is what tells you how far off a wine is and what stands
-    behind what. Point at a glass to read the bottle, click a name to be carried
-    toward it, and press <b>G</b> for the globe, which is the only view that shows
-    what is behind you. The shop holds 1,652 bottles and you are standing among
-    all of them: <b>fill the screen</b> with the arrows at the top left, and tick
-    a word to leave only the wines described that way lit.</p>
   </div>
 </section>
 </div>
@@ -1057,7 +1107,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='76e84796';
+const BUILD='3e64925d';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -3181,21 +3231,32 @@ function fill(on) {
   if (want) view.appendChild(side); else sideHome.insertBefore(side, sideHome.firstChild);
   chatHere(!want && live);
   view.classList.toggle('big', want);
-  view.classList.toggle('words', want && !view.classList.contains('nowords'));
+  view.classList.toggle('words', want && !atlasGrid.classList.contains('nowords'));
+  view.classList.toggle('nowords', atlasGrid.classList.contains('nowords'));
   document.body.style.overflow = want ? 'hidden' : '';
   el('atlasBig').setAttribute('aria-label',
     want ? 'Return the shop to the page' : 'Fill the screen with the shop');
   refit();
 }
 el('atlasBig').onclick = e => { e.stopPropagation(); fill(); };
-el('atlasList').onclick = e => {
-  e.stopPropagation();
-  const hide = !view.classList.contains('nowords');
-  view.classList.toggle('nowords', hide);
-  view.classList.toggle('words', !hide);
-  el('atlasList').setAttribute('aria-pressed', hide ? 'false' : 'true');
+/* Either side folds away. In the page they are columns of the grid; on the full
+   screen the words are a drawer over the view and the sommelier is not there at
+   all -- the shop wants the whole window. One button each, in the same row. */
+const atlasGrid = document.querySelector('.atlas');
+function fold(which, hide) {
+  atlasGrid.classList.toggle(which, hide);
+  view.classList.toggle(which, hide);
+  if (which === 'nowords') view.classList.toggle('words', !hide);
+  if (which === 'nowords')
+    el('atlasList').setAttribute('aria-pressed', hide ? 'false' : 'true');
   refit();
-};
+}
+el('atlasList').onclick = e => { e.stopPropagation();
+  fold('nowords', !atlasGrid.classList.contains('nowords')); };
+el('atlasWordsShut').onclick = e => { e.stopPropagation(); fold('nowords', true); };
+el('atlasWordsTab').onclick = e => { e.stopPropagation(); fold('nowords', false); };
+el('atlasChatShut').onclick = e => { e.stopPropagation(); fold('nochat', true); };
+el('atlasChatTab').onclick = e => { e.stopPropagation(); fold('nochat', false); };
 el('atlasList').setAttribute('aria-pressed', 'true');
 
 /* WHAT YOU CAN DO HERE, said as what and not as how. It is a space and a space
