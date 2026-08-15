@@ -189,7 +189,7 @@
     chat.pop();
   });
   await T('plain words without a key open setup instead of calling out', () => {
-    delete agent.key; el('setup').hidden = true;
+    agent.keys = {}; el('setup').hidden = true;
     type('something for lamb'); el('askGo').click();
     ok(!el('setup').hidden, 'setup opened');
     eq(ask.value, 'something for lamb', 'composer keeps the message');
@@ -526,11 +526,11 @@
   });
 
   await T('reset returns every control but keeps the key and its setup', () => {
-    agent.key = 'kept-key'; agent.vendor = 'anthropic';
+    agent.vendor = 'anthropic'; agent.keys = { anthropic: 'kept-key' };
     const biggest = KINDS.slice().sort((a, b) => b.wines.length - a.wines.length)[0];
     pickKind(biggest.i);                        // the precondition: the largest type is the one open
     el('resetChat').click(); el('resetTaste').click();
-    ok(agent.key === 'kept-key', 'key survives reset');
+    ok(KEY() === 'kept-key', 'key survives reset');
     ok(chat.length === 0, 'chat cleared');
     const span = kindSpread(biggest);
     /* Reset returns the ranges to the span of his own bottles in the type that is
@@ -1475,7 +1475,7 @@
         usage: { input_tokens: 1, output_tokens: 1 } }];
     window.fetch = async (u, o) => ({ ok: true, json: async () => (sent.push(JSON.parse(o.body)), reply[sent.length - 1]) });
     const wasAgent = { ...agent }, before = chat.length;
-    agent.vendor = 'anthropic'; agent.key = 'x';
+    agent.vendor = 'anthropic'; agent.keys = { anthropic: 'x' };
     el('atlasClear').click();
     type('turn me to the oaked wines');
     await send();
@@ -1496,6 +1496,70 @@
     ok(AT.dot(AT.unit(AT.frame().f), p.dir) > 0.99, 'and the Atlas actually turned');
   });
 
+  await T('each house keeps its own key, so trying the other does not lose it', () => {
+    /* There was one slot for both. Pasting an OpenAI key to try ChatGPT wrote
+       over the Anthropic one, and switching back sent the wrong key to the
+       wrong door -- which reads as neither of them working. */
+    const was = { ...agent };
+    agent.vendor = 'anthropic'; agent.keys = { anthropic: 'ant-key' };
+    el('vendor').value = 'openai'; el('vendor').dispatchEvent(new Event('change'));
+    eq(KEY(), '', 'the other house has none of its own yet');
+    setKey('oai-key'); saveAgent();
+    el('vendor').value = 'anthropic'; el('vendor').dispatchEvent(new Event('change'));
+    eq(KEY(), 'ant-key', 'and the first key is still there');
+    el('vendor').value = 'openai'; el('vendor').dispatchEvent(new Event('change'));
+    eq(KEY(), 'oai-key', 'as is the second');
+    /* clearing one clears only that one */
+    el('keyClear').click();
+    eq(KEY(), '', 'cleared here');
+    el('vendor').value = 'anthropic'; el('vendor').dispatchEvent(new Event('change'));
+    eq(KEY(), 'ant-key', 'and not there');
+    /* a key saved before there were two belongs to the house it was saved for */
+    localStorage.setItem('cc_agent', JSON.stringify({ vendor: 'openai', key: 'old-single' }));
+    const old = JSON.parse(localStorage.getItem('cc_agent'));
+    ok(old.key === 'old-single', 'the old shape is what it was');
+    Object.assign(agent, was);
+  });
+
+  await T('either house is asked in its own words, and says why when it refuses', async () => {
+    /* Two vendors, two shapes for the same loop. OpenAI was shipped without a
+       test and the first report from it was "HTTP 400", which is a refusal with
+       the reason thrown away: a model that cannot take tools, a context
+       overrun and a wrong key all read alike and none can be acted on. */
+    const realFetch = window.fetch, wasAgent = { ...agent }, sent = [];
+    const reply = [
+      { choices: [{ message: { role: 'assistant', content: 'Turning you to it.',
+          tool_calls: [{ id: 'c1', type: 'function',
+            function: { name: 'atlas', arguments: '{"face":"heavily oaked"}' } }] } }],
+        usage: {} },
+      { choices: [{ message: { role: 'assistant', content: 'Oak, straight ahead.' } }], usage: {} }];
+    window.fetch = async (u, o) => ({ ok: true, json: async () => (sent.push({ u, b: JSON.parse(o.body) }), reply[sent.length - 1]) });
+    agent.vendor = 'openai'; agent.keys = { openai: 'x' }; agent.model = 'gpt-4o';
+    type('turn me to the oaked wines'); await send();
+
+    ok(/openai\.com/.test(sent[0].u), 'asked OpenAI');
+    eq(sent[0].b.tools.map(t => t.type), TOOLBOX.map(() => 'function'), 'in its own shape');
+    eq(sent[0].b.tools.map(t => t.function.name), TOOLBOX.map(t => t.name), 'the same controls');
+    ok(sent[0].b.tools.every(t => t.function.parameters.type === 'object'), 'each with its schema');
+    ok(!('response_format' in sent[0].b), 'and no longer asked for a blob of JSON');
+    eq(sent.length, 2, 'it called, was answered, and came back to speak');
+    const back = sent[1].b.messages.slice(-1)[0];
+    eq(back.role, 'tool', 'the page answered as a tool result');
+    eq(back.tool_call_id, 'c1', 'the call it was answering');
+    ok(back.content.startsWith('WHAT HE SEES RIGHT NOW'), 'with what it then showed');
+    ok(sent[1].b.messages.some(m => m.tool_calls), 'the call it made went back with it');
+
+    /* and a refusal says what the other end said */
+    window.fetch = async () => ({ ok: false, status: 400,
+      json: async () => ({ error: { message: "This model does not support tools." } }) });
+    type('again'); await send();
+    const said = chat[chat.length - 1];
+    eq(said.role, 'notice', 'a refusal is the tool talking, not the sommelier');
+    ok(said.text.includes('400'), 'says what the status was');
+    ok(said.text.includes('does not support tools'), 'and what the reason was: ' + said.text);
+    window.fetch = realFetch; Object.assign(agent, wasAgent);
+  });
+
   await T('a move it only described is not possible', async () => {
     /* The reported failure: it said "turning the Atlas to the wine sitting
        closest" and nothing moved, because the old prompt put "atlas" at the top
@@ -1503,7 +1567,7 @@
        without calling now changes nothing, and one that sends the old flat
        blob is still obeyed. */
     const realFetch = window.fetch, wasAgent = { ...agent };
-    agent.vendor = 'anthropic'; agent.key = 'x';
+    agent.vendor = 'anthropic'; agent.keys = { anthropic: 'x' };
     const run = async body => {
       window.fetch = async () => ({ ok: true, json: async () => body });
       type('show me something oaked'); await send();

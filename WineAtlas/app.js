@@ -306,6 +306,19 @@ document.documentElement.dataset.build=BUILD;
 const VIEWER=/claude(usercontent)?\.(ai|com)$/.test(location.hostname);
 if(VIEWER){el('askOn').hidden=true;el('askOff').hidden=false;}
 let agent=JSON.parse(localStorage.getItem('cc_agent')||'{}');
+/* A KEY BELONGS TO A HOUSE. There was one slot for both, so pasting an OpenAI
+   key to try ChatGPT wrote over the Anthropic one, and switching back sent the
+   wrong key to the wrong door -- which reads as neither of them working. Each
+   house keeps its own; switching between them is switching between two saved
+   keys, not throwing one away. */
+const HOUSE=()=>agent.vendor==='openai'?'openai':'anthropic';
+const KEY=()=>(agent.keys||{})[HOUSE()]||'';
+const setKey=v=>{(agent.keys=agent.keys||{})[HOUSE()]=v;};
+const dropKey=()=>{if(agent.keys) delete agent.keys[HOUSE()];};
+if(agent.key){                                  // what was saved before there were two
+  (agent.keys=agent.keys||{})[HOUSE()]=agent.key;
+  delete agent.key; localStorage.setItem('cc_agent',JSON.stringify(agent));
+}
 let refs={}, msel=0, mlist=[];
 const askEl=el('ask'), menEl=el('mention'), hlEl=el('hl');
 
@@ -805,14 +818,25 @@ function applyOld(j){
   if(j.tour&&act.tour===undefined) act.tour=j.tour;
   applyAct(act);
 }
+/* WHAT THE OTHER END ACTUALLY SAID. A refusal was reported as "HTTP 400" and
+   nothing else, so a model that cannot take tools, a context overrun and a bad
+   key all read the same and none of them could be acted on. The body carries
+   the reason; it is short, and it is the whole of what is useful. */
+async function refusal(r){
+  let why='';
+  try{ const d=await r.json();
+    why=(d&&d.error&&(d.error.message||d.error.type))||'';
+  }catch(_){ try{ why=(await r.text()).slice(0,300); }catch(__){} }
+  return new Error('HTTP '+r.status+(why?' — '+String(why).slice(0,300):''));
+}
 async function callAgent(sys,msgs){
   if(agent.vendor==='openai'){
     const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+agent.key},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+KEY()},
       body:JSON.stringify({model:agent.model||DEFAULT_MODEL.openai,
         tools:TOOLBOX.map(t=>({type:'function',function:{name:t.name,description:t.description,parameters:t.schema}})),
         messages:[{role:'system',content:sys.stat+'\n\n'+sys.dyn},...msgs]})});
-    if(!r.ok) throw new Error('HTTP '+r.status);
+    if(!r.ok) throw await refusal(r);
     const d=await r.json(), m=d.choices&&d.choices[0]&&d.choices[0].message;
     if(!m) throw new Error('empty answer from the model');
     const calls=(m.tool_calls||[]).map(c=>{
@@ -824,13 +848,13 @@ async function callAgent(sys,msgs){
         tin:d.usage?.prompt_tokens||0,tout:d.usage?.completion_tokens||0}};
   }
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':agent.key,
+    headers:{'Content-Type':'application/json','x-api-key':KEY(),
       'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:agent.model||DEFAULT_MODEL.anthropic,max_tokens:1200,
       system:[{type:'text',text:sys.stat,cache_control:{type:'ephemeral'}},{type:'text',text:sys.dyn}],
       tools:TOOLBOX.map(t=>({name:t.name,description:t.description,input_schema:t.schema})),
       messages:msgs})});
-  if(!r.ok) throw new Error('HTTP '+r.status);
+  if(!r.ok) throw await refusal(r);
   const d=await r.json();
   // content may open with a thinking block on newer models -- take text and calls
   const blocks=d.content||[];
@@ -846,10 +870,10 @@ async function callAgent(sys,msgs){
 async function send(){
   const text=askEl.value.trim(); if(!text) return;
   const sp=parseSpell(text);
-  if(sp.hasPlain&&!agent.key){ // do not consume the message: it stays in the box
+  if(sp.hasPlain&&!KEY()){ // do not consume the message: it stays in the box
     el('setup').hidden=false;
     el('setupBtn').classList.add('on'); el('setupBtn').setAttribute('aria-expanded','true');
-    addMsg('notice','Plain words are sent to Anthropic or OpenAI, and no key is set yet. Open the gear, paste a key, then press Send again -- your message is still in the box.');
+    addMsg('notice','Plain words are sent to '+(HOUSE()==='openai'?'OpenAI':'Anthropic')+', and no key is saved for '+(HOUSE()==='openai'?'OpenAI':'Anthropic')+' yet. Open the gear, paste one -- each house keeps its own -- then press Send again; your message is still in the box.');
     return;}
   addMsg('user',text);
   askEl.value=''; drawSpell(); menEl.hidden=true;
@@ -897,7 +921,7 @@ async function send(){
     if(round>=ROUNDS) addMsg('notice','It kept working and was stopped after '+ROUNDS+' moves. Ask again, more narrowly.');
     if(!spoke) addMsg('assistant','Done.');
   }catch(err){
-    addMsg('notice','That did not go through ('+err.message+'). Check the key behind the gear and the connection, then send again.');
+    addMsg('notice','That did not go through. '+err.message+'\nThe key and the model are behind the gear; each house keeps its own key.');
   }
   el('askNote').textContent='';
 }
@@ -937,25 +961,25 @@ function addSpend(u){
 function saveAgent(){localStorage.setItem('cc_agent',JSON.stringify(agent));}
 async function fetchModels(){
   if(agent.vendor==='openai'){
-    const r=await fetch('https://api.openai.com/v1/models',{headers:{Authorization:'Bearer '+agent.key}});
-    if(!r.ok) throw new Error('HTTP '+r.status);
+    const r=await fetch('https://api.openai.com/v1/models',{headers:{Authorization:'Bearer '+KEY()}});
+    if(!r.ok) throw await refusal(r);
     return (await r.json()).data.map(m=>m.id).filter(id=>/^(gpt|o\d)/.test(id)).sort();
   }
   const r=await fetch('https://api.anthropic.com/v1/models?limit=100',
-    {headers:{'x-api-key':agent.key,'anthropic-version':'2023-06-01',
+    {headers:{'x-api-key':KEY(),'anthropic-version':'2023-06-01',
       'anthropic-dangerous-direct-browser-access':'true'}});
-  if(!r.ok) throw new Error('HTTP '+r.status);
+  if(!r.ok) throw await refusal(r);
   return (await r.json()).data.map(m=>m.id);
 }
 function reflectSetup(){
   el('vendor').value=agent.vendor||'anthropic';
   el('key').value='';
-  el('key').placeholder=agent.key?'Saved — paste to replace':'Paste your API key';
-  el('keyClear').hidden=!agent.key;
-  el('modelRow').hidden=!agent.key;
-  el('setupStatus').textContent=agent.key?'A key is saved for '+(agent.vendor==='openai'?'OpenAI':'Anthropic')+'.':'No key saved yet.';
+  el('key').placeholder=KEY()?'Saved — paste to replace':'Paste your API key';
+  el('keyClear').hidden=!KEY();
+  el('modelRow').hidden=!KEY();
+  el('setupStatus').textContent=KEY()?'A key is saved for '+(HOUSE()==='openai'?'OpenAI':'Anthropic')+'.':'No key saved for '+(HOUSE()==='openai'?'OpenAI':'Anthropic')+' yet.';
   if(document.activeElement!==el('prompt')) el('prompt').value=framing();
-  if(agent.key) loadModels();
+  if(KEY()) loadModels();
 }
 async function loadModels(){
   const sel=el('model'), chosen=agent.model||DEFAULT_MODEL[agent.vendor||'anthropic'];
@@ -984,11 +1008,11 @@ el('key').addEventListener('input',()=>{
   keyDebounce=setTimeout(()=>{
     const v=el('key').value.trim();
     if(!v) return;
-    agent.vendor=el('vendor').value; agent.key=v; delete agent.model;
+    agent.vendor=el('vendor').value; setKey(v); delete agent.model;
     saveAgent(); reflectSetup();
   },500);
 });
-el('keyClear').onclick=()=>{delete agent.key; delete agent.model; saveAgent(); reflectSetup();};
+el('keyClear').onclick=()=>{dropKey(); delete agent.model; saveAgent(); reflectSetup();};
 let promptDebounce;
 function commitPrompt(){
   const v=el('prompt').value.trim();
