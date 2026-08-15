@@ -111,6 +111,8 @@ def test_a_smell_is_a_nose(page):
     body = body[:body.index("if (said)")]
     assert "${it.hue}" in body, "the nose stopped carrying the word's colour"
     assert "it.sat - 24" in body and "it.lit + 26" in body, "the second tone is gone"
+    assert "IN FRONT OF THE NOSE" in body, "the scent went behind the face again"
+    assert "g.moveTo(nx + R * 0.84, yy);" in body, "the scent lines are not ahead of the tip"
 
 
 def test_the_argmax_is_not_carried(strains):

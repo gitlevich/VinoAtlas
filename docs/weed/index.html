@@ -561,7 +561,7 @@ function draw() {
          drifting in from the left. How far the lines spread is how weakly the
          word holds its bearing. */
       const R = face * 1.05;
-      const nx = p.x + R * 0.16, ny = my;
+      const nx = p.x - R * 0.58, ny = my;   // the scent trails right, so the face sits left
       g.beginPath();
       g.moveTo(nx - R*0.16, ny - R*0.86);
       g.bezierCurveTo(nx + R*0.04, ny - R*0.42, nx + R*0.22, ny - R*0.16, nx + R*0.28, ny + R*0.03);
@@ -582,13 +582,16 @@ function draw() {
       g.lineCap = 'round';
       g.lineWidth = Math.max(1, R * 0.075);
       g.strokeStyle = `hsla(${it.hue},${Math.max(20, it.sat - 24)}%,${Math.min(92, it.lit + 26)}%,${a * 0.85})`;
+      /* IN FRONT OF THE NOSE, not behind it. The lines were on the far side of
+         the face, which reads as scent leaving the back of someone's head. A
+         nose points somewhere; the thing it is smelling has to be there. */
       for (let k = -1; k <= 1; k++) {
-        const yy = ny + R * (0.05 + k * 0.30);
+        const yy = ny + R * (0.26 + k * 0.27);
         g.beginPath();
-        g.moveTo(nx - R * 0.34, yy);
-        g.bezierCurveTo(nx - R * (0.60 + 0.14*drift), yy - R * 0.20 * drift,
-                        nx - R * (0.76 + 0.14*drift), yy + R * 0.20 * drift,
-                        nx - R * (1.02 + 0.20*drift), yy);
+        g.moveTo(nx + R * 0.84, yy);
+        g.bezierCurveTo(nx + R * (1.08 + 0.14*drift), yy - R * 0.19 * drift,
+                        nx + R * (1.26 + 0.14*drift), yy + R * 0.19 * drift,
+                        nx + R * (1.52 + 0.20*drift), yy);
         g.stroke();
       }
     }
