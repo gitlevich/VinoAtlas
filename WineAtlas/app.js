@@ -149,8 +149,22 @@ function radarWine(w){
 }
 /* the range IS the taste; the centre is its middle, derived, never separate */
 function recentre(a){point[a]=(band[a][0]+band[a][1])/2;}
+/* NAMING A VALUE SLIDES THE RANGE, and a range that fills the scale has nowhere
+   to slide -- so typing "cherry", pointing at a wine, or the sommelier answering
+   with a value all landed silently on any measure you had left wide open. The
+   width now comes from HIS OWN BOTTLES in the type that is open: the same span
+   the reset button uses, so nothing is invented and no width is chosen by us.
+   A measure you have already narrowed keeps the width you gave it. */
+function ownSpan(a){
+  const k=chosenKind===null
+    ? KINDS.slice().sort((x,y)=>y.wines.length-x.wines.length)[0]
+    : KINDS[chosenKind];
+  if(!k||!k.wines.length) return 0.3;
+  const [lo,hi]=kindSpread(k)[a];
+  return Math.min(0.999,Math.max(0.06,hi-lo));
+}
 function setPoint(p){A.forEach(a=>{           // slide the range so its middle lands on p
-  const w=band[a][1]-band[a][0];
+  const w=(band[a][1]-band[a][0])>=0.999?ownSpan(a):band[a][1]-band[a][0];
   let lo=Math.min(Math.max(p[a]-w/2,0),1-w), hi=lo+w;
   band[a]=[lo,hi]; recentre(a); drawAxis(a);});syncHold();render();}
 function setBands(h){A.forEach(a=>{band[a]=h&&h[a]?[Math.max(0,h[a][0]),Math.min(1,h[a][1])]:[0,1];

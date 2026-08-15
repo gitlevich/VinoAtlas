@@ -1040,11 +1040,11 @@ function drawMini() {
          in the middle and thins to the edge. It was the other way round, which is
          how a painted ball behaves and why it read as plastic. */
       const thru = Math.exp(-1.05 * w);        // what gets out
-      const body = (0.40 + 0.55 * lam) * (0.42 + 1.55 * thru);
+      const body = (0.40 + 0.55 * lam) * (0.34 + 1.18 * thru);
       const seen = 0.60 + 0.40 * vis;          // outside your field, quieter
-      const wet = 120 * Math.pow(1 - w, 11);   // the bright line right at the limb
-      const s1 = 255 * Math.pow(lam, 150);
-      const s2 = 90 * Math.pow(lam2, 90);
+      const wet = 86 * Math.pow(1 - w, 11);    // the bright line right at the limb
+      const s1 = 205 * Math.pow(lam, 150);
+      const s2 = 62 * Math.pow(lam2, 90);
       if (DARK) {
         const f = body * seen;
         px[k] = r*f + s1 + s2 + wet*0.92;

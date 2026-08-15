@@ -830,8 +830,22 @@ function radarWine(w){
 }
 /* the range IS the taste; the centre is its middle, derived, never separate */
 function recentre(a){point[a]=(band[a][0]+band[a][1])/2;}
+/* NAMING A VALUE SLIDES THE RANGE, and a range that fills the scale has nowhere
+   to slide -- so typing "cherry", pointing at a wine, or the sommelier answering
+   with a value all landed silently on any measure you had left wide open. The
+   width now comes from HIS OWN BOTTLES in the type that is open: the same span
+   the reset button uses, so nothing is invented and no width is chosen by us.
+   A measure you have already narrowed keeps the width you gave it. */
+function ownSpan(a){
+  const k=chosenKind===null
+    ? KINDS.slice().sort((x,y)=>y.wines.length-x.wines.length)[0]
+    : KINDS[chosenKind];
+  if(!k||!k.wines.length) return 0.3;
+  const [lo,hi]=kindSpread(k)[a];
+  return Math.min(0.999,Math.max(0.06,hi-lo));
+}
 function setPoint(p){A.forEach(a=>{           // slide the range so its middle lands on p
-  const w=band[a][1]-band[a][0];
+  const w=(band[a][1]-band[a][0])>=0.999?ownSpan(a):band[a][1]-band[a][0];
   let lo=Math.min(Math.max(p[a]-w/2,0),1-w), hi=lo+w;
   band[a]=[lo,hi]; recentre(a); drawAxis(a);});syncHold();render();}
 function setBands(h){A.forEach(a=>{band[a]=h&&h[a]?[Math.max(0,h[a][0]),Math.min(1,h[a][1])]:[0,1];
@@ -964,7 +978,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='59d82c8a';
+const BUILD='788bfb42';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -2805,11 +2819,11 @@ function drawMini() {
          in the middle and thins to the edge. It was the other way round, which is
          how a painted ball behaves and why it read as plastic. */
       const thru = Math.exp(-1.05 * w);        // what gets out
-      const body = (0.40 + 0.55 * lam) * (0.42 + 1.55 * thru);
+      const body = (0.40 + 0.55 * lam) * (0.34 + 1.18 * thru);
       const seen = 0.60 + 0.40 * vis;          // outside your field, quieter
-      const wet = 120 * Math.pow(1 - w, 11);   // the bright line right at the limb
-      const s1 = 255 * Math.pow(lam, 150);
-      const s2 = 90 * Math.pow(lam2, 90);
+      const wet = 86 * Math.pow(1 - w, 11);    // the bright line right at the limb
+      const s1 = 205 * Math.pow(lam, 150);
+      const s2 = 62 * Math.pow(lam2, 90);
       if (DARK) {
         const f = body * seen;
         px[k] = r*f + s1 + s2 + wet*0.92;

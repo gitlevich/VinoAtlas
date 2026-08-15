@@ -18,6 +18,19 @@
   const snap = { v: localStorage.getItem('cc_votes'), a: localStorage.getItem('cc_agent'), c: localStorage.getItem('cc_chat'), s: localStorage.getItem('cc_spend') };
   const realConfirm = window.confirm; window.confirm = () => true;
 
+  /* WHAT NAMING A VALUE OWES, now that taste is a range and the middle is only
+     the middle of it. The range slides so its middle lands on what was named;
+     where it started at the whole scale there is nowhere to slide, so it takes
+     the width of his own bottles in the type that is open. Either way the named
+     value ends up INSIDE the range, and the middle lands on it unless an end of
+     the scale got there first. That is the whole criterion. */
+  const landed = (a, want, m) => {
+    const [lo, hi] = band[a], w = hi - lo;
+    ok(want >= lo - 1e-9 && want <= hi + 1e-9,
+       `${m || ''} ${a}: ${want} outside ${lo.toFixed(2)}–${hi.toFixed(2)}`);
+    near(point[a], Math.min(Math.max(want, w / 2), 1 - w / 2), (m || '') + ' ' + a);
+  };
+
   // -- boot --
   await T('every tab is there, in order, with the Atlas last', () => {
     const want = ['t-find','t-palate','t-move','t-pop','t-how','t-atlas'];
@@ -87,16 +100,20 @@
     ok(chat[chat.length - 1].text.includes('oak'), 'reply names the measure');
   });
   await T('a measured word moves its measure to its grounded value', () => {
-    setBands({});
+    setBands({});                               // every measure wide open
+    const wide = band.fruit[1] - band.fruit[0];
     type('cherry'); el('askGo').click();
-    near(point.fruit, 0.8);
+    landed('fruit', 0.8, 'cherry');
+    const w = band.fruit[1] - band.fruit[0];
+    ok(w < wide, 'a wide-open measure had to take a width from somewhere');
+    near(w, ownSpan('fruit'), 'and it took his own bottles\' span, not an invented one');
   });
   await T('a pointed wine sets the point to its coordinates', () => {
     el('resetTaste').click();
     const name = Object.keys(refs)[0] || (() => { type('like @ech'); pickMention(0); return Object.keys(refs)[0]; })();
     const w = S.wines.find(x => x.id === refs[name]);
     type('@' + name); el('askGo').click();
-    A.forEach(a => near(point[a], Math.min(Math.max(w[a], band[a][0]), band[a][1]), a));
+    A.forEach(a => landed(a, w[a], w.name));
   });
 
   // -- the wish under the point (band push must be reversible) --
@@ -342,7 +359,7 @@
     // naming wines he likes -- the chip path
     applyAct({ like: [S.wines[3].name] });
     ok(picked.length === 1, 'like sets the picked wine');
-    A.forEach(a => near(point[a], Math.min(Math.max(S.wines[3][a], band[a][0]), band[a][1]), a));
+    A.forEach(a => landed(a, S.wines[3][a], 'like'));
     // writing his taste out -- the button path
     applyAct({ writeTaste: true });
     ok(/^!/.test(ask.value), 'writeTaste fills the composer');
