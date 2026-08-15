@@ -5,7 +5,7 @@ let point={...C.centroid}, hideOwned=true, hideVoted=false, picked=[], hold={};
 let votes=JSON.parse(localStorage.getItem('cc_votes')||'{}');
 
 /* ---------- tabs ---------- */
-const TABS=['find','atlas','palate','move','pop','how'];
+const TABS=['find','palate','move','pop','how','atlas'];
 TABS.forEach(t=>el('t-'+t).onclick=()=>{
   TABS.forEach(x=>{el('t-'+x).setAttribute('aria-selected',x===t); el('s-'+x).hidden=x!==t;});
   /* a hidden canvas has no size, so the atlas is told when it is on screen: it

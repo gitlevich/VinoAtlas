@@ -8,11 +8,11 @@
 
 <nav role="tablist">
   <button role="tab" id="t-find" aria-selected="true">Find wines</button>
-  <button role="tab" id="t-atlas" aria-selected="false">Atlas</button>
   <button role="tab" id="t-palate" aria-selected="false">Your palate</button>
   <button role="tab" id="t-move" aria-selected="false">How your buying changed</button>
   <button role="tab" id="t-pop" aria-selected="false">What happens to everyone</button>
   <button role="tab" id="t-how" aria-selected="false">What the words mean</button>
+  <button role="tab" id="t-atlas" aria-selected="false">Atlas</button>
 </nav>
 
 <section id="s-find">
@@ -176,56 +176,6 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
   </div>
 </section>
 
-<section id="s-atlas" hidden>
-  <div class="card">
-    <div class="atlas">
-      <div class="atlas-side">
-        <h2>What do you want it to taste of?</h2>
-        <p class="note">Tick a word and you are turned to face the wines the shop
-        describes that way. Or just drag the view and look around.</p>
-        <div class="awhead"><span>In the shop’s notes</span><span>wines</span></div>
-        <div class="awlist" id="atlasWords"></div>
-        <div class="awfoot">
-          <button id="atlasClear">clear</button>
-          <button id="atlasWide" style="display:none">step back</button>
-        </div>
-      </div>
-      <div class="atlas-view">
-        <canvas id="atlasCanvas"></canvas>
-        <button id="atlasBig" class="atlas-grow" aria-label="Fill the screen with the shop">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path class="out" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
-            <path class="in" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>
-          </svg>
-          <span></span>
-        </button>
-        <div class="atlas-cues">
-          <b>You are standing in the shop.</b><br>
-          Every glass is one of the 1,652 wines,<br>
-          and the ones on your account are lit.<br>
-          The names in the sky are the five<br>
-          measures, written at both ends.
-        </div>
-        <div id="atlasFacing"></div>
-        <div id="atlasGlobe">
-          <div id="atlasGbar"><button id="atlasGx" aria-label="close the globe">&times;</button></div>
-          <canvas id="atlasMini" width="224" height="224"></canvas>
-        </div>
-        <div id="atlasName"></div>
-      </div>
-    </div>
-    <p class="note" style="margin-top:12px">Drag to look around; pinch to walk in.
-    As you move, near glasses slide past far ones while the names in the sky hold
-    still — that sliding is what tells you how far off a wine is and what stands
-    behind what. Point at a glass to read the bottle, click a name to be carried
-    toward it, and press <b>G</b> for the globe, which is the only view that shows
-    what is behind you. The shop holds 1,652 bottles and you are standing among
-    all of them: <b>fill the screen</b> with the arrows at the top left, and tick
-    a word to leave only the wines described that way lit.</p>
-  </div>
-</section>
-
 <section id="s-palate" hidden>
   <div class="stats" id="palateStats"></div>
   <div class="card">
@@ -277,6 +227,56 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
     filed wrongly, and there will be others. Oak is the shakiest of the five: no tasting panel ever tested
     whether people agree about it, it is here because the shop's list records it. And the order the ten
     orders appear in is inferred, not dated.</p>
+  </div>
+</section>
+
+<section id="s-atlas" hidden>
+  <div class="card">
+    <div class="atlas">
+      <div class="atlas-side">
+        <h2>What do you want it to taste of?</h2>
+        <p class="note">Tick a word and you are turned to face the wines the shop
+        describes that way. Or just drag the view and look around.</p>
+        <div class="awhead"><span>In the shop’s notes</span><span>wines</span></div>
+        <div class="awlist" id="atlasWords"></div>
+        <div class="awfoot">
+          <button id="atlasClear">clear</button>
+          <button id="atlasWide" style="display:none">step back</button>
+        </div>
+      </div>
+      <div class="atlas-view">
+        <canvas id="atlasCanvas"></canvas>
+        <button id="atlasBig" class="atlas-grow" aria-label="Fill the screen with the shop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path class="out" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
+            <path class="in" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>
+          </svg>
+          <span></span>
+        </button>
+        <div class="atlas-cues">
+          <b>You are standing in the shop.</b><br>
+          Every glass is one of the 1,652 wines,<br>
+          and the ones on your account are lit.<br>
+          The names in the sky are the five<br>
+          measures, written at both ends.
+        </div>
+        <div id="atlasFacing"></div>
+        <div id="atlasGlobe">
+          <div id="atlasGbar"><button id="atlasGx" aria-label="close the globe">&times;</button></div>
+          <canvas id="atlasMini" width="224" height="224"></canvas>
+        </div>
+        <div id="atlasName"></div>
+      </div>
+    </div>
+    <p class="note" style="margin-top:12px">Drag to look around; pinch to walk in.
+    As you move, near glasses slide past far ones while the names in the sky hold
+    still — that sliding is what tells you how far off a wine is and what stands
+    behind what. Point at a glass to read the bottle, click a name to be carried
+    toward it, and press <b>G</b> for the globe, which is the only view that shows
+    what is behind you. The shop holds 1,652 bottles and you are standing among
+    all of them: <b>fill the screen</b> with the arrows at the top left, and tick
+    a word to leave only the wines described that way lit.</p>
   </div>
 </section>
 </div>

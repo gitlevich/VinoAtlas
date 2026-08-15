@@ -19,8 +19,13 @@
   const realConfirm = window.confirm; window.confirm = () => true;
 
   // -- boot --
-  await T('every tab and both panels exist', () => {
-    ['t-find','t-atlas','t-palate','t-move','t-pop','t-how'].forEach(id => ok(el(id), id));
+  await T('every tab is there, in order, with the Atlas last', () => {
+    const want = ['t-find','t-palate','t-move','t-pop','t-how','t-atlas'];
+    want.forEach(id => ok(el(id), id));
+    eq([...document.querySelectorAll('nav [role=tab]')].map(b => b.id), want);
+    /* the sections read in the same order as the tabs that open them */
+    eq([...document.querySelectorAll('section[id^="s-"]')].map(x => x.id),
+       want.map(t => 's-' + t.slice(2)));
     ok(el('out').children.length > 0, 'wine list rendered');
     ok(el('axes').children.length === 5, 'five measures');
   });
@@ -534,7 +539,7 @@
      that the sky does not, that you cannot walk out of it, and that every mark
      stands where the catalogue put it. */
   const AT = ATLAS, ATD = AT.D;
-  const wasTab = ['find','atlas','palate','move','pop','how']
+  const wasTab = ['find','palate','move','pop','how','atlas']
     .find(t => el('t-' + t).getAttribute('aria-selected') === 'true') || 'find';
   const atSnap = { yaw: AT.yaw, pitch: AT.pitch, FOV: AT.FOV, STAND: AT.STAND.slice(),
                    held: AT.held, words: [...AT.state] };
@@ -1003,6 +1008,11 @@
   AT.yaw = atSnap.yaw; AT.pitch = atSnap.pitch; AT.FOV = atSnap.FOV;
   AT.STAND = atSnap.STAND; AT.held = atSnap.held;
   AT.toggleGlobe(true);
+  /* the suite leaves a pointer where no pointer is, and a way back from a lean
+     it has already undone; both are chrome and both are put back by hand */
+  el('atlasName').style.display = 'none';
+  el('atlasWide').style.display = 'none';
+  AT.fill(false); AT.draw();
   el('t-' + wasTab).click();
 
   // restore
