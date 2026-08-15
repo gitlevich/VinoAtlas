@@ -293,6 +293,9 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .aw em{margin-left:auto;font-style:normal;font-size:11px;color:var(--ink-3);
   font-variant-numeric:tabular-nums}
 .aw[aria-checked="yes"]{background:var(--raise);font-weight:600}
+/* a word that would leave nothing: still tickable, plainly pointless */
+.aw.none{opacity:.38}
+.aw.none em{text-decoration:line-through}
 .awfoot{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--rule)}
 .awfoot button{font:inherit;font-size:11.5px;padding:5px 10px;border-radius:6px;
   border:1px solid var(--rule);background:var(--raise);color:var(--ink-2);cursor:pointer}

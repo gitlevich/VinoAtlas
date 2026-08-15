@@ -293,6 +293,9 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .aw em{margin-left:auto;font-style:normal;font-size:11px;color:var(--ink-3);
   font-variant-numeric:tabular-nums}
 .aw[aria-checked="yes"]{background:var(--raise);font-weight:600}
+/* a word that would leave nothing: still tickable, plainly pointless */
+.aw.none{opacity:.38}
+.aw.none em{text-decoration:line-through}
 .awfoot{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--rule)}
 .awfoot button{font:inherit;font-size:11.5px;padding:5px 10px;border-radius:6px;
   border:1px solid var(--rule);background:var(--raise);color:var(--ink-2);cursor:pointer}
@@ -1043,7 +1046,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='28ecc396';
+const BUILD='431e2acb';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -2582,15 +2585,36 @@ const state = new Set();
    the same way, so the red half of the sky is a wall; tick "cedar" and 173 wines
    stay lit out of 1,652. The rest do not go away -- a shop you cannot see past is
    still the shop -- they go quiet, and walking still carries you among them. */
-let onlyThese = null;
+let onlyThese = null, askedNothing = false;
 function refilter() {
-  if (!state.size) { onlyThese = null; return; }
   let keep = null;
   for (const w of state) {
     const s = new Set(TERMS.find(t => t.w === w).in);
     keep = keep === null ? s : new Set([...keep].filter(i => s.has(i)));
   }
-  onlyThese = keep;
+  /* AN EMPTY ANSWER MUST NOT BLACK OUT THE SHOP. Words are read together, and
+     four of them together often name nothing at all; quieting every wine then
+     leaves a field of specks with no way to tell what is there except to walk
+     over and look. If nothing matches, the shop stays lit and the readout says
+     so. */
+  askedNothing = keep !== null && keep.size === 0;
+  onlyThese = (keep && keep.size) ? keep : null;
+  countRows();
+}
+
+/* AND THE LIST SAYS WHAT ADDING A WORD WOULD DO, before it is clicked: the count
+   beside each word is how many are left if you add it to what is already ticked.
+   A word that would leave none is greyed. Otherwise the only way to find out is
+   to tick it and watch the shop go dark. */
+function countRows() {
+  for (const row of wordList.children) {
+    const t = TERMS.find(x => x.w === row.dataset.w);
+    const on = state.has(t.w);
+    const n = (onlyThese && !on) ? t.in.reduce((k, i) => k + (onlyThese.has(i) ? 1 : 0), 0)
+                                 : (askedNothing && !on ? 0 : t.n);
+    row.querySelector('em').textContent = n;
+    row.classList.toggle('none', n === 0 && !on);
+  }
 }
 
 function bundle(F) {
@@ -2637,7 +2661,8 @@ function readout() {
     } else if (idx.length) {
       odds = `<div class="odds">only ${idx.length} wines are described this way &mdash; too few to say</div>`;
     } else {
-      odds = `<div class="odds">no wine in the shop is described with all of those words</div>`;
+      odds = `<div class="odds">no wine in the shop is described with all of those`
+            + ` words &mdash; the shop is lit again; untick one</div>`;
     }
   }
   const one = it => `<span style="color:${vivid(it.hsl, 1, 6)}">${it.w}</span>`;
@@ -2689,6 +2714,7 @@ el('atlasClear').onclick = () => {
   refilter();
   nudge();
 };
+countRows();
 
 /* ---- pointing ------------------------------------------------------------ */
 let down = false, lx = 0, ly = 0, moved = 0;
@@ -2859,7 +2885,6 @@ const NORM = v => { const n = Math.hypot(...v); return v.map(x => x/n); };
 const LIGHT = NORM([-0.42, 0.52, 0.74]);      // the key
 const FILL  = NORM([0.55, -0.40, 0.73]);      // a second, weaker, from below right
 let showMini = true;
-const gimg = mg.createImageData(GS, GS);
 function hsl2rgb(h, s, l) {
   h = ((h % 360) + 360) % 360; s /= 100; l /= 100;
   const c = (1 - Math.abs(2*l - 1)) * s, x = c * (1 - Math.abs((h/60) % 2 - 1)), m = l - c/2;
@@ -2869,86 +2894,83 @@ function hsl2rgb(h, s, l) {
   else if (h < 300) [r, g2, b] = [x, 0, c]; else [r, g2, b] = [c, 0, x];
   return [(r+m)*255, (g2+m)*255, (b+m)*255];
 }
+/* A WIREFRAME, NOT A PAINTED BALL.
+   Painted solid, the globe was a mood: ten muted hexes averaged into a wash, and
+   nothing on it could be pointed at. A wireframe says the two things a globe is
+   for. It is a SPHERE -- the meridians crowd at the silhouette and the parallels
+   bow, which no flat disc does -- and it has a FRONT AND A BACK, so a pole behind
+   you can be shown as being behind you rather than left off. Colour is carried by
+   the ten circles alone; the cage stays neutral, and the names come on hover so
+   they are not in the way of the thing they name. */
+let gHover = null;
+
 function drawMini() {
   if (!showMini || !live) return;
   const F = frame(), fwd = unit(F.f), gr = unit(F.r), gu = unit(F.u);
-  /* taken as they are: these are wine colours already, and boosting them is
-     what turned tawny into orange and pale rose into magenta */
-  const rgb = POLES.map(p => hsl2rgb(p.hsl[0], p.hsl[1], p.hsl[2]));
-  const px = gimg.data;
-  for (let j = 0; j < GS; j++) {
-    const v = (GC - j) / GR;
-    for (let i = 0; i < GS; i++) {
-      const u = (i - GC) / GR, k = (j*GS + i)*4, rr = u*u + v*v;
-      if (rr > 1) { px[k+3] = 0; continue; }
-      const w = Math.sqrt(1 - rr);
-      const d0 = gr[0]*u + gu[0]*v + fwd[0]*w;
-      const d1 = gr[1]*u + gu[1]*v + fwd[1]*w;
-      const d2 = gr[2]*u + gu[2]*v + fwd[2]*w;
-      let bs = -2;
-      const t = [];
-      for (let q = 0; q < POLES.length; q++) {
-        const e = POLES[q].dir, sd = d0*e[0] + d1*e[1] + d2*e[2];
-        t.push(sd); if (sd > bs) bs = sd;
-      }
-      let r = 0, g2 = 0, b2 = 0, tot = 0;
-      for (let q = 0; q < POLES.length; q++) {
-        /* REGIONS, NOT AN AVERAGE. Four of the ten poles lie within fourteen
-           degrees of each other, so a soft blend returns their mean and the whole
-           face goes beige. */
-        const wq = Math.exp((t[q] - bs) * 45);
-        if (wq < 0.004) continue;
-        r += rgb[q][0]*wq; g2 += rgb[q][1]*wq; b2 += rgb[q][2]*wq; tot += wq;
-      }
-      const edge = Math.cos(FOV / 2);
-      const vis = w >= edge ? 1 : Math.max(0, 1 - (edge - w) / 0.10);
-      r /= tot; g2 /= tot; b2 /= tot;
-      /* A BALL, LIT. It was shaded by depth alone -- brightest dead centre,
-         falling evenly to the rim -- which is what a disc looks like, not a
-         sphere. A light off to one side gives it a terminator and a limb, and
-         those are what say sphere without anything being written down. */
-      /* GLASS WITH WINE IN IT, NOT A PAINTED BALL.
-         The broad diffuse wash is what made it plastic -- a lambert term is how
-         chalk behaves, and a wide soft sheen on top of it is how plastic does.
-         Glass is three other things. It is DEEPEST WHERE IT IS THICKEST, so the
-         colour darkens toward the middle where the line of sight runs furthest
-         through the wine and thins at the silhouette. It carries a THIN BRIGHT
-         EDGE where the surface turns away and the light comes back out. And its
-         highlights are SMALL AND HARD, two of them, because a glass sphere
-         reflects both the front face and the back. */
-      const lam = Math.max(0, u*LIGHT[0] + v*LIGHT[1] + w*LIGHT[2]);
-      const lam2 = Math.max(0, u*FILL[0] + v*FILL[1] + w*FILL[2]);
-      /* Beer-Lambert, near enough: the line of sight through a sphere is longest
-         dead centre and shortest at the silhouette, so a ball of wine is DEEPEST
-         in the middle and thins to the edge. It was the other way round, which is
-         how a painted ball behaves and why it read as plastic. */
-      const thru = Math.exp(-1.05 * w);        // what gets out
-      const body = (0.40 + 0.55 * lam) * (0.34 + 1.18 * thru);
-      const seen = 0.60 + 0.40 * vis;          // outside your field, quieter
-      const wet = 86 * Math.pow(1 - w, 11);    // the bright line right at the limb
-      const s1 = 205 * Math.pow(lam, 150);
-      const s2 = 62 * Math.pow(lam2, 90);
-      if (DARK) {
-        const f = body * seen;
-        px[k] = r*f + s1 + s2 + wet*0.92;
-        px[k+1] = g2*f + s1 + s2 + wet*0.86;
-        px[k+2] = b2*f + s1 + s2 + wet;
-      } else {
-        const wash = (1 - Math.min(1, body)) * 0.45 + (1 - vis) * 0.20;
-        px[k] = r + (250-r)*wash + s1*0.6; px[k+1] = g2 + (250-g2)*wash + s1*0.6;
-        px[k+2] = b2 + (250-b2)*wash + s1*0.6;
-      }
-      px[k+3] = 255;
+  const at = p => ({ x: GC + dot(p, gr)*GR, y: GC - dot(p, gu)*GR, w: dot(p, fwd) });
+  const ink = a => DARK ? `rgba(255,255,255,${a})` : `rgba(24,24,28,${a})`;
+  mg.clearRect(0, 0, GS, GS);
+
+  /* the ball itself: a faint disc so the cage reads as a surface and not as wire
+     floating in nothing */
+  const bg = mg.createRadialGradient(GC - GR*0.3, GC - GR*0.3, 0, GC, GC, GR);
+  bg.addColorStop(0, DARK ? 'rgba(255,255,255,.055)' : 'rgba(20,20,28,.05)');
+  bg.addColorStop(1, DARK ? 'rgba(255,255,255,.012)' : 'rgba(20,20,28,.015)');
+  mg.fillStyle = bg;
+  mg.beginPath(); mg.arc(GC, GC, GR, 0, 6.2832); mg.fill();
+
+  /* meridians and parallels, drawn all the way round: the half facing you is
+     plain, the half behind you is faint, and that difference IS the sphere */
+  const curve = pts => {
+    for (let k = 0; k + 1 < pts.length; k++) {
+      const a = pts[k], b = pts[k+1], front = (a.w + b.w) > 0;
+      mg.strokeStyle = ink(front ? (DARK ? 0.30 : 0.26) : (DARK ? 0.085 : 0.075));
+      mg.lineWidth = front ? 1 : 0.9;
+      mg.beginPath(); mg.moveTo(a.x, a.y); mg.lineTo(b.x, b.y); mg.stroke();
+    }
+  };
+  for (let m = 0; m < 8; m++) {                    // meridians, every 22.5 degrees
+    const lon = m * Math.PI / 8, pts = [];
+    for (let t = 0; t <= 72; t++) {
+      const la = -Math.PI/2 + t * Math.PI / 72;
+      pts.push(at([Math.cos(la)*Math.cos(lon), Math.sin(la), Math.cos(la)*Math.sin(lon)]));
+    }
+    curve(pts);
+  }
+  for (const la of [-1.0472, -0.5236, 0, 0.5236, 1.0472]) {   // parallels, every 30
+    const pts = [];
+    for (let t = 0; t <= 96; t++) {
+      const lo = t * 6.2832 / 96;
+      pts.push(at([Math.cos(la)*Math.cos(lo), Math.sin(la), Math.cos(la)*Math.sin(lo)]));
+    }
+    curve(pts);
+  }
+  mg.strokeStyle = ink(DARK ? 0.34 : 0.30); mg.lineWidth = 1;
+  mg.beginPath(); mg.arc(GC, GC, GR, 0, 6.2832); mg.stroke();
+
+  /* THE TEN CIRCLES, which are where the colour lives. Facing you: filled, with a
+     ring. Behind you: hollow, so you can see it is round the back without having
+     to turn to find out. */
+  const marks = POLES.map(p => ({ p, q: at(p.dir) }));
+  marks.sort((a, b) => a.q.w - b.q.w);            // the far ones first
+  for (const { p, q } of marks) {
+    const front = q.w > 0, r = front ? 5.6 : 4.4;
+    const col = vivid(p.hsl, front ? 1 : 0.55, front ? 4 : 0);
+    p.gHit = [q.x, q.y];
+    p.gFront = front;
+    if (front) {
+      mg.fillStyle = col;
+      mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.fill();
+      mg.strokeStyle = ink(0.55); mg.lineWidth = 1;
+      mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.stroke();
+    } else {
+      mg.strokeStyle = col; mg.lineWidth = 1.4;
+      mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.stroke();
     }
   }
-  mg.clearRect(0, 0, GS, GS);
-  mg.putImageData(gimg, 0, 0);
 
   /* WHAT IS UNDER THE CROSSHAIR, PUT ON THE BALL. The globe says which way you
-     are facing; it did not say what you are facing AT. The wines inside the
-     crosshair are drawn on it at their own bearing -- a bottle for his, a glass
-     for the shop's, each in the wine's own colour -- so the thing you are
-     pointing at is shown standing on the ground it stands on. */
+     are facing; it did not say what you are facing AT. */
   const near0 = [];
   for (const m of WMARK) {
     if (!m.node) continue;
@@ -2958,86 +2980,73 @@ function drawMini() {
   near0.sort((a, b) => a.d - b.d);
   const put0 = [];
   for (const { m } of near0.slice(0, 6)) {
-    const u = unit(here(m.pos));
-    if (dot(u, fwd) <= 0.02) continue;
-    let px0 = GC + dot(u, gr)*GR, py0 = GC - dot(u, gu)*GR, k = 0;
-    while (k < 8 && put0.some(q => Math.hypot(q[0]-px0, q[1]-py0) < 11)) { k++; px0 += 9; }
+    const q = at(unit(here(m.pos)));
+    if (q.w <= 0.02) continue;
+    let px0 = q.x, py0 = q.y, k = 0;
+    while (k < 8 && put0.some(o => Math.hypot(o[0]-px0, o[1]-py0) < 11)) { k++; px0 += 9; }
     put0.push([px0, py0]);
     const wine = pour(m.i), fill = `hsl(${wine[0]},${wine[1]}%,${wine[2]}%)`;
     mg.save();
     mg.shadowColor = 'rgba(0,0,0,.85)'; mg.shadowBlur = 4;
-    if (MINE[m.i]) {                                  // a bottle: his
-      mg.fillStyle = fill;
+    mg.fillStyle = fill;
+    if (MINE[m.i]) {
       mg.fillRect(px0 - 1.4, py0 - 7, 2.8, 4.4);
       mg.beginPath(); mg.roundRect(px0 - 3.4, py0 - 3.2, 6.8, 10.4, 1.6); mg.fill();
-      mg.strokeStyle = 'rgba(255,255,255,.9)'; mg.lineWidth = 1;
+      mg.strokeStyle = ink(0.9); mg.lineWidth = 1;
       mg.beginPath(); mg.roundRect(px0 - 3.4, py0 - 3.2, 6.8, 10.4, 1.6); mg.stroke();
-    } else {                                          // a glass: the shop's
-      mg.fillStyle = fill;
+    } else {
       mg.beginPath(); mg.moveTo(px0 - 3.6, py0 - 4.4); mg.lineTo(px0 + 3.6, py0 - 4.4);
       mg.lineTo(px0, py0 + 3.2); mg.closePath(); mg.fill();
-      mg.strokeStyle = 'rgba(255,255,255,.9)'; mg.lineWidth = 1; mg.stroke();
+      mg.strokeStyle = ink(0.9); mg.lineWidth = 1; mg.stroke();
       mg.beginPath(); mg.moveTo(px0, py0 + 3.2); mg.lineTo(px0, py0 + 6.4);
       mg.moveTo(px0 - 2.6, py0 + 6.6); mg.lineTo(px0 + 2.6, py0 + 6.6); mg.stroke();
     }
     mg.restore();
   }
 
-  mg.textAlign = 'center'; mg.textBaseline = 'middle';
-  const FS = 11;
-  mg.font = `600 ${FS}px system-ui,-apple-system,"Segoe UI",sans-serif`;
-  const cand = [];
-  for (const p of POLES) {
-    p.gHit = null;
-    const c = dot(p.dir, fwd);
-    if (c <= 0.04) continue;                   // genuinely round the back
-    cand.push({ p, c, ax: GC + dot(p.dir, gr)*GR, ay: GC - dot(p.dir, gu)*GR });
-  }
-  cand.sort((a, b) => b.c - a.c);
-  /* Four of these poles lie within forty degrees of one another, so nailing each
-     name to its own patch put half of them on top of each other. A name that
-     would land on one already placed is pushed outward along its own radius
-     until it is clear, and a leader runs back to where it belongs -- a label that
-     has moved a little is worth more than a label you cannot read. */
-  const put = [];
-  for (const q of cand) {
-    const tw = mg.measureText(q.p.w).width, bw = tw + 11, bh = FS + 6;
-    const ux = q.ax - GC, uy = q.ay - GC, un = Math.hypot(ux, uy) || 1;
-    let x = q.ax, y = q.ay, k = 0;
-    const clash = () => put.some(b => Math.abs(x - b[0]) < (bw + b[2])/2 + 2
-                                   && Math.abs(y - b[1]) < (bh + b[3])/2 + 2);
-    while (clash() && k < 26) { k++; x = q.ax + ux/un * k * 5; y = q.ay + uy/un * k * 5; }
-    x = Math.max(bw/2 + 2, Math.min(GS - bw/2 - 2, x));
-    y = Math.max(bh/2 + 2, Math.min(GS - bh/2 - 2, y));
-    put.push([x, y, bw, bh]);
-    const a = Math.min(1, Math.max(0.35, (q.c - 0.04) / 0.16));
-    if (k) {
-      mg.strokeStyle = vivid(q.p.hsl, a * 0.5);
-      mg.lineWidth = 1;
-      mg.beginPath(); mg.moveTo(q.ax, q.ay); mg.lineTo(x, y); mg.stroke();
-      mg.beginPath(); mg.arc(q.ax, q.ay, 1.8, 0, 6.2832);
-      mg.fillStyle = vivid(q.p.hsl, a * 0.8); mg.fill();
-    }
-    mg.fillStyle = DARK ? `rgba(6,6,6,${a*0.82})` : `rgba(255,255,255,${a*0.86})`;
-    mg.beginPath(); mg.roundRect(x - bw/2, y - bh/2, bw, bh, 5); mg.fill();
-    mg.strokeStyle = vivid(q.p.hsl, a*0.9);
-    mg.lineWidth = 1.1;
-    mg.beginPath(); mg.roundRect(x - bw/2, y - bh/2, bw, bh, 5); mg.stroke();
-    mg.fillStyle = DARK ? `rgba(255,255,255,${a})` : `rgba(20,20,24,${a})`;
-    mg.fillText(q.p.w, x, y + 0.5);
-    q.p.gHit = [x, y];
-  }
-  mg.textBaseline = 'alphabetic';
+  /* the rim of what you can see: the ground inside it is your field */
   mg.beginPath();
   mg.arc(GC, GC, GR * Math.sin(FOV/2), 0, 6.2832);
-  mg.strokeStyle = DARK ? 'rgba(255,255,255,.55)' : 'rgba(20,20,24,.45)';
-  mg.lineWidth = 1.3; mg.stroke();
+  mg.strokeStyle = ink(DARK ? 0.5 : 0.42);
+  mg.setLineDash([3, 3]); mg.lineWidth = 1.2; mg.stroke(); mg.setLineDash([]);
+
+  /* ONE NAME, AND ONLY WHERE YOU ARE POINTING. Ten labels nailed to a
+     postage-stamp ball covered the thing they were labelling. */
+  if (gHover) {
+    const p = gHover, q = at(p.dir);
+    mg.font = `600 11px system-ui,-apple-system,"Segoe UI",sans-serif`;
+    mg.textAlign = 'center'; mg.textBaseline = 'middle';
+    const tw = mg.measureText(p.w).width, bw = tw + 12, bh = 18;
+    const x = Math.max(bw/2 + 2, Math.min(GS - bw/2 - 2, q.x));
+    const y = Math.max(bh/2 + 2, Math.min(GS - bh/2 - 2, q.y - 15));
+    mg.fillStyle = DARK ? 'rgba(8,8,8,.92)' : 'rgba(255,255,255,.94)';
+    mg.beginPath(); mg.roundRect(x - bw/2, y - bh/2, bw, bh, 5); mg.fill();
+    mg.strokeStyle = vivid(p.hsl, 0.95); mg.lineWidth = 1.2;
+    mg.beginPath(); mg.roundRect(x - bw/2, y - bh/2, bw, bh, 5); mg.stroke();
+    mg.fillStyle = DARK ? 'rgba(255,255,255,.96)' : 'rgba(18,18,22,.96)';
+    mg.fillText(p.w + (q.w > 0 ? '' : ' · behind you'), x, y + 0.5);
+    mg.textBaseline = 'alphabetic';
+  }
 }
 
 /* DOUBLE-CLICK THE GLOBE TO GO THERE. The globe paints each pixel by turning
    disc coordinates into a direction, so the same arithmetic run backwards turns
    a click into the direction it was painted from. It is the only view that shows
    what is behind you, and this is what makes that reachable. */
+mini.addEventListener('pointermove', e => {
+  if (gDown) return;
+  const r = mini.getBoundingClientRect(), sc = GS / r.width;
+  const mx = (e.clientX - r.left) * sc, my = (e.clientY - r.top) * sc;
+  let best = null, bd = 13 * 13;
+  for (const p of POLES) {
+    if (!p.gHit) continue;
+    const d = (p.gHit[0] - mx) ** 2 + (p.gHit[1] - my) ** 2;
+    if (d < bd) { bd = d; best = p; }
+  }
+  if (best !== gHover) { gHover = best; drawMini(); }
+});
+mini.addEventListener('pointerleave', () => { if (gHover) { gHover = null; drawMini(); } });
+
 mini.addEventListener('dblclick', e => {
   const r = mini.getBoundingClientRect(), s = GS / r.width;
   const u = ((e.clientX - r.left)*s - GC) / GR, v = (GC - (e.clientY - r.top)*s) / GR;
@@ -3228,7 +3237,8 @@ return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, r
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },
          get FOV() { return FOV; }, set FOV(v) { FOV = fovWant = v; },
-         glide, easeStand, showZoom, zOf, FOVMIN, help,
+         glide, easeStand, showZoom, zOf, FOVMIN, help, countRows,
+         get askedNothing() { return askedNothing; },
          get STAND() { return STAND; }, set STAND(v) { STAND = v; standWant = null; },
          get standWant() { return standWant; },
          get EYE() { return EYE; },

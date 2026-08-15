@@ -1102,6 +1102,31 @@
     ok(!AT.onlyThese, 'clear puts the whole shop back');
   });
 
+  await T('the list says what adding a word would leave, before it is clicked', () => {
+    el('atlasClear').click();
+    const row = w => [...el('atlasWords').children].find(r => r.dataset.w === w);
+    const count = w => +row(w).querySelector('em').textContent;
+    eq(count('citrus'), AT.TERMS.find(t => t.w === 'citrus').n, 'its own count to start');
+    row('cedar').click();
+    /* every other word now says how many are left if you add it to cedar */
+    eq(count('cedar'), 173, 'the ticked word keeps its own');
+    const cedar = new Set(AT.TERMS.find(t => t.w === 'cedar').in);
+    for (const w of ['tobacco', 'graphite', 'truffle', 'citrus']) {
+      const want = AT.TERMS.find(t => t.w === w).in.filter(i => cedar.has(i)).length;
+      eq(count(w), want, w);
+      eq(row(w).classList.contains('none'), want === 0, w + ' greyed when it would leave none');
+    }
+    ok([...el('atlasWords').children].filter(r => r.classList.contains('none')).length > 5,
+       'and plenty of words would leave none');
+    /* asked for nothing, the shop comes back lit rather than going dark */
+    row('citrus').click();
+    ok(AT.askedNothing, 'cedar and citrus name nothing together');
+    eq(AT.onlyThese, null, 'so nothing is quieted');
+    ok(/no wine in the shop/.test(el('atlasFacing').textContent), 'and it says so');
+    el('atlasClear').click();
+    eq(count('citrus'), AT.TERMS.find(t => t.w === 'citrus').n, 'clear puts the counts back');
+  });
+
   await T('a sparkling wine is a flute, and the catalogue\'s own flag is not asked', () => {
     const fizz = ATD.fizz;
     eq(fizz.length, S.wines.length);
