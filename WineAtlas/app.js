@@ -546,15 +546,21 @@ function observeApp(){
     .map(r=>{const w=S.wines.find(x=>x.id===r.dataset.w); return w?w.name:'';}).filter(Boolean);
   const pin=pinned?(S.wines.find(x=>x.id===pinned)||{}).name:null;
   const marks=Object.keys(votes).length;
+  /* his marks are the measurement: the sommelier may read every one of them by
+     name -- it just may never cast one */
+  const named=d=>Object.keys(votes).filter(id=>votes[id]===d)
+    .map(id=>(S.wines.find(x=>x.id===id)||{}).name).filter(Boolean).join('; ');
+  const right=named(1), wrong=named(-1);
   return `WHAT HE SEES RIGHT NOW
 Open section: ${open}.
 The point stands at: ${A.map(a=>`${a}=${point[a].toFixed(2)}`).join(' ')}.
 Bands held (a wine outside any band is never shown): ${hs||'none'}.
-Wines considered after the bands and filters: ${el('count').textContent.split('·')[0].trim()}.
+Wines considered after the bands and filters: ${el('count').textContent.split('·')[0].replace(/\s*wines considered\s*/,'').trim()}.
 Closest wines on his screen, nearest first: ${shown.join('; ')||'none'}.
 Held on his radar: ${pin||'nothing'}.
-Wines he has marked so far: ${marks}.
-Hiding wines he already bought: ${hideOwned?'yes':'no'}. Hiding ones he already marked: ${hideVoted?'yes':'no'}.`;
+Wines he has marked so far: ${marks}.${right?`\nHe marked right: ${right}.`:''}${wrong?`\nHe marked wrong: ${wrong}.`:''}
+Hiding wines he already bought: ${hideOwned?'yes':'no'}. Hiding ones he already marked: ${hideVoted?'yes':'no'}.
+${ATLAS.seen()}`;
 }
 /* WHAT THE SOMMELIER IS GIVEN. It had the shop as name, grape, region and five
    numbers -- and nothing else, which is why it could say what his earliest order
@@ -562,14 +568,16 @@ Hiding wines he already bought: ${hideOwned?'yes':'no'}. Hiding ones he already 
    his, what year, what the Atlas words say about each, and what was actually in
    each of the ten orders. Built at send time, since the Atlas words come from
    the Atlas and it is assembled after this. */
+const KINDNAME=k=>k.name.split(/[—-]/)[0].trim();
 function catalogText(){
-  const words=[];
+  const words=[], kind={};
   try{ for(const t of ATLAS.D.terms) for(const i of t.in) (words[i]=words[i]||[]).push(t.w); }catch(_){}
+  KINDS.forEach(k=>k.wines.forEach(w=>{kind[w.id]=KINDNAME(k);}));
   return S.wines.map((w,i)=>
     `${w.name} | ${w.vintage?Math.round(w.vintage):'NV'} | `
     +`${[w.variety,w.region].filter(Boolean).join(', ')||'-'} | `
     +A.map(a=>w[a].toFixed(2)).join(' ')
-    +(OWNED.has(w.id)?' | HIS':'')
+    +(OWNED.has(w.id)?' | HIS, '+(kind[w.id]||'unsorted'):'')
     +(words[i]&&words[i].length?' | '+words[i].join(' '):'')).join('\n');
 }
 function ordersText(){
@@ -597,12 +605,10 @@ ${(()=>{const o=S.orders.filter(x=>x.weight!==undefined);if(o.length<4)return ''
   const f=m(o.slice(0,3)), l=m(o.slice(-3));
   return 'His buying has moved, earliest orders to latest: '+A.map((a,i)=>`${a} ${f[i].toFixed(2)} -> ${l[i].toFixed(2)}`).join(', ')+'.';})()}
 The user may name a measure with #weight #grip #oak #fruit #age; "more #oak" means raise oak.
-Answer with JSON only, nothing else:
-{"say":"one short plain sentence answering the user","point":{"weight":n,"grip":n,"oak":n,"fruit":n,"maturity":n},"hold":{"oak":[0,0.3]},"act":{"tab":"find","kind":0,"heading":true,"hideOwned":false,"hideVoted":false,"pin":"exact wine name","show":"sigil","like":["exact wine name"],"writeTaste":true}}
-"say" is required: one short plain sentence for the user. Send "point" only when the user's words move the point; send "hold" only for a stated hard requirement, as [low, high] on 0..1.
-"atlas" drives the space in the Atlas tab, and it opens that tab first: {"face":"a pole, a word in the list, or a wine by name"} turns him to face it, {"faceTo":[x,y,z]} turns him to a bearing, {"zoom":0..1} sets how close he is looking (0 the whole field, 1 the closest), {"walk":0.5} steps him forward and a negative number back, {"tick":["cedar"],"untick":["citrus"]} light the wines described that way, {"clear":true} unticks everything, {"point":"a wine by name"} turns to it and opens its card, {"globe":false} hides the globe, {"help":true} opens what-you-can-do, {"approach":true} carries him toward what he is facing and marks what stayed in frame on the way, {"words":false} and {"sommelier":false} fold the side panels, {"screen":true} fills the window. "tour" takes him through his ten orders in that space, oldest to newest, saying what moved between each -- offer it when he asks how his buying has changed, or how to read the Atlas.
-"act" drives the page itself -- everything the user can click except his marks and Reset. Each field is optional: "tab" opens a section (find = the finder; palate = his wines against the shelf; move = how his buying changed; pop = what happens to a drinker's first decade; how = what the words mean), "kind" presses one of his four kind buttons (0 to 3, the order listed above), "heading" sets the point to where his buying is heading, "hideOwned"/"hideVoted" set the finder's filters, "pin" holds a named wine's shape on his radar (null releases it), "show" brings one part of the page into view and rings it -- one of: sigil (the whole taste card), measures (the five band sliders), shape (the five-cornered drawing of his taste), list (the wines found), ask (this sommelier panel), kinds (his four buying kinds), filters (the two hiding switches), marks (the button that downloads his marks). "like" sets the point to the middle of the named wines, exactly as if he had named them himself; "writeTaste" measures the bands his own buying stays inside and writes them into this box for him to correct. Use "act" when his words ask to see, learn, or do something, never to decorate. Everything he can do here, you can do -- except marking a wine right or wrong, and Reset. Those are his: his marks are the measurement, and you must never cast them.
-In "say", the only measure names allowed are: body, tannin grip, oak, fruit character, age. The JSON key for age is "maturity"; in speech it is always age. The interface calls the point "the wine you are asking for" -- use that phrase when you refer to it, never "the point".
+
+YOUR HANDS. The tools sent with this message are the page's own controls, and calling one is his hand on it: it happens at once, on his screen, and whatever you move wears a fading ring where it sits. Everything he can do you can do, except marking a wine right or wrong and Reset -- those are his, his marks are the measurement, and you must never cast one.
+Never say a move instead of making it. If you are about to write that you are turning the Atlas, or setting a measure, or opening a section, call the tool in that same turn; a sentence about a move that was not called is a lie to him. Every call answers with what the page shows afterwards. Read that answer before you speak, and name the wines that actually came up rather than the ones you expected. When you are asked something you can only settle by looking, call "look" first and answer from what it says.
+Then reply in plain sentences -- short, to an expert, never JSON. The only measure names allowed in speech are: body, tannin grip, oak, fruit character, age. The tools call age "maturity"; in speech it is always age. The interface calls the point "the wine you are asking for" -- use that phrase when you refer to it, never "the point".
 
 His ten orders, oldest to newest, with what was actually in each:
 ${ordersText()}
@@ -665,7 +671,7 @@ function applyAct(act){
      can do too -- turn, walk, change the field, tick a word, point at a bottle,
      fold a panel, fill the screen. Marking a wine right or wrong stays his. */
   if(act.atlas){ if(el('s-atlas').hidden) el('t-atlas').click(); ATLAS.act(act.atlas); }
-  if(act.tour) ATLAS.tour();
+  if(act.tour){ if(el('s-atlas').hidden) el('t-atlas').click(); ATLAS.tour(); }
   if('pin' in act){
     const w=act.pin?S.wines.find(x=>x.name.toLowerCase()===String(act.pin).toLowerCase()):null;
     pinned=w?w.id:null;
@@ -675,37 +681,167 @@ function applyAct(act){
       r.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'nearest'});}}
   }
 }
+/* ---- the sommelier's hands ------------------------------------------------
+   It used to answer with a blob of hand-written JSON that carried both its
+   sentence and its move. Nothing checked the blob: a key in the wrong place
+   was not an error, it was silence -- it said "turning the Atlas to that wine"
+   and the Atlas did not turn, because "atlas" had been documented at the top
+   level and was read one level down. Saying and doing were the same act, so
+   there was nothing to disagree with.
+
+   These are real tool calls instead. The shape is checked before it reaches us,
+   the call is a separate thing from the sentence, and every call answers with
+   what the page shows afterwards -- so the sentence is written after the move,
+   about the move, from what the page then said. */
+const SHOWPARTS=['sigil','measures','shape','list','ask','kinds','filters','marks'];
+const axSchema=(d,lo,hi)=>({type:'number',minimum:lo===undefined?0:lo,maximum:hi===undefined?1:hi,description:d});
+const TOOLBOX=[
+{name:'move',
+ description:'Move the wine he is asking for, and the bands that limit the search. The list then shows the shop wines nearest that wine, inside every band. Send only the measures his words move; the ones you leave out stay where they are.',
+ schema:{type:'object',properties:{
+   weight:axSchema(`${S.labels.weight}: 0 = ${S.ends.weight[0]}, 1 = ${S.ends.weight[1]}`),
+   grip:axSchema(`${S.labels.grip}: 0 = ${S.ends.grip[0]}, 1 = ${S.ends.grip[1]}`),
+   oak:axSchema(`${S.labels.oak}: 0 = ${S.ends.oak[0]}, 1 = ${S.ends.oak[1]}`),
+   fruit:axSchema(`${S.labels.fruit}: 0 = ${S.ends.fruit[0]}, 1 = ${S.ends.fruit[1]}`),
+   maturity:axSchema(`${S.labels.maturity}: 0 = ${S.ends.maturity[0]}, 1 = ${S.ends.maturity[1]}`),
+   hold:{type:'object',description:'Hard requirements only, one per measure, as [low, high] on 0..1. A wine outside any band is never shown. [0, 1] releases a band.',
+     properties:Object.fromEntries(A.map(a=>[a,{type:'array',items:{type:'number'},minItems:2,maxItems:2}]))}}}},
+{name:'page',
+ description:"Press the page's own controls. Every field is optional; send only what his words ask for.",
+ schema:{type:'object',properties:{
+   tab:{type:'string',enum:TABS,description:'Open a section. find = the finder; palate = his wines against the shelf; move = how his buying changed; pop = what happens to a drinker\'s first decade; how = what the words mean; atlas = the shop as a place he stands inside.'},
+   kind:{type:'integer',minimum:0,maximum:3,description:'Press one of his four buying kinds: '+KINDS.map((k,i)=>`${i} = ${k.name} (${k.wines.length} of his wines)`).join('; ')},
+   heading:{type:'boolean',description:'Set the wine he is asking for to where his buying is heading.'},
+   hideOwned:{type:'boolean',description:'Hide wines he has already bought.'},
+   hideVoted:{type:'boolean',description:'Hide wines he has already marked.'},
+   pin:{type:'string',description:"Hold a named wine's shape on his radar, against his own. An empty string releases it."},
+   show:{type:'string',enum:SHOWPARTS,description:'Bring one part of the page into view and ring it. sigil = the whole taste card; measures = the five band sliders; shape = the five-cornered drawing of his taste; list = the wines found; ask = this sommelier panel; kinds = his four buying kinds; filters = the two hiding switches; marks = the button that downloads his marks.'},
+   like:{type:'array',items:{type:'string'},description:'Exact wine names. Sets the wine he is asking for to the middle of them, exactly as if he had named them himself.'},
+   writeTaste:{type:'boolean',description:'Measure the bands his own buying stays inside and write them into his box, for him to correct and send.'}}}},
+{name:'atlas',
+ description:'Move him through the Atlas: the shop as a place he stands inside, where every wine is a glass at a bearing and his own are bottles. Opens that section first if it is closed. Every field is optional.',
+ schema:{type:'object',properties:{
+   face:{type:'string',description:'Turn him to face a pole, a word in the list, or a wine by name.'},
+   faceTo:{type:'array',items:{type:'number'},minItems:3,maxItems:3,description:'Turn him to a bare bearing [x, y, z].'},
+   zoom:axSchema('How close he is looking: 0 the whole field, 1 the closest.'),
+   walk:{type:'number',minimum:-4,maximum:4,description:'Step him forward; a negative number steps him back.'},
+   point:{type:'string',description:'Turn to a wine by name and open its card. Use this when he asks to be shown a particular bottle.'},
+   tick:{type:'array',items:{type:'string'},description:'Light only the wines the shop describes with these words.'},
+   untick:{type:'array',items:{type:'string'},description:'Put these words out.'},
+   clear:{type:'boolean',description:'Put every word out, so the whole shop is shown.'},
+   approach:{type:'boolean',description:'Carry him toward what he faces and hold what stayed in frame the whole way -- the wines that are really together rather than together from here.'},
+   globe:{type:'boolean',description:'Show or hide the ball that says which way he is looking.'},
+   help:{type:'boolean',description:'Open or close what-you-can-do-here.'},
+   words:{type:'boolean',description:'Unfold or fold the word list on the left.'},
+   sommelier:{type:'boolean',description:'Unfold or fold this panel.'},
+   screen:{type:'boolean',description:'Fill the window with the shop, or give the page back.'}}}},
+{name:'tour',
+ description:'Walk him through his ten orders inside the Atlas, oldest to newest, standing him at each and saying what moved between it and the last. Offer this when he asks how his buying has changed, or how to read the Atlas.',
+ schema:{type:'object',properties:{}}},
+{name:'look',
+ description:'Read the page back without touching it: the open section, where the wine he is asking for stands, the bands, the wines on his screen now, what he has marked, and where he stands in the Atlas. Every other tool answers with this too.',
+ schema:{type:'object',properties:{}}}];
+const clamp01=v=>Math.max(0,Math.min(1,v));
+function runTool(name,input){
+  const a=input&&typeof input==='object'?input:{};
+  if(name==='move'){
+    if(a.hold&&typeof a.hold==='object'){
+      const h={...hold};
+      for(const x of A){const b=a.hold[x];
+        if(Array.isArray(b)&&b.length===2&&b.every(Number.isFinite)&&b[0]<b[1])
+          h[x]=[clamp01(b[0]),clamp01(b[1])];}
+      setBands(h);
+    }
+    if(A.some(x=>Number.isFinite(Number(a[x])))){
+      const p={};
+      A.forEach(x=>{const v=Number(a[x]); p[x]=Number.isFinite(v)?clamp01(v):point[x];});
+      picked=[]; drawPicked(); setPoint(p);
+    }
+  }else if(name==='page'){
+    const act={};
+    for(const k of ['tab','kind','heading','hideOwned','hideVoted','show','like','writeTaste'])
+      if(a[k]!==undefined) act[k]=a[k];
+    if(a.pin!==undefined) act.pin=a.pin||null;
+    applyAct(act);
+  }else if(name==='atlas'){ applyAct({atlas:a}); }
+  else if(name==='tour'){ applyAct({tour:true}); }
+  else if(name!=='look') return 'There is no control by that name.';
+  return observeApp();
+}
+/* the rings: whatever moved says so where it sits, whoever moved it */
+function ringMoved(was){
+  let moved=false;
+  A.forEach(a=>{
+    if(Math.abs(point[a]-was.p[a])>0.001
+      ||band[a][0]!==was.b[a][0]||band[a][1]!==was.b[a][1]){
+      moved=true; flash(el('bt-'+a).closest('.ax'));}
+  });
+  if(moved) flash(el('radar'));
+}
+const nowAt=()=>({p:{...point},b:Object.fromEntries(A.map(a=>[a,[...band[a]]]))});
+/* A model given no tools, or a hand-written framing that asks for the old blob,
+   still lands here. Both shapes are honoured -- nested under "act" and flat --
+   because the flat one is what the old prompt actually asked for. */
 function parseReply(raw){
   const a=raw.indexOf('{'), b=raw.lastIndexOf('}');
   if(a>=0&&b>a){try{return JSON.parse(raw.slice(a,b+1));}catch(_){}}
   return {say:raw.trim()}; // the model spoke prose; show it as the answer
 }
+function applyOld(j){
+  if(j.hold){
+    const h={...hold};
+    for(const a of A){const b=j.hold[a];
+      if(Array.isArray(b)&&b.length===2&&b.every(Number.isFinite)&&b[0]<b[1])
+        h[a]=[clamp01(b[0]),clamp01(b[1])];}
+    setBands(h);
+  }
+  if(j.point){
+    const p={};
+    A.forEach(a=>{const v=Number(j.point[a]); p[a]=Number.isFinite(v)?clamp01(v):point[a];});
+    picked=[]; drawPicked(); setPoint(p);
+  }
+  const act={...(j.act&&typeof j.act==='object'?j.act:{})};
+  if(j.atlas&&act.atlas===undefined) act.atlas=j.atlas;
+  if(j.tour&&act.tour===undefined) act.tour=j.tour;
+  applyAct(act);
+}
 async function callAgent(sys,msgs){
   if(agent.vendor==='openai'){
     const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+agent.key},
-      body:JSON.stringify({model:agent.model||DEFAULT_MODEL.openai,response_format:{type:'json_object'},
+      body:JSON.stringify({model:agent.model||DEFAULT_MODEL.openai,
+        tools:TOOLBOX.map(t=>({type:'function',function:{name:t.name,description:t.description,parameters:t.schema}})),
         messages:[{role:'system',content:sys.stat+'\n\n'+sys.dyn},...msgs]})});
     if(!r.ok) throw new Error('HTTP '+r.status);
-    const d=await r.json(), c=d.choices;
-    if(!c||!c[0]||typeof c[0].message?.content!=='string') throw new Error('empty answer from the model');
-    return {text:c[0].message.content,usage:{model:agent.model||DEFAULT_MODEL.openai,
-      tin:d.usage?.prompt_tokens||0,tout:d.usage?.completion_tokens||0}};
+    const d=await r.json(), m=d.choices&&d.choices[0]&&d.choices[0].message;
+    if(!m) throw new Error('empty answer from the model');
+    const calls=(m.tool_calls||[]).map(c=>{
+      let input={}; try{input=JSON.parse(c.function.arguments||'{}');}catch(_){}
+      return {id:c.id,name:c.function.name,input};});
+    return {say:typeof m.content==='string'&&m.content?[m.content]:[],calls,turn:m,
+      follow:rs=>rs.map(x=>({role:'tool',tool_call_id:x.id,content:x.out})),
+      usage:{model:agent.model||DEFAULT_MODEL.openai,
+        tin:d.usage?.prompt_tokens||0,tout:d.usage?.completion_tokens||0}};
   }
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':agent.key,
       'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:agent.model||DEFAULT_MODEL.anthropic,max_tokens:1200,
       system:[{type:'text',text:sys.stat,cache_control:{type:'ephemeral'}},{type:'text',text:sys.dyn}],
+      tools:TOOLBOX.map(t=>({name:t.name,description:t.description,input_schema:t.schema})),
       messages:msgs})});
   if(!r.ok) throw new Error('HTTP '+r.status);
   const d=await r.json();
-  // content may open with a thinking block on newer models -- take the text one
-  const text=(d.content||[]).find(b=>b.type==='text');
-  if(!text) throw new Error('empty answer from the model');
-  return {text:text.text,usage:{model:agent.model||DEFAULT_MODEL.anthropic,
-    tin:d.usage?.input_tokens||0,tout:d.usage?.output_tokens||0,
-    cw:d.usage?.cache_creation_input_tokens||0,cr:d.usage?.cache_read_input_tokens||0}};
+  // content may open with a thinking block on newer models -- take text and calls
+  const blocks=d.content||[];
+  if(!blocks.length) throw new Error('empty answer from the model');
+  return {say:blocks.filter(b=>b.type==='text').map(b=>b.text),
+    calls:blocks.filter(b=>b.type==='tool_use').map(b=>({id:b.id,name:b.name,input:b.input})),
+    turn:{role:'assistant',content:blocks},
+    follow:rs=>[{role:'user',content:rs.map(x=>({type:'tool_result',tool_use_id:x.id,content:x.out}))}],
+    usage:{model:agent.model||DEFAULT_MODEL.anthropic,
+      tin:d.usage?.input_tokens||0,tout:d.usage?.output_tokens||0,
+      cw:d.usage?.cache_creation_input_tokens||0,cr:d.usage?.cache_read_input_tokens||0}};
 }
 async function send(){
   const text=askEl.value.trim(); if(!text) return;
@@ -728,33 +864,38 @@ async function send(){
     return;
   }
   el('askNote').textContent='…';
+  /* IT MOVES, THEN SEES, THEN SPEAKS. The turn is a loop, not a single answer:
+     it calls a control, the page answers with what it now shows, and only when
+     it stops calling does it have the last word. So what it says is written
+     after the move and from the result, and a move it merely described is not
+     possible -- there is nothing to describe until the call has been made. */
+  const ROUNDS=6;
   try{
-    const res=await callAgent(lensSystem(sp),chatMessages());
-    if(res.usage) addSpend(res.usage);
-    const j=parseReply(String(res.text));
-    const wasPoint={...point}, wasBand=Object.fromEntries(A.map(a=>[a,[...band[a]]]));
-    if(j.hold){
-      const h={...hold};
-      for(const a of A){const b=j.hold[a];
-        if(Array.isArray(b)&&b.length===2&&b.every(Number.isFinite)&&b[0]<b[1])
-          h[a]=[Math.max(0,b[0]),Math.min(1,b[1])];}
-      setBands(h);
+    const sys=lensSystem(sp);
+    let msgs=chatMessages(), spoke=false, round=0;
+    for(;round<ROUNDS;round++){
+      const res=await callAgent(sys,msgs);
+      if(res.usage) addSpend(res.usage);
+      for(const t of res.say){
+        const j=res.calls.length?null:parseReply(String(t));
+        if(j&&j.say!==undefined&&/^\s*\{/.test(t)){        // an old-shaped blob
+          const was=nowAt(); applyOld(j); ringMoved(was);
+          if(j.say){addMsg('assistant',String(j.say));spoke=true;}
+        }else if(String(t).trim()){addMsg('assistant',String(t).trim());spoke=true;}
+      }
+      if(!res.calls.length) break;
+      const out=[];
+      for(const c of res.calls){
+        const was=nowAt();
+        let said; try{said=runTool(c.name,c.input);}
+        catch(e){said='That control did not take: '+e.message;}
+        ringMoved(was);
+        out.push({id:c.id,out:said});
+      }
+      msgs=msgs.concat(res.turn,res.follow(out));
     }
-    if(j.point){
-      const p={};
-      A.forEach(a=>{const v=Number(j.point[a]);
-        p[a]=Number.isFinite(v)?Math.max(0,Math.min(1,v)):point[a];});
-      picked=[]; drawPicked(); setPoint(p);
-    }
-    applyAct(j.act);
-    let moved=false;
-    A.forEach(a=>{
-      if(Math.abs(point[a]-wasPoint[a])>0.001
-        ||band[a][0]!==wasBand[a][0]||band[a][1]!==wasBand[a][1]){
-        moved=true; flash(el('bt-'+a).closest('.ax'));}
-    });
-    if(moved) flash(el('radar'));
-    addMsg('assistant',j.say||'done');
+    if(round>=ROUNDS) addMsg('notice','It kept working and was stopped after '+ROUNDS+' moves. Ask again, more narrowly.');
+    if(!spoke) addMsg('assistant','Done.');
   }catch(err){
     addMsg('notice','That did not go through ('+err.message+'). Check the key behind the gear and the connection, then send again.');
   }
@@ -1125,6 +1266,40 @@ el('howAxes').innerHTML=A.map(a=>`<div style="margin-bottom:14px">
   <p class="note" style="margin-top:4px">${DEF[a]}</p></div>`).join('');
 
 openOnLargestKind();
+
+/* ---- inhabiting this page from outside ------------------------------------
+   The sommelier that lives in the panel and a driver standing outside the page
+   are the same kind of visitor: both want to know what is on the screen and to
+   press what the reader can press. So they are given one surface, not two --
+   the catalogue below is the catalogue sent to the model, the runner is the
+   runner the model's calls go through, and the observation is the observation
+   the model reads. A tool that works here works there, and a tool that rots
+   here rots there, visibly.
+
+   There is no sidecar to poll: this page is one file and is served as one file,
+   so the transport is the page itself. A driver evaluates against this global.
+     inhabit.guide()             what this is, and every tool with its schema
+     inhabit.observe()           what the reader is looking at, in words
+     inhabit.call(name, input)   press one, and read back what the page shows
+     inhabit.ask(text)           put words to the sommelier and let it drive */
+window.inhabit={
+  protocol:'cellar-compass app-tools v1',
+  get build(){return BUILD;},
+  guide(){return{
+    protocol:this.protocol, build:BUILD,
+    what:'Cellar Compass: one buyer\'s ten orders against a shop of '+S.wines.length
+      +' wines, placed on five measures. Six sections; the last, Atlas, is that shop as a place you stand inside.',
+    how:'Call a tool by name with its input. Every call answers with the page\'s own observation, so the result and the new state are one thing. observe() is the same text without moving anything.',
+    his:'Marking a wine right or wrong, and Reset, are the reader\'s alone and have no tool. His marks are the measurement.',
+    tools:TOOLBOX.map(t=>({name:t.name,description:t.description,inputSchema:t.schema}))};},
+  tools(){return TOOLBOX.map(t=>t.name);},
+  observe(){return observeApp();},
+  call(name,input){
+    if(!TOOLBOX.some(t=>t.name===name))
+      return 'There is no control by that name. Call inhabit.tools() for the list.';
+    const was=nowAt(); const out=runTool(name,input||{}); ringMoved(was); return out;},
+  ask(text){askEl.value=String(text||''); drawSpell(); return send();}
+};
 
 __ATLAS__
 </script>

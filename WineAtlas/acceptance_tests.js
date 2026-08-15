@@ -1328,6 +1328,150 @@
     for (const p of AT.POLES) ok(Object.values(S.ends).some(e => e.includes(p.w)), p.w + ' is his word');
   });
 
+  /* ---- THE SOMMELIER'S HANDS -------------------------------------------
+     It used to answer with a blob of hand-written JSON carrying both its
+     sentence and its move, and nothing checked the blob: "atlas" was
+     documented at the top level and read one level down, so it said it was
+     turning the Atlas and the Atlas did not turn. Not an error -- silence.
+     These are real tool calls now, and the six tests below are what reliable
+     means here: the catalogue is the page's own controls; every property the
+     model is offered reaches a hand; every call answers with what the page
+     then shows; the sentence is written after the move; and the reading of
+     the space is of where he is being taken, not where he still points. */
+  await T('the sommelier is handed the page\'s controls, and none of his own', () => {
+    eq(TOOLBOX.map(t => t.name), ['move','page','atlas','tour','look'], 'the catalogue');
+    TOOLBOX.forEach(t => {
+      ok(t.description.length > 40, t.name + ' says what it is for');
+      ok(t.schema && t.schema.type === 'object', t.name + ' carries a schema');
+    });
+    /* his marks are the measurement: no tool casts one, and no hand touches
+       the votes. Showing him the button that downloads them is not casting. */
+    const names = TOOLBOX.flatMap(t => [t.name, ...Object.keys(t.schema.properties || {})]);
+    names.forEach(n => ok(!/^(mark|vote|thumb|reset)/i.test(n), n + ' is his, not a tool'));
+    const hands = runTool.toString() + applyAct.toString() + AT.act.toString();
+    ['votes', 'resetMarks', 'resetChat', 'resetTaste'].forEach(w =>
+      ok(!hands.includes(w), 'no hand reaches ' + w));
+    A.forEach(a => ok(TOOLBOX[0].schema.properties[a].description.includes(S.ends[a][1]),
+      a + ' is offered with its own far end named'));
+  });
+
+  await T('every property the sommelier is offered reaches a hand', () => {
+    const keys = n => Object.keys(TOOLBOX.find(t => t.name === n).schema.properties || {});
+    const has = (src, k) => new RegExp('\\b' + k + '\\b').test(src);
+    /* move walks the measures by name, so the claim is that it offers exactly
+       the measures the page has, and the bands */
+    eq(keys('move'), [...A, 'hold'], 'move offers the five measures and the bands');
+    const byHand = runTool.toString() + applyAct.toString();
+    keys('page').forEach(k => ok(has(byHand, k), 'page.' + k + ' is read by someone'));
+    const inSpace = AT.act.toString();
+    keys('atlas').forEach(k => ok(has(inSpace, k), 'atlas.' + k + ' is read by someone'));
+    /* and the other way round -- the gap that started this was a hand nobody
+       was told about, so nothing the hands read may be missing from the offer */
+    [...new Set((inSpace.match(/\ba\.(\w+)/g) || []).map(s => s.slice(2)))]
+      .forEach(k => ok(keys('atlas').includes(k), 'the atlas tool offers ' + k));
+    eq(keys('tour'), [], 'the tour takes no arguments');
+    eq(keys('look'), [], 'looking takes no arguments');
+  });
+
+  await T('every call answers with what the page then shows', () => {
+    for (const name of ['move','page','atlas','look']) {
+      const said = inhabit.call(name, {});
+      ok(said.startsWith('WHAT HE SEES RIGHT NOW'), name + ' answers with the page');
+      ok(said.includes('IN THE ATLAS'), name + ' answers about the space too');
+    }
+    ok(inhabit.call('nonesuch', {}).startsWith('There is no control'),
+       'and a name nobody has says so instead of going quiet');
+    /* the catalogue a driver outside the page reads is the catalogue the model
+       is sent -- one surface, so a tool cannot rot on one side only */
+    eq(inhabit.guide().tools.map(t => t.name), TOOLBOX.map(t => t.name));
+    eq(inhabit.guide().tools.map(t => t.inputSchema), TOOLBOX.map(t => t.schema));
+    ok(inhabit.observe() === observeApp(), 'and so is the observation');
+  });
+
+  await T('it moves, then sees, then speaks', async () => {
+    /* The turn is a loop. It calls a control, the page answers with what it now
+       shows, and only when it stops calling does it have the last word -- so
+       the sentence is written after the move, from the result. */
+    const realFetch = window.fetch, sent = [];
+    const reply = [
+      { content: [{ type: 'text', text: 'Turning you to it.' },
+                  { type: 'tool_use', id: 'a1', name: 'atlas', input: { face: 'heavily oaked' } }],
+        usage: { input_tokens: 1, output_tokens: 1 } },
+      { content: [{ type: 'text', text: 'Oak, straight ahead.' }],
+        usage: { input_tokens: 1, output_tokens: 1 } }];
+    window.fetch = async (u, o) => ({ ok: true, json: async () => (sent.push(JSON.parse(o.body)), reply[sent.length - 1]) });
+    const wasAgent = { ...agent }, before = chat.length;
+    agent.vendor = 'anthropic'; agent.key = 'x';
+    el('atlasClear').click();
+    type('turn me to the oaked wines');
+    await send();
+    window.fetch = realFetch; Object.assign(agent, wasAgent);
+
+    eq(sent.length, 2, 'it called, was answered, and came back to speak');
+    eq(sent[0].tools.map(t => t.name), TOOLBOX.map(t => t.name), 'the tools went with the question');
+    const back = sent[1].messages.slice(-1)[0].content[0];
+    eq(back.type, 'tool_result', 'the page answered the call');
+    eq(back.tool_use_id, 'a1', 'the call it was answering');
+    ok(back.content.startsWith('WHAT HE SEES RIGHT NOW'), 'with what it then showed');
+    ok(back.content.includes('heavily oaked'), 'which already names where he is being taken');
+    eq(chat.slice(before).map(m => m.text),
+       ['turn me to the oaked wines', 'Turning you to it.', 'Oak, straight ahead.'],
+       'and both sentences reached him, in order');
+    frames(220);
+    const p = AT.POLES.find(x => x.w === 'heavily oaked');
+    ok(AT.dot(AT.unit(AT.frame().f), p.dir) > 0.99, 'and the Atlas actually turned');
+  });
+
+  await T('a move it only described is not possible', async () => {
+    /* The reported failure: it said "turning the Atlas to the wine sitting
+       closest" and nothing moved, because the old prompt put "atlas" at the top
+       level and the old code read it one level down. A model that speaks
+       without calling now changes nothing, and one that sends the old flat
+       blob is still obeyed. */
+    const realFetch = window.fetch, wasAgent = { ...agent };
+    agent.vendor = 'anthropic'; agent.key = 'x';
+    const run = async body => {
+      window.fetch = async () => ({ ok: true, json: async () => body });
+      type('show me something oaked'); await send();
+    };
+    el('t-find').click();
+    await run({ content: [{ type: 'text', text: 'Turning the Atlas to it.' }], usage: {} });
+    const wordsAlone = el('s-atlas').hidden;
+    await run({ content: [{ type: 'text',
+      text: '{"say":"Here.","atlas":{"face":"heavily oaked"},"point":{"oak":0.9}}' }], usage: {} });
+    const flatWorked = !el('s-atlas').hidden, said = chat[chat.length - 1].text;
+    /* put the space back before judging, so a failure here cannot strand the
+       next test in a tab that was never measured */
+    window.fetch = realFetch; Object.assign(agent, wasAgent);
+    el('t-atlas').click(); AT.refit();
+    ok(wordsAlone, 'words alone move nothing');
+    ok(flatWorked, 'the flat shape the old prompt asked for is honoured');
+    eq(said, 'Here.', 'and only the sentence is shown, not the blob');
+    landed('oak', 0.9, 'flat blob');
+  });
+
+  await T('the space reports where he is being taken, not where he still points', () => {
+    /* Turning is eased over frames. A reading taken the instant a turn is asked
+       for is a reading of the turn before it -- told to face heavily oaked, it
+       said strawberry and herbal, true for another fifth of a second and false
+       by the time anyone could say it. */
+    const from = AT.POLES.find(x => x.w === 'light-bodied');
+    const to = AT.POLES.find(x => x.w === 'heavily oaked');
+    AT.faceTo(from.dir); frames(220);
+    ok(AT.seen().includes('He faces: light-bodied'), 'settled, it says he faces');
+    AT.act({ face: 'heavily oaked' });
+    const straightAway = AT.seen();
+    ok(straightAway.includes('He is being carried to face: heavily oaked'),
+       'mid-turn, it says where he is being carried: ' + straightAway.split('\n')[2]);
+    ok(!straightAway.includes('light-bodied;'), 'and not where the head still is');
+    frames(220);
+    ok(AT.seen().includes('He faces: heavily oaked'), 'and it arrives where it said');
+    ok(AT.dot(AT.unit(AT.frame().f), to.dir) > 0.99, 'because it really turned');
+    /* the bottles it named mid-turn are the bottles that are there on arrival */
+    const named = s => s.split('Bottles in his frame, nearest first: ')[1].split(';')[0];
+    eq(named(straightAway), named(AT.seen()), 'the nearest bottle it promised');
+  });
+
   // restore the atlas, then the tab that was open
   CanvasRenderingContext2D.prototype.clearRect = realClear;
   el('atlasClear').click();

@@ -164,12 +164,13 @@ const rate = () => TURN * FOV / (W || 1);
    thing that feels wrong. This maps ANGLE to screen the way a panorama does, so
    a degree turned is the same number of pixels wherever you look. Apparent size
    still comes from true distance, so nothing swells as you turn. */
-function place(P, F) {
+function place(P, F, fv) {
+  const fov = fv || FOV;                 // a caller may ask about a field not yet eased into
   const fwd = dot(P, F.f), rgt = dot(P, F.r), up = dot(P, F.u);
   const th = Math.atan2(rgt, fwd);
-  if (Math.abs(th) > FOV / 2 + 0.05) return null;
+  if (Math.abs(th) > fov / 2 + 0.05) return null;
   const ph = Math.atan2(up, Math.hypot(rgt, fwd));
-  const ppr = W / FOV;
+  const ppr = W / fov;
   const y = H/2 - ph * ppr;
   if (y < -60 || y > H + 60) return null;
   /* Attention falls off toward the edge of vision, as it does in a head -- and it
@@ -177,7 +178,7 @@ function place(P, F) {
      radians, which is a sliver of a wide field and a third of a narrow one, so at
      nine degrees this ran past 1 and returned NEGATIVE: marks drawn at a negative
      radius, inside out. Clamped at both ends. */
-  const off = Math.min(1, Math.abs(th) / (FOV / 2));
+  const off = Math.min(1, Math.abs(th) / (fov / 2));
   return { x: W/2 + th * ppr, y, ppr, dist: len(P),
            edge: 1 - 0.55 * Math.pow(Math.max(0, off - 0.35) / 0.65, 1.6) };
 }
@@ -502,7 +503,12 @@ function draw() {
     const q = place(here(m.pos), F);        // from the eye, so it parallaxes
     if (!q) continue;
     m.seen = true;
-    const off = Math.hypot(q.x - W/2, q.y - H/2) / (Math.min(W, H) * 0.62);
+    /* A canvas with no area has nothing off-centre. Drawn before it has been
+       measured -- a tab that never opened -- this divided nought by nought and
+       every wine was painted at an alpha of NaN, which the engine rejects: one
+       bad colour and the whole frame stops. */
+    const span = Math.min(W, H) * 0.62;
+    const off = span > 0 ? Math.hypot(q.x - W/2, q.y - H/2) / span : 0;
     /* Attention falls off toward the edge of the eye, but not off a cliff. At
        the full field almost everything IS off-centre, and a square law took the
        whole shop down with it -- zoom out and the wines stopped being wines. */
@@ -1562,6 +1568,50 @@ function tourStep() {
 
 el('atlasTour').onclick = () => tour();
 
+/* WHAT HE SEES IN HERE, IN WORDS.
+   The sommelier can turn him, walk him and point at a bottle; without this it
+   did all of that blind. It is told what he reads off the screen: where he is
+   standing, how wide he is looking, what he faces, and which bottles are
+   actually in the frame -- nearest first, because that is the order they read
+   in. The page's own observation carries this, so it is refreshed after every
+   move the sommelier makes. */
+function seen() {
+  if (!live) return 'IN THE ATLAS\nThe Atlas is closed. Any move you make there opens it first.';
+  /* WHERE HE IS BEING TAKEN, NOT WHERE HE STILL HAPPENS TO POINT.
+     Turning, walking and changing the field are all eased over frames, so a
+     reading taken the instant a move is asked for is a reading of the move
+     before it -- told to turn him to heavily oaked, this said he was facing
+     strawberry and herbal, which was true for another two hundred milliseconds
+     and false by the time anyone could say it. The glide is for his eyes; the
+     destination is what is true of the sentence being written about it. */
+  let aim = target;
+  if (pointWant !== null && pointWant !== undefined) {   // told to point, not yet aimed
+    const d = unit(here(WPOS[pointWant]));
+    aim = [Math.atan2(d[2], d[0]), Math.asin(Math.max(-1, Math.min(1, d[1])))];
+  }
+  const yy = aim ? aim[0] : yaw, pp = aim ? aim[1] : pitch;
+  const cy = Math.cos(yy), sy = Math.sin(yy), cp = Math.cos(pp), sp = Math.sin(pp);
+  const F = { f: [cp*cy, sp, cp*sy], r: [-sy, 0, cy], u: [-sp*cy, cp, -sp*sy] };
+  const st = standWant || STAND, fov = fovWant || FOV;
+  const eye = [st[0] + F.f[0]*NECK, st[1] + F.f[1]*NECK, st[2] + F.f[2]*NECK];
+  const b = bundle(F), got = [];
+  for (const m of MARKS) {
+    if (m.kind !== 'wine') continue;
+    const q = place([m.pos[0]-eye[0], m.pos[1]-eye[1], m.pos[2]-eye[2]], F, fov);
+    if (q) got.push({ n: S.wines[m.i].name, d: q.dist, mine: MINE[m.i],
+                      lit: !onlyThese || onlyThese.has(m.i) });
+  }
+  got.sort((x, y) => x.d - y.d);
+  const lit = got.filter(g => g.lit), CAP = 14;
+  const facing = b.poles.map(p => p.w).concat(b.terms.map(t => t.w)).join('; ');
+  const settling = aim || standWant || Math.abs(fov - FOV) > 1e-4;
+  return `IN THE ATLAS
+He stands ${len(st).toFixed(1)} of ${ROAM.toFixed(1)} in from the middle of the shop, looking ${Math.round(fov * 57.3)} degrees wide (zoom ${(zOf(fov) / 1000).toFixed(2)} of 1).
+${settling ? 'He is being carried to face' : 'He faces'}: ${facing || 'open space'}${b.wide ? ` -- nothing close; the nearest is ${b.off} degrees round` : ''}.
+Bottles in his frame, nearest first: ${lit.slice(0, CAP).map(x => x.n + (x.mine ? ' (his)' : '')).join('; ') || 'none'}${lit.length > CAP ? ` -- and ${lit.length - CAP} further off` : ''}.
+Words lit: ${[...state].join(', ') || 'none, so the whole shop is shown'}.${held ? `\nHeld from the last approach: ${[...held].filter(m => m.kind === 'wine').map(m => S.wines[m.i].name).join('; ')}.` : ''}`;
+}
+
 function show(on) {
   live = on;
   el('atlasOffer').hidden = !on;          // offered where it means something
@@ -1577,7 +1627,7 @@ return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, r
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },
          get FOV() { return FOV; }, set FOV(v) { FOV = fovWant = v; },
-         glide, easeStand, showZoom, zOf, FOVMIN, help, countRows, act, tour, named,
+         glide, easeStand, showZoom, zOf, FOVMIN, help, countRows, act, tour, named, seen,
          get touring() { return !!tourQ; },
          get askedNothing() { return askedNothing; },
          get STAND() { return STAND; }, set STAND(v) { STAND = v; standWant = null; },

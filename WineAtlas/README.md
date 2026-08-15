@@ -44,14 +44,23 @@ leaned out. Walking glides — a pinch sets where you are heading and the view
 eases there, so the motion is made of time rather than of the wheel's event
 stream. The rim is 3.8 from the middle and the field closes to 9°.
 
-**The sommelier can do all of it.** Parity: `{"atlas": {...}}` turns the head
+**The sommelier can do all of it.** Parity: the `atlas` tool turns the head
 (`face` a pole, a word or a wine; `faceTo` a bearing), sets how close he is
 looking (`zoom` 0 to 1), `walk`s him forward or back, `tick`s and `unticks`
 words, `point`s at a bottle and opens its card, folds either panel, and fills the
 screen. It cannot mark a wine right or wrong — that is his, everywhere on this
-page. `{"tour": true}` stands him at each of his ten orders in turn, oldest to
+page. The `tour` tool stands him at each of his ten orders in turn, oldest to
 newest, saying what moved between each and what it adds up to; it is offered as a
 chip in the sommelier whenever the Atlas is open.
+
+It used to answer with a blob of hand-written JSON carrying both its sentence and
+its move, and nothing checked the blob: `atlas` was documented at the top level
+and read one level down, so it said it was turning the Atlas and the Atlas did
+not turn. Not an error — silence. Saying and doing were one act, so there was
+nothing to disagree with. They are real tool calls now, and the turn is a loop:
+it calls a control, the page answers with what it then shows, and only when it
+stops calling does it have the last word. A move it merely described is not
+possible, because there is nothing to describe until the call has been made.
 
 **On the crowd.** 1,652 glasses is a lot to be standing among, and three things
 answer it. The view **opens at 74°** rather than the 120° a head takes in, which
@@ -103,6 +112,33 @@ The page carries a build stamp: `const BUILD=` is a hash of its own bytes, so a
 served page can be asked which build it is holding — in the console,
 `document.documentElement.dataset.build`.
 
+## Inhabiting it
+
+The sommelier in the panel and a driver standing outside the page are the same
+kind of visitor: both want to know what is on the screen and to press what the
+reader can press. They are given one surface, not two. The catalogue below is
+the catalogue sent to the model; the runner is the runner its calls go through;
+the observation is the observation it reads. A tool that works here works there,
+and a tool that rots here rots there, visibly.
+
+There is no sidecar to poll — this page is one file and is served as one file —
+so the transport is the page itself. Evaluate against the global:
+
+    inhabit.guide()              // what this is, and every tool with its schema
+    inhabit.observe()            // what the reader is looking at, in words
+    inhabit.call(name, input)    // press one, and read back what the page shows
+    inhabit.ask(text)            // put words to the sommelier and let it drive
+
+`guide()` is the front door: it names the tools and their schemas out of the
+live catalogue, so it cannot drift from what the model is actually offered.
+Marking a wine right or wrong, and Reset, have no tool. His marks are the
+measurement.
+
+Every call answers with the page's own observation, so the result and the new
+state are one thing. The reading of the Atlas is of where he is *being taken* —
+turning, walking and the field are eased over frames, and a reading taken the
+instant a move is asked for is a reading of the move before it.
+
 ## Tests
 
 Serve the repo root and evaluate `acceptance_tests.js` in the page:
@@ -111,8 +147,7 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **104 of 104 pass**; the four that
-do not are the open design question below, not defects.
+Every test name states an acceptance criterion. **111 of 111 pass.**
 
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from
 the catalogue by a second route and checks every claim the page makes about it:
