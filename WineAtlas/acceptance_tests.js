@@ -19,8 +19,8 @@
   const realConfirm = window.confirm; window.confirm = () => true;
 
   // -- boot --
-  await T('all five tabs and both panels exist', () => {
-    ['t-find','t-palate','t-move','t-pop','t-how'].forEach(id => ok(el(id), id));
+  await T('every tab and both panels exist', () => {
+    ['t-find','t-atlas','t-palate','t-move','t-pop','t-how'].forEach(id => ok(el(id), id));
     ok(el('out').children.length > 0, 'wine list rendered');
     ok(el('axes').children.length === 5, 'five measures');
   });
@@ -527,6 +527,320 @@
     for (const bad of ['dark fruit', 'heaviness', 'readiness', 'percentile', 'shipment'])
       ok(!text.includes(bad), bad);
   });
+
+  /* -- the atlas ------------------------------------------------------------
+     The tab is a place rather than a chart, so what has to be tested is what a
+     place owes you: that near things pass in front of far ones as you move,
+     that the sky does not, that you cannot walk out of it, and that every mark
+     stands where the catalogue put it. */
+  const AT = ATLAS, ATD = AT.D;
+  const wasTab = ['find','atlas','palate','move','pop','how']
+    .find(t => el('t-' + t).getAttribute('aria-selected') === 'true') || 'find';
+  const atSnap = { yaw: AT.yaw, pitch: AT.pitch, FOV: AT.FOV, STAND: AT.STAND.slice(),
+                   held: AT.held, words: [...AT.state] };
+  el('t-atlas').click();
+  const cvA = el('atlasCanvas');
+  /* The view is advanced by hand, never by waiting on the frame clock: a browser
+     stops animation frames in a tab that is not on screen, so a test written
+     against them hangs there instead of failing, which is the worst of both. */
+  const frames = n => { for (let i = 0; i < n; i++) AT.step(); };
+  /* Counted at the canvas, not at a function the page could stop calling: every
+     paint begins by clearing, so this cannot be satisfied by intent. */
+  let PAINTS = 0;
+  const realClear = CanvasRenderingContext2D.prototype.clearRect;
+  CanvasRenderingContext2D.prototype.clearRect = function (...a) {
+    if (this.canvas === cvA) PAINTS++;
+    return realClear.apply(this, a);
+  };
+  const nearest = () => AT.WMARK.filter(m => m.node).sort((a, b) => a.dist - b.dist);
+  const atSize = async (w, h, fn) => {
+    const w0 = AT.W, h0 = AT.H;
+    try { AT.W = w; AT.H = h; AT.draw(); return await fn(); }
+    finally { AT.W = w0; AT.H = h0; AT.draw(); }
+  };
+
+  await T('the atlas paints only while it is the tab you are on', async () => {
+    el('t-find').click();
+    ok(!AT.live, 'not live behind another tab');
+    const before = PAINTS;
+    AT.walk(0.1);
+    eq(PAINTS, before, 'a hidden canvas is not painted');
+    el('t-atlas').click();
+    ok(AT.live && AT.W > 0 && AT.H > 0, 'measured itself on the way in');
+    ok(PAINTS > before, 'and painted');
+  });
+
+  await T('a gesture paints by itself, with nothing else driving it', async () => {
+    AT.STAND = [0, 0, 0];
+    frames(3);
+    const before = PAINTS;
+    cvA.dispatchEvent(new WheelEvent('wheel', { deltaX: 40, deltaY: 0, bubbles: true, cancelable: true }));
+    ok(PAINTS > before, 'the wheel turned the head and the head was drawn');
+  });
+
+  await T('the eye rides a neck ahead of where you stand', () => {
+    AT.STAND = [0, 0, 0]; AT.draw();
+    near(Math.hypot(...AT.EYE), AT.NECK);
+    ok(AT.NECK > 1, 'and it is a neck, not a pinhole');
+    ok(nearest()[0].dist > AT.NECK, 'nothing stands nearer than the neck is long');
+  });
+
+  await T('turning your head slides near glasses past far ones, and not the sky', () => {
+    AT.STAND = [0, 0, 0]; AT.yaw = 0.4; AT.pitch = 0; AT.draw();
+    const seen = AT.WMARK.filter(m => m.node && Math.abs(m.node[0] - AT.W / 2) < AT.W * 0.2);
+    const close = seen.sort((a, b) => a.dist - b.dist)[0];
+    const far = seen[seen.length - 1];
+    const sky = AT.POLES.filter(p => p.hit)[0];
+    ok(close && far && sky, 'something near, something far and a name in view');
+    const was = [close.node[0], far.node[0], sky.hit[0]];
+    AT.yaw = 0.4 + 0.04; AT.draw();
+    const now = [close.node[0], far.node[0], sky.hit[0]];
+    const move = was.map((x, i) => Math.abs(now[i] - x));
+    /* WITH A THRESHOLD, and here is why. Written as a bare inequality this test
+       passed with the neck set to a ten-thousandth -- a camera on its own pivot,
+       which is precisely the thing the neck exists to avoid. It passed because a
+       neck of 1e-4 still yields a parallax, of eight thousandths of a pixel. So
+       the bar is a ratio and it is set from the measurement: over a 2.3 degree
+       turn a glass at 4.0 slides 42.3 pixels, one at 11.0 slides 25.8, and the
+       sky slides 20.4. Take the neck away and all three read 20.436. */
+    ok(move[0] > move[1] * 1.3,
+       `near ${move[0].toFixed(1)} must plainly outrun far ${move[1].toFixed(1)}`);
+    ok(move[1] > move[2] * 1.15,
+       `far ${move[1].toFixed(1)} must plainly outrun the sky ${move[2].toFixed(1)}`);
+    /* the sky moved by exactly the angle turned, which is what makes it a frame */
+    near(Math.round(move[2] * 100) / 100, Math.round(AT.W / AT.FOV * 0.04 * 100) / 100);
+  });
+
+  await T('walking moves the shop and leaves the sky where it was', () => {
+    AT.STAND = [0, 0, 0]; AT.yaw = 0; AT.pitch = 0; AT.draw();
+    const sky = AT.POLES.filter(p => p.hit)[0];
+    ok(sky, 'a name is in view');
+    const s0 = sky.hit.slice();
+    /* a glass near the middle of the view, so it is still in view after the step */
+    const mid = AT.WMARK.filter(m => m.node
+        && Math.hypot(m.node[0] - AT.W / 2, m.node[1] - AT.H / 2) < Math.min(AT.W, AT.H) * 0.2)
+      .sort((a, b) => a.dist - b.dist)[0];
+    ok(mid, 'a glass in the middle of the view');
+    const w0 = mid.node.slice();
+    AT.walk(0.6);
+    ok(mid.node, 'still in view after a step forward');
+    ok(Math.hypot(mid.node[0] - w0[0], mid.node[1] - w0[1]) > 1, 'the glass moved');
+    eq([Math.round(sky.hit[0]), Math.round(sky.hit[1])],
+       [Math.round(s0[0]), Math.round(s0[1])], 'the name did not');
+  });
+
+  await T('the shop closes around you: there is no way to step outside it', () => {
+    const sweep = () => {
+      const c = [];
+      for (let k = 0; k < 8; k++) { AT.yaw = k * Math.PI / 4; AT.draw();
+                                    c.push(AT.WMARK.filter(m => m.node).length); }
+      return c;
+    };
+    AT.STAND = [0, 0, 0]; AT.pitch = 0;
+    const middle = Math.min(...sweep());
+    AT.yaw = 1.2;
+    for (let i = 0; i < 200; i++) AT.walk(0.3);
+    ok(Math.hypot(...AT.STAND) <= AT.ROAM + 1e-6, 'held at the rim');
+    ok(Math.hypot(...AT.EYE) <= AT.REACH + 1e-6, 'and so is the eye');
+    const rim = Math.min(...sweep());
+    ok(rim > 0, 'every way you turn at the rim there are still wines');
+    /* and the price is stated rather than hidden: out there the shop is thinner */
+    ok(rim < middle, `sparsest heading: ${rim} at the rim against ${middle} in the middle`);
+  });
+
+  await T('each measure is one line through the middle, named at both ends', () => {
+    AT.STAND = [0, 0, 0]; AT.draw();
+    eq(ATD.lines.length, 5);
+    for (const l of ATD.lines) {
+      const along = AT.dot(AT.EYE, l.dir);
+      const q = l.dir.map((d, i) => AT.EYE[i] - along * d);
+      const n = AT.unit([q[1]*l.dir[2] - q[2]*l.dir[1],
+                         q[2]*l.dir[0] - q[0]*l.dir[2],
+                         q[0]*l.dir[1] - q[1]*l.dir[0]]);
+      /* the middle of the shop lies in the plane every one of these arcs sweeps,
+         so all five cross there and nowhere else */
+      ok(Math.abs(AT.dot(n, AT.unit(AT.EYE))) < 1e-9, l.ax + ' misses the middle');
+      const ends = AT.POLES.filter(p => p.ax === l.ax);
+      eq(ends.length, 2);
+      ok(AT.dot(ends[0].dir, ends[1].dir) < -0.9999, l.ax + ' ends are not opposite');
+    }
+  });
+
+  await T('you can turn to face age, which stands overhead', () => {
+    const old = AT.POLES.find(p => p.w === 'old');
+    ok(Math.asin(old.dir[1]) > 1.39, 'older is nearly straight up');
+    AT.faceTo(old.dir);
+    for (let i = 0; i < 200; i++) { }
+    AT.pitch = Math.asin(old.dir[1]); AT.yaw = Math.atan2(old.dir[2], old.dir[0]);
+    AT.draw();
+    ok(old.hit, 'and looking that way, it is there');
+  });
+
+  await T('a wine stands where the catalogue puts it, and its glass says so', () => {
+    const i = S.wines.findIndex(w => w.maturity > 0.9 && w.weight > 0.9);
+    const j = S.wines.findIndex(w => w.maturity < 0.3 && w.weight > 0.9);
+    const older = AT.pour(i), younger = AT.pour(j);
+    ok(older[0] > younger[0], 'a red browns as it ages');
+    const white = S.wines.findIndex((w, k) => ATD.col[k] === 'white');
+    ok(AT.pour(white)[0] < 60 && AT.pour(white)[0] > 25, 'a white is gold, never red');
+    eq(ATD.pos.length, S.wines.length);
+    eq(AT.WMARK.length, S.wines.length);
+  });
+
+  await T('the wines on your account are the ones lit', () => {
+    eq(AT.MINE.filter(Boolean).length, S.wines.filter(w => OWNED.has(w.id)).length);
+    ok(AT.MINE.filter(Boolean).length > 200);
+    S.wines.forEach((w, k) => { if (AT.MINE[k]) ok(OWNED.has(w.id), w.name); });
+  });
+
+  await T('a glass answers the pointer over the whole glass', async () => {
+    AT.STAND = [0, 0, 0]; AT.draw();
+    const big = AT.WMARK.filter(m => m.node).sort((a, b) => b.node[2] - a.node[2])[0];
+    const [x, y, R] = big.node;
+    /* bowl, stem and foot alike: the reach is the glass's own drawn size, so it
+       grows with it rather than being a fixed ring around a point */
+    for (const [dx, dy] of [[0, 0], [0, -R * 0.9], [0, R * 0.9], [-R * 0.5, 0]])
+      ok(AT.hoverAt(x + dx, y + dy), `missed at ${dx},${dy} of a glass ${R.toFixed(1)} across`);
+    ok(!AT.hoverAt(x, y + R * 4 + 40), 'and stops where the glass does');
+    ok(!AT.hoverAt(-500, -500), 'and nothing where there is nothing');
+  });
+
+  await T('pointing at a glass names the bottle in the reader\'s own words', () => {
+    AT.STAND = [0, 0, 0]; AT.draw();
+    const big = AT.WMARK.filter(m => m.node).sort((a, b) => b.node[2] - a.node[2])[0];
+    AT.hoverAt(big.node[0], big.node[1]);
+    const box = el('atlasName'), txt = box.textContent;
+    eq(box.style.display, 'block');
+    ok(txt.includes(S.wines[big.i].name), 'the bottle');
+    A.forEach(a => ok(txt.includes(S.labels[a]), S.labels[a]));
+    const w = S.wines[big.i];
+    A.forEach(a => ok(txt.includes(S.ends[a][w[a] >= 0.5 ? 1 : 0]), a + ' end named'));
+    ok(box.innerHTML.includes(S.colors[A[0]]), 'each bar in its own measure\'s colour');
+  });
+
+  await T('ticking a word turns you to face the wines described that way', async () => {
+    el('atlasClear').click();
+    const t = AT.TERMS.find(x => x.w === 'tobacco');
+    const row = [...el('atlasWords').children].find(r => r.dataset.w === 'tobacco');
+    AT.yaw = Math.atan2(-t.pos[2], -t.pos[0]); AT.pitch = 0;   // facing away
+    row.click();
+    ok(AT.state.has('tobacco'), 'ticked');
+    eq(row.getAttribute('aria-checked'), 'yes');
+    frames(90);
+    const d = AT.unit(t.pos), f = AT.frame().f;
+    ok(AT.dot(d, f) > 0.97, 'carried round to face it, got ' + AT.dot(d, f).toFixed(3));
+  });
+
+  await T('what those wines are is said in the five measures, against the shop', () => {
+    el('atlasClear').click();
+    [...el('atlasWords').children].find(r => r.dataset.w === 'tobacco').click();
+    [...el('atlasWords').children].find(r => r.dataset.w === 'cedar').click();
+    AT.readout();
+    const txt = el('atlasFacing').textContent;
+    const idx = AT.TERMS.find(t => t.w === 'tobacco').in
+      .filter(i => AT.TERMS.find(t => t.w === 'cedar').in.includes(i));
+    ok(txt.includes(String(idx.length)), 'how many wines, exactly: ' + idx.length);
+    ok(A.some(a => txt.includes(S.ends[a][0]) || txt.includes(S.ends[a][1])),
+       'and which way they run, in his words');
+    el('atlasClear').click();
+    ok(!el('atlasFacing').textContent.includes('described this way'), 'cleared');
+  });
+
+  await T('a word the shop has no bearing for is not offered at all', () => {
+    const shown = [...el('atlasWords').children].map(r => r.dataset.w);
+    eq(shown.length, AT.TERMS.length);
+    for (const gone of ['balanced', 'elegant', 'forest floor', 'red fruits'])
+      ok(!shown.includes(gone), gone + ' points nowhere in this shop');
+    for (const kept of ['tobacco', 'cedar', 'truffle', 'citrus'])
+      ok(shown.includes(kept), kept);
+  });
+
+  await T('what stays in frame as you go toward it is what was really there', async () => {
+    AT.STAND = [0, 0, 0]; AT.held = null;
+    const t = AT.TERMS.find(x => x.w === 'cedar');
+    AT.yaw = Math.atan2(t.pos[2], t.pos[0]); AT.pitch = Math.asin(AT.unit(t.pos)[1]);
+    AT.draw();
+    AT.beginApproach();
+    frames(40);
+    ok(AT.held, 'the approach finished and said what held');
+    ok(AT.held.size > 0 && AT.held.size < AT.MARKS.length, 'some held, some did not');
+    const cedar = AT.TMARK.find(m => m.t.w === 'cedar');
+    ok(AT.held.has(cedar), 'what you went toward held');
+    AT.held = null;
+  });
+
+  await T('the globe shows what is behind you, and takes you there', () => {
+    ok(el('atlasGlobe').style.display !== 'none', 'open by default');
+    AT.STAND = [0, 0, 0]; AT.yaw = 0; AT.pitch = 0; AT.draw(); AT.drawMini();
+    const behind = AT.frame().f.map(x => -x);
+    const before = AT.dot(AT.unit(behind), AT.frame().f);
+    near(Math.round(before), -1);
+    const r = el('atlasMini').getBoundingClientRect();
+    /* the centre of the disc is where you are looking; the rim is a quarter turn
+       away, so a click near the rim must turn you at least that far */
+    el('atlasMini').dispatchEvent(new MouseEvent('dblclick',
+      { clientX: r.left + r.width * 0.06, clientY: r.top + r.height / 2, bubbles: true }));
+    frames(120);                       // the turn is a glide, not a jump
+    const turned = Math.acos(Math.max(-1, Math.min(1, AT.dot(AT.unit(AT.frame().f), [1, 0, 0]))));
+    ok(turned > 1.0, 'carried most of a quarter turn round, got ' + (turned * 57.3).toFixed(0) + ' deg');
+  });
+
+  await T('the globe closes on its own button and on G, and comes back', () => {
+    /* G is a shortcut, not a keystroke stolen from the composer: typing "grippy"
+       into the sommelier must not open a globe in another tab */
+    ask.focus();
+    dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }));
+    ok(el('atlasGlobe').style.display !== 'none', 'G in the composer does nothing');
+    ask.blur();
+    el('atlasGx').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    eq(el('atlasGlobe').style.display, 'none', 'the X closes it');
+    ok(el('atlasFacing').classList.contains('wide'), 'and the readout takes the room');
+    dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }));
+    ok(el('atlasGlobe').style.display !== 'none', 'G brings it back');
+  });
+
+  await T('leaning in narrows the view and step back undoes it', () => {
+    const wide = AT.WIDE;
+    AT.FOV = wide;
+    cvA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, clientX: 0, clientY: 0 }));
+    ok(el('atlasWide').style.display === '', 'the way back appears');
+    el('atlasWide').click();
+    ok(el('atlasWide').style.display === 'none', 'and goes again');
+  });
+
+  await T('the atlas reads the same whatever the window is', async () => {
+    AT.STAND = [0, 0, 0]; AT.yaw = 0.4; AT.pitch = 0;
+    const count = async () => {
+      AT.draw();
+      return AT.WMARK.filter(m => m.node).length;
+    };
+    const wide = await atSize(1200, 700, count);
+    const tall = await atSize(700, 1200, count);
+    ok(wide > 30 && tall > 30, `something in view either way: ${wide} / ${tall}`);
+    /* a taller window at the same pixels-per-radian sees a taller slice, so the
+       counts differ -- what must not differ is that the shop surrounds you */
+    ok(AT.POLES.some(p => p.hit) || AT.TERMS.some(t => t.hit), 'and always something named');
+  });
+
+  await T('nothing in the atlas says a word the page has banned', () => {
+    const words = [...el('atlasWords').children].map(r => r.textContent.toLowerCase()).join(' ');
+    const copy = el('s-atlas').innerText.toLowerCase();
+    for (const bad of ['dark fruit', 'heaviness', 'readiness', 'shipment', 'sigil', 'invariant', 'percentile'])
+      ok(!words.includes(bad) && !copy.includes(bad), bad);
+    for (const p of AT.POLES) ok(Object.values(S.ends).some(e => e.includes(p.w)), p.w + ' is his word');
+  });
+
+  // restore the atlas, then the tab that was open
+  CanvasRenderingContext2D.prototype.clearRect = realClear;
+  el('atlasClear').click();
+  atSnap.words.forEach(w => {
+    const row = [...el('atlasWords').children].find(r => r.dataset.w === w);
+    if (row) row.click();
+  });
+  AT.yaw = atSnap.yaw; AT.pitch = atSnap.pitch; AT.FOV = atSnap.FOV;
+  AT.STAND = atSnap.STAND; AT.held = atSnap.held;
+  AT.toggleGlobe(true);
+  el('t-' + wasTab).click();
 
   // restore
   window.confirm = realConfirm;

@@ -1,11 +1,15 @@
 """Assemble Cellar Compass from its parts into one self-contained page.
 
 app_head.html (style) + app_body.html (markup) + app.js (all logic, with the
-catalogue substituted for __DATA__) -> cellar_compass.html, plus a standalone
-wrapped copy, which is both the file you open from disk and the page that is
-served: it is written to docs/wine/index.html, which is what GitHub Pages
-publishes. The asserts are the build's own guards: one script block, no <line>
-elements, and no banned vocabulary in anything the reader can see.
+catalogue substituted for __DATA__ and the Atlas tab folded in at __ATLAS__)
+-> cellar_compass.html, plus a standalone wrapped copy, which is both the file
+you open from disk and the page that is served: it is written to
+docs/wine/index.html, which is what GitHub Pages publishes. The asserts are the
+build's own guards: one script block, no <line> elements, and no banned
+vocabulary in anything the reader can see.
+
+The Atlas carries its own arrangement, written by atlas.py; run that first if
+the catalogue has changed.
 """
 import hashlib
 import pathlib
@@ -22,6 +26,11 @@ def build(src=pathlib.Path(__file__).parent, out=None):
     body = (src / 'app_body.html').read_text()
     js = (src / 'app.js').read_text()
     data = (src / 'app_data.json').read_text()
+    # the Atlas is written apart and folded in here, so it is checked by the same
+    # guards as everything else rather than smuggled past them
+    assert '__ATLAS__' in js, 'the atlas placeholder went missing'
+    js = js.replace('__ATLAS__', (src / 'atlas.js').read_text())
+    atlas_data = (src / 'atlas_data.json').read_text()
 
     import re
     nocomment = re.sub(r'/\*.*?\*/', '', head + body + js, flags=re.S)
@@ -33,7 +42,7 @@ def build(src=pathlib.Path(__file__).parent, out=None):
     for bad in BANNED_RESEARCH:
         assert bad not in rendered.lower(), (bad, rendered.lower().split(bad)[0][-60:])
 
-    page = head + body + js.replace('__DATA__', data)
+    page = head + body + js.replace('__ATLASDATA__', atlas_data).replace('__DATA__', data)
     assert page.count('<script') == 1, 'exactly one script block'
     assert '<line' not in page, 'the artifact viewer strips <line> elements'
     # the stamp names the bytes themselves, so a browser can be asked which build

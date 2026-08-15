@@ -7,6 +7,7 @@
   --rule:#e3e3e5; --track:#e8e8ea; --grid:#dcdcdf;
   --mark:#6b4bc0; --mark-rgb:107,75,192; --me:#0a7d8f; --me-rgb:10,125,143; --mark-2:#8c6fe0; --rise:#a8641f; --rise-rgb:168,100,31; --good:#1d7a52; --bad:#a33b3b;
  
+  --sky:#e9e9ee;
   --shadow:0 1px 2px rgba(0,0,0,.06);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -16,6 +17,7 @@
   --rule:#242424; --track:#282828; --grid:#2e2e2e;
   --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a;
  
+  --sky:#000;
   --shadow:none;
 }}
 :root[data-theme="dark"]{
@@ -25,6 +27,7 @@
   --rule:#242424; --track:#282828; --grid:#2e2e2e;
   --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a;
  
+  --sky:#000;
   --shadow:none;
 }
 *{box-sizing:border-box}
@@ -265,4 +268,89 @@ th,td{text-align:left;padding:7px 8px 7px 0;border-bottom:1px solid var(--rule)}
 th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:600}
 th.num{text-align:right}
 td.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---- atlas -----------------------------------------------------------------
+   A view into a place, so it keeps its own ground: pale by day, black by night,
+   both read out of the tokens by the canvas itself. Nothing in it is text to be
+   copied -- every word is somewhere you look or something you tick -- and
+   dragging is the main gesture, so a drag that selects the list behind it would
+   turn half the panel blue. */
+.atlas{display:grid;grid-template-columns:236px minmax(0,1fr);gap:14px;align-items:stretch;
+  -webkit-user-select:none;user-select:none}
+/* stacked, the view comes first: the words are what you do to it, and a column
+   of fifty-four of them above it puts the shop below the fold */
+.atlas-side{display:flex;flex-direction:column;min-height:0}
+.atlas-side .note{margin:0 0 12px}
+.awhead{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:600;
+  padding:0 6px 6px;border-bottom:1px solid var(--rule)}
+.awlist{flex:1;min-height:120px;max-height:clamp(300px,50vh,560px);overflow-y:auto;
+  overscroll-behavior:contain;padding:6px 0}
+.aw{display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:5px;
+  cursor:pointer;font-size:12.5px;color:var(--ink-2);line-height:1.65}
+.aw:hover{background:var(--raise)}
+.aw i{width:10px;height:10px;border-radius:3px;border:1.5px solid var(--ink-3);flex:none}
+.aw em{margin-left:auto;font-style:normal;font-size:11px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+.aw[aria-checked="yes"]{background:var(--raise);font-weight:600}
+.awfoot{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--rule)}
+.awfoot button{font:inherit;font-size:11.5px;padding:5px 10px;border-radius:6px;
+  border:1px solid var(--rule);background:var(--raise);color:var(--ink-2);cursor:pointer}
+.awfoot button:hover{color:var(--ink);border-color:var(--ink-3)}
+.awfoot button:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+
+.atlas-view{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--rule);
+  height:clamp(430px,64vh,720px);background:var(--sky)}
+#atlasCanvas{display:block;width:100%;height:100%;background:var(--sky);cursor:grab;touch-action:none}
+#atlasCanvas.drag{cursor:grabbing}
+.atlas-cues{position:absolute;right:14px;top:12px;text-align:right;pointer-events:none;
+  font-size:11.5px;color:var(--ink-3);line-height:1.6;max-width:238px}
+.atlas-cues b{color:var(--ink-2);font-weight:600}
+#atlasFacing{position:absolute;left:0;right:0;bottom:14px;text-align:center;pointer-events:none;
+  padding:0 240px 0 22px;transition:padding .2s}
+#atlasFacing.wide{padding:0 22px}
+#atlasFacing .lead{color:var(--ink-3);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase}
+#atlasFacing .set{font-size:14.5px;margin-top:3px;line-height:1.55}
+#atlasFacing .set.dim{color:var(--ink-3)}
+#atlasFacing .odds{color:var(--ink-3);font-size:12px;margin-top:6px;
+  font-variant-numeric:tabular-nums}
+#atlasGlobe{position:absolute;right:16px;bottom:16px;width:224px;z-index:3;overflow:hidden;
+  border-radius:9px;border:1px solid var(--rule);background:var(--panel)}
+#atlasGbar{height:20px;display:flex;align-items:center;justify-content:flex-end;
+  padding:0 3px 0 8px;cursor:grab;background:var(--raise);border-bottom:1px solid var(--rule)}
+#atlasGbar.drag{cursor:grabbing}
+#atlasGx{background:none;border:0;color:var(--ink-3);font:inherit;font-size:14px;line-height:1;
+  padding:1px 5px;cursor:pointer;border-radius:4px}
+#atlasGx:hover{color:var(--ink);background:var(--track)}
+#atlasGx:focus-visible{outline:2px solid var(--mark);outline-offset:1px}
+#atlasMini{display:block;width:224px;height:224px;cursor:grab;touch-action:none}
+#atlasMini.drag{cursor:grabbing}
+/* above the globe, which parks in the same corner: what you are pointing at has
+   to win against a panel you left open */
+#atlasName{position:absolute;left:0;top:0;width:236px;z-index:4;display:none;
+  background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:10px 11px;
+  font-size:12px;color:var(--ink-2);pointer-events:none;box-shadow:0 6px 22px rgba(0,0,0,.28)}
+#atlasName b{display:block;color:var(--ink);font-size:12.5px;line-height:1.35}
+#atlasName .sub{color:var(--ink-3);font-size:11px;margin-top:2px;line-height:1.4}
+#atlasName .yours{color:var(--mark);font-size:11px;margin-top:4px;font-weight:600}
+#atlasName .mbars{display:grid;grid-template-columns:52px auto auto;gap:4px 8px;
+  align-items:center;margin-top:8px}
+#atlasName .mtrk{height:7px;background:var(--track);border-radius:2px;overflow:hidden}
+#atlasName .mtrk i{display:block;height:100%;border-radius:2px}
+#atlasName .mnm{font-size:11px;color:var(--ink-2);white-space:nowrap}
+#atlasName .mend{font-size:10.5px;color:var(--ink-3);white-space:nowrap;text-align:right}
+/* Narrow, and last, because these override rules written above them: an ID
+   selector inside a media query still loses to an identical one further down. */
+@media(max-width:880px){
+  .atlas{grid-template-columns:1fr}
+  /* the view comes first: the words are what you do to it, and a column of
+     fifty-four of them above it puts the shop below the fold */
+  .atlas-view{order:-1;height:clamp(340px,52vh,520px)}
+  .awlist{max-height:210px}
+  /* the globe is a reference, and at this width it was taking a third of the
+     shop; it keeps its 224 pixels of canvas and is simply drawn smaller */
+  #atlasGlobe{width:158px}
+  #atlasMini{width:158px;height:158px}
+  #atlasFacing{padding:0 172px 0 14px}
+}
 </style>

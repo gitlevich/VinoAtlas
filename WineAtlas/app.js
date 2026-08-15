@@ -5,9 +5,12 @@ let point={...C.centroid}, hideOwned=true, hideVoted=false, picked=[], hold={};
 let votes=JSON.parse(localStorage.getItem('cc_votes')||'{}');
 
 /* ---------- tabs ---------- */
-const TABS=['find','palate','move','pop','how'];
+const TABS=['find','atlas','palate','move','pop','how'];
 TABS.forEach(t=>el('t-'+t).onclick=()=>{
   TABS.forEach(x=>{el('t-'+x).setAttribute('aria-selected',x===t); el('s-'+x).hidden=x!==t;});
+  /* a hidden canvas has no size, so the atlas is told when it is on screen: it
+     measures itself and paints on the way in, and stops painting on the way out */
+  ATLAS.show(t==='atlas');
 });
 
 /* ---------- find ---------- */
@@ -1078,4 +1081,6 @@ el('howAxes').innerHTML=A.map(a=>`<div style="margin-bottom:14px">
   <p class="note" style="margin-top:4px">${DEF[a]}</p></div>`).join('');
 
 openOnLargestKind();
+
+__ATLAS__
 </script>
