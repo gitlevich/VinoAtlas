@@ -753,6 +753,65 @@
     for (const e of EFFECT_ORDER) ok(D.chance[e] > 0, e + ' has no base rate');
   });
 
+  const facing = () => [...document.querySelectorAll('#facing .set span')];
+
+  await T('the line that names them says which are smells and which are feelings', async () => {
+    /* One line naming both kinds, and until it carried these two glyphs the
+       only things telling them apart were a gap and a hue -- and hue here is
+       DIRECTION, so two words the same shade can be different kinds of thing. */
+    yaw = 1.9; pitch = 0.05; await paint();
+    const said = facing();
+    ok(said.length, 'nothing is named this way');
+    const { smells, feels } = bundle(frame());
+    const want = new Map([...smells.map(i => [i.w, 'smell']),
+                          ...feels.map(i => [i.w, 'feel'])]);
+    for (const sp of said) {
+      const w = sp.textContent.trim();
+      const svg = sp.querySelector('svg');
+      ok(svg, w + ' is named with no mark at all');
+      const kind = svg.querySelector('circle') ? 'feel' : 'smell';
+      ok(kind === want.get(w), w + ' is a ' + want.get(w) + ' drawn as a ' + kind);
+    }
+  });
+
+  await T('a glyph draws every part of the mark it stands for', async () => {
+    /* THE ONE THAT CAUGHT A REAL BUG. Written unquoted, an attribute swallows
+       the self-closing slash, the tag never closes, and the next shape becomes
+       its CHILD -- and a shape inside a shape does not draw. Three lobes and
+       three waves each drew exactly one, and the glyphs shipped as dots and
+       squiggles. So the parts are counted, and counted as SIBLINGS. */
+    yaw = 1.9; pitch = 0.05; await paint();
+    let sm = 0, fl = 0;
+    for (const sp of facing()) {
+      const svg = sp.querySelector('svg');
+      const kids = [...svg.children];
+      ok(kids.every(e => e.parentNode === svg), 'a part of the glyph is inside another part');
+      if (svg.querySelector('circle')) {
+        ok(kids.length === 4 && kids.every(e => e.tagName === 'circle'),
+           'a feeling is three lobes and a heart, not ' + kids.map(e => e.tagName));
+        fl++;
+      } else {
+        ok(kids.length === 3 && kids.every(e => e.tagName === 'path'),
+           'a smell is three rising waves, not ' + kids.map(e => e.tagName));
+        sm++;
+      }
+    }
+    ok(sm && fl, 'this heading names only one kind, so the test proved nothing');
+  });
+
+  await T('a glyph wears the word’s own colour, as the word does', async () => {
+    yaw = 1.9; pitch = 0.05; await paint();
+    for (const sp of facing()) {
+      const w = sp.textContent.trim();
+      const it = ITEMS.find(i => i.w === w);
+      const part = sp.querySelector('circle, path');
+      const got = (part.getAttribute('fill') !== 'none'
+                 ? part.getAttribute('fill') : part.getAttribute('stroke'));
+      ok(got === `hsl(${it.hue},${it.sat}%,${it.lit}%)`,
+         w + ' is marked ' + got + ' and written hsl(' + it.hue + ',' + it.sat + '%,' + it.lit + '%)');
+    }
+  });
+
   await T('a smell in the list wears the colour it has in the sky', async () => {
     /* so it is recognised rather than read, and so the list also shows which
        smells lie together and which lie apart */
@@ -829,7 +888,188 @@
       .every(r => r.getAttribute('aria-checked') === 'off'), 'a row still reads as picked');
   });
 
+  // -- a weed you already know -----------------------------------------------
+
+  /* Typing, as the page receives it: a value and an input event, because the
+     handler reads the field rather than the keystroke. The keydown helper sends
+     keydown, which is the only thing those handlers listen for.
+
+     Neither waits for a frame. What a hit list says is a claim about the DOM and
+     it is true the moment the handler returns; only ONE test here is about the
+     page painting by itself -- clicking a hit -- and that one waits. Waiting
+     everywhere would not make the suite stricter, only slower, and it hides
+     which claim the wait belongs to. */
+  const type = s => {
+    qbox.value = s;
+    qbox.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  const key = (k, el) => (el || qbox).dispatchEvent(
+    new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+  const rows = () => [...hits.querySelectorAll('.h')];
+  const clearFind = () => document.getElementById('bClear').click();
+
+  await T('every weed in the field can be found by its own name', () => {
+    /* The claim the whole feature rests on. Not a sample: all of them, because
+       the corpus is fixed and a name that finds nothing is a weed you cannot
+       reach by the one route that does not require you to already know where
+       it is. */
+    const lost = ST.filter(t => matches(t.n)[0] !== t);
+    ok(!lost.length, lost.length + ' weeds do not lead their own search, e.g. '
+       + lost.slice(0, 3).map(t => t.n).join(', '));
+  });
+
+  await T('a name that begins with what you typed comes first', async () => {
+    type('blue');
+    ok(shown.length, 'nothing matched blue');
+    const first = shown.findIndex(t => !t.n.toLowerCase().startsWith('blue'));
+    if (first >= 0) ok(shown.slice(first).every(t => !t.n.toLowerCase().startsWith('blue')),
+      'a name beginning with blue was listed under one that merely contains it');
+    ok(shown.every(t => t.n.toLowerCase().includes('blue')), 'a listed name lacks blue');
+    clearFind();
+  });
+
+  await T('naming a strain turns you to face it, and marks it', async () => {
+    clearFind();
+    yaw = 0; pitch = 0; target = null; await paint();
+    type(ST[7].n.slice(0, 4));
+    ok(shown.length, 'nothing matched');
+    const want = shown[0], d0 = DRAWS;
+    rows()[0].click(); await settle();
+    ok(found === want, 'the strain was not marked');
+    ok(DRAWS > d0, 'the strain was marked but the page never redrew it');
+    ok(target !== null, 'nothing was aimed at');
+    aimsAt(target, want.pos, want.n);
+    clearFind();
+  });
+
+  await T('facing a strain turns you, and does not move you', async () => {
+    /* It is a rotation. Walking would change what stands in front of what,
+       which is the one thing you asked it not to do: you asked where this weed
+       is, and the answer is a bearing from where you already are. */
+    clearFind();
+    STAND = [0.4, 0, -0.3]; yaw = 0; pitch = 0; await paint();
+    const s0 = STAND.slice();
+    type(ST[30].n);
+    rows()[0].click(); await settle();
+    ok(STAND.every((v, i) => v === s0[i]), 'naming a strain walked you to ' + STAND);
+    clearFind();
+    STAND = [0, 0, 0]; await paint();
+  });
+
+  await T('the marked weed is drawn, named, and never faded', async () => {
+    clearFind();
+    const said = [];
+    const realFill = g.fillText.bind(g);
+    g.fillText = (s, x, y) => { said.push(s); return realFill(s, x, y); };
+    try {
+      /* wide open, where no strain name is drawn at all */
+      fovWant = FOV = WIDE;
+      const t = ST.find(x => x.dist < 5) || ST[0];
+      faceTo(t.pos); yaw = target[0]; pitch = target[1]; target = null;
+      found = t; held = new Set();          // an approach it did not survive
+      said.length = 0; draw();
+      ok(t.node, 'the weed you named is not in view after facing it');
+      ok(t.node[3] === 1, 'the marked weed was faded to ' + t.node[3]);
+      ok(said.includes(t.n), 'the marked weed was not named at full width');
+      const others = ST.filter(x => x !== t && x.node);
+      ok(others.some(x => x.node[3] < 1), 'nothing else was dimmed, so the mark says nothing');
+    } finally { delete g.fillText; held = null; }
+    clearFind();
+  });
+
+  await T('the marked weed’s name moves out from under a panel rather than going', async () => {
+    /* Face a weed and it lands on the crosshair, which is the corner the globe
+       parks in. The name is painted on the canvas and the globe is a window
+       over it, so a name that stays put is a name nobody sees. */
+    clearFind();
+    toggleGlobe(true);
+    const said = [];
+    const realFill = g.fillText.bind(g);
+    g.fillText = (s, x, y) => { said.push([s, x]); return realFill(s, x, y); };
+    try {
+      const t = ST.find(x => x.dist < 5) || ST[0];
+      faceTo(t.pos); yaw = target[0]; pitch = target[1]; target = null;
+      found = t; said.length = 0; draw();
+      const put = said.find(s => s[0] === t.n);
+      ok(put, 'the marked weed lost its name entirely');
+      const R = t.node[2], rr = Math.max(15, R * 1.35);
+      ok(put[1] < t.node[0] - rr || put[1] > t.node[0] + rr,
+         'the name was painted on top of its own mark');
+      /* against where the globe ACTUALLY is, not where a constant said it was */
+      const gr = globe.getBoundingClientRect(), vr = c.getBoundingClientRect();
+      const gx = gr.left - vr.left, gy = gr.top - vr.top;
+      const ly = t.node[1] - R * 0.45;
+      const over = put[1] < gx + gr.width && put[1] + 46 > gx
+                && ly - 13 < gy + gr.height && ly + 13 > gy;
+      ok(!over, 'the name was painted under the globe, at x=' + put[1].toFixed(0)
+         + ' y=' + ly.toFixed(0) + ' against a globe at ' + gx.toFixed(0) + ',' + gy.toFixed(0));
+    } finally { delete g.fillText; }
+    clearFind();
+  });
+
+  await T('a name in the list wears the colour of the ground that weed stands on', async () => {
+    clearFind();
+    type('purple');
+    ok(shown.length, 'nothing matched purple');
+    const row = rows()[0], want = shown[0];
+    const got = getComputedStyle(row).color.match(/[\d.]+/g).map(Number);
+    const [r2, g2, b2] = hsl2rgb(want.a, 58, 72);
+    ok(Math.abs(got[0] - r2) < 3 && Math.abs(got[1] - g2) < 3 && Math.abs(got[2] - b2) < 3,
+       'the row is ' + got + ' where its ground is ' + [r2, g2, b2].map(Math.round));
+    clearFind();
+  });
+
+  await T('the arrows walk the list and enter takes the one they are on', async () => {
+    clearFind();
+    type('a');
+    ok(shown.length > 2, 'not enough matched to walk');
+    key('ArrowDown');
+    ok(cursor === 1, 'the arrow did not move down the list, cursor is ' + cursor);
+    ok(rows()[1].classList.contains('on'), 'the row it is on does not say so');
+    const want = shown[1];
+    key('Enter');
+    ok(found === want, 'enter did not take the row the arrows were on');
+    key('ArrowUp');
+    ok(cursor === 0, 'up did not go back, cursor is ' + cursor);
+    clearFind();
+  });
+
+  await T('typing a name never walks you through the field', async () => {
+    /* w and s walk. They are also letters, and 84 of these strains have one in
+       their name. */
+    clearFind();
+    STAND = [0, 0, 0]; await paint();
+    qbox.focus();
+    key('w'); key('s'); key('ArrowUp');
+    ok(len(STAND) === 0, 'typing walked you to ' + STAND);
+    qbox.blur();
+  });
+
+  await T('a name nothing carries says so, and marks nothing', async () => {
+    clearFind();
+    type('zzzznotastrain');
+    ok(shown.length === 0, 'something matched a name no weed carries');
+    ok(hits.textContent.trim().length, 'the panel went blank instead of saying so');
+    ok(found === null, 'a mark survived a search that found nothing');
+    clearFind();
+  });
+
+  await T('escape drops the name and the mark, and so does clear', async () => {
+    type(ST[3].n);
+    rows()[0].click(); await settle();
+    ok(found, 'nothing was marked to drop');
+    key('Escape');
+    ok(found === null && qbox.value === '', 'escape left the mark or the name behind');
+
+    type(ST[3].n);
+    rows()[0].click(); await settle();
+    document.getElementById('bClear').click(); await paint();
+    ok(found === null && qbox.value === '' && hits.innerHTML === '',
+       'clear left the search behind');
+  });
+
   yaw = home.yaw; pitch = home.pitch; fovWant = home.fov; vYaw = vPitch = 0;
+  found = null; held = null; qbox.value = ''; drawHits();
   await paint();
 
   const bad = R.filter(r => r.startsWith('FAIL'));

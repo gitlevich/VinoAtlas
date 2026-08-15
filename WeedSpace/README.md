@@ -36,15 +36,111 @@ You cannot walk out, and what is bounded is the **eye**, which swings to
 the field has stopped surrounding you and become a clump you are looking at,
 which is where first person ends.
 
+The strip along the bottom names what lies the way you are facing, and it names
+smells and feelings in one breath. Each word carries the mark it already wears
+out in the world — three rising waves, or a nebula — because until it did, the
+only things telling the two apart were a wider gap and their colour, and colour
+here means *direction*, not kind. Two words the same shade can be different
+kinds of thing entirely: read the line and you could not tell whether you were
+being told the jar smells of honey or that the weed will make you giggly.
+
+The glyph says kind and nothing else. Out there a wave's waver says how weakly a
+word holds its bearing and a nebula's heart says how sharply; at fourteen pixels
+that is noise. Two proportions are opened out from the sky's for the same reason
+the page draws a far-off weed with three leaflets instead of seven: below a size,
+holding the ratio costs the shape.
+
 The list on the left wears the sky's colours — a smell there and the same smell
 out in the field are one thing, so it is recognised rather than read, and the
 list also shows at a glance which smells lie together and which lie apart.
+
+## A weed you already know
+
+The rest of the panel runs one way — from what is in the jar, or from the state
+you want, out to the weeds that lie that way. Naming one runs the other way. You
+arrive holding the name and what you lack is the place, so typing it turns you
+to face it and leaves it ringed, and from there it is read like any other place:
+what it stands near, what country it is in, what else lies that way.
+
+It is a **rotation and nothing else**. Walking would change what stands in front
+of what, and the question a name asks is a bearing from where you already are.
+The mark then stays until you clear it, because the thing you came for is not
+which one it is — you knew that — but what is around it, and that is asked by
+turning away and coming back.
+
+The ring is drawn in no colour this space uses. Every part of how a weed is
+drawn already carries a claim — green that it is a weed, lightness how far it
+commits, the accent the ground it stands on — so a mark made from any of them
+would say something false about the weed in order to say something true about
+your search. The ring belongs to you, not to it. Its name is drawn at any width,
+where every other strain name has to earn its place by your leaning in: a weed
+you asked for by name and cannot see the name of has not been found.
+
+`every weed in the field can be found by its own name` runs all 563 rather than
+a sample, because the corpus is fixed and a name that finds nothing is a weed
+with no route to it but knowing already where it stands.
 
 **A gesture that does not paint did not happen.** The first version of this
 deferred drawing to the animation loop, which only runs while something glides
 or coasts — so two fingers changed the state perfectly and the screen never
 moved. Every handler paints directly now, and `acceptance_tests.js` has a
 `settle()` that refuses to draw for the page, so a dead gesture fails loudly.
+
+## One witness, at a level the crowd does not report from
+
+`reports.jsonl` is a separate record, and it is not more of the same data.
+
+The field is built from a crowd, and a crowd reports **outcomes** — happy,
+hungry, sleepy, things that happened to it. Thirteen words, all of them passive.
+What this record holds is **how attention is allocated**: short horizon and high
+resolution against long horizon and coarse, time-like against space-like. That
+is not a fourteenth outcome. It is the frame the outcomes occur inside, reported
+from a level of control the crowd does not operate at — which is why it is
+recorded as the report's content and not as a residue left over after the
+thirteen have taken what they can use.
+
+Each report keeps four things, and they are not equal. `said` is verbatim and is
+never normalised away. `attention` is the allocation. `own` is his terms the
+thirteen have no place for. `crowd` is a *reading* of `said` into the thirteen —
+mine, revisable, and there only to find neighbours in the field.
+
+```bash
+.venv/bin/python WeedSpace/reports.py
+```
+
+The claim being accumulated toward is precise: **allocation earns its place only
+if it separates weeds the field puts together.** If every pair that differs in
+allocation is also far apart in the thirteen, it is a relabelling of what the
+crowd already measures. `separates()` decides that, and until there are reports
+at both poles it returns nothing and says why — an empty list would read as a
+finding of no difference, which is not the same as having no evidence.
+
+## The tab icon
+
+The leaf, again — not a drawing of it. `ANG` and `LEN` and the sawtooth are
+written once in `build_horizon.py`; the page's canvas leaf takes them by
+substitution and `_favicon()` walks the same construction into an SVG path, so
+the two cannot drift apart. It travels in the page as a data URI: no second
+file, no request.
+
+Two departures, both stated: the blades only, because the stem is a third of the
+height and under a pixel wide in a tab — and it is the part that carries the
+accent, which is the ground one weed stands on and not something an icon for the
+whole space can wear. And round joins, because at sixteen pixels a mitred
+sawtooth is aliasing rather than teeth. The green is the field's own, at the
+middle of the range a weed's commitment moves it through.
+
+It is drawn twice, because **Safari does not take an SVG icon**. So the page
+offers a PNG first and the SVG second: Safari takes the PNG, everything else
+prefers the SVG and stays sharp at any size. Drawing a mark twice is the thing
+all of this was arranged to avoid, so nothing is redrawn — `leaf_parts()` hands
+over the points and the colours, and `leaf_svg()` and `leaf_raster()` are two
+readings of them. Move a leaflet and both move. The rasteriser is
+`scripts/raster.py`, shared with the shop and the landing page.
+
+`leaf_parts()` places the crown at any size anywhere, which is also how the
+landing page sets one beside the shop's glass — `scripts/landing_icon.py`.
+Importing this module no longer writes the page; running it does.
 
 ## Build
 
@@ -64,13 +160,13 @@ are not in the repo. It is deterministic: the same corpus gives a byte-identical
 .venv/bin/python -m pytest WeedSpace
 ```
 
-53 tests over the data. `test_pipeline.py` checks navdata.json against the
+64 tests over the data. `test_pipeline.py` checks navdata.json against the
 parquet — which words are admitted, where each one sits, what each strain does.
 `test_page.py` checks horizon.html against navdata.json — that direction
 survives the move into the world, that colour follows direction, that a weed
 wears the colour of the ground it stands on.
 
-The other 36 are in `acceptance_tests.js` and need the page running, because
+The other 57 are in `acceptance_tests.js` and need the page running, because
 they are about moving through it:
 
 ```bash

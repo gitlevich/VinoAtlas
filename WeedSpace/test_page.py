@@ -457,3 +457,79 @@ def test_the_field_of_view_is_a_human_one(page):
 def test_a_feelings_base_rate_is_carried_so_a_claim_can_be_measured(baked):
     assert set(baked["chance"]) == set(baked["effectOrder"])
     assert all(25 <= v <= 45 for v in baked["chance"].values())
+
+
+# ------------------------------------------------------------------ the tab icon
+
+def test_the_tab_icon_is_the_leaf_the_field_is_drawn_with(page):
+    """One leaf, written once. ANG and LEN live in build_horizon and are
+    substituted into the page, so the canvas leaf and the icon cannot say
+    different things about the same shape -- which is the whole reason they are
+    not two lists."""
+    import json
+    import urllib.parse
+
+    from build_horizon import ANG, LEN, _favicon
+
+    assert f"const ANG = {json.dumps(ANG)}, LEN = {json.dumps(LEN)};" in page
+    icon = re.search(r'rel=icon type="image/svg\+xml" href="([^"]+)"', page).group(1)
+    assert icon == _favicon(), 'the page carries an icon it was not built with'
+    svg = urllib.parse.unquote(icon.split(',', 1)[1])
+    # seven leaflets, and each one is a closed run
+    assert svg.count('M') == len(ANG) == svg.count('Z')
+    assert 'http' not in svg.replace('http://www.w3.org/2000/svg', ''), 'it reaches out'
+
+
+def test_the_page_carries_a_leaf_safari_can_also_read(page):
+    """Safari does not take an SVG icon. The PNG stands first for it; every
+    other browser prefers the SVG and stays sharp at any size."""
+    from build_horizon import _favicon_png
+
+    assert f'<link rel=icon href="{_favicon_png()}" sizes="32x32">' in page
+    assert page.index('image/png;base64') < page.index('image/svg+xml'), \
+        'the SVG is offered first, which is the order Safari loses on'
+
+
+def test_the_leaf_in_pixels_is_the_leaf_the_vectors_draw():
+    """The PNG is not a second drawing of the leaf: it is the same points, run
+    through the other renderer. So it is checked against those points -- green
+    and solid at the heart, ink under the crown's own tips, and a corner of the
+    box left empty, because a crown is not a square."""
+    import raster
+
+    from build_horizon import LEAF_H, LEAF_W, leaf_parts, leaf_raster
+
+    box, pad = 32, 0.5
+    R = (box - 2 * pad) / max(LEAF_W, LEAF_H)
+    canvas = raster.Canvas(box)
+    leaf_raster(canvas, R, box / 2, box / 2)
+    px = canvas.pixels()
+    m = leaf_parts(R, box / 2, box / 2)
+
+    hx, hy = m['heart']
+    r, g, b, a = px[int(hy), int(hx)]
+    assert a == 255, 'the heart of the leaf is not solid'
+    assert g > r and g > b, f'the heart is not green: {(r, g, b)}'
+
+    for run in m['runs']:                        # every leaflet reaches its tip
+        tip = min(run, key=lambda p: math.dist(p, m['heart']) * -1)
+        step = 0.75                              # just inside the point
+        x = tip[0] + (m['heart'][0] - tip[0]) * 0.12
+        y = tip[1] + (m['heart'][1] - tip[1]) * 0.12
+        assert px[int(y), int(x), 3] > 0, f'a leaflet is missing near {tip}'
+
+    assert px[0, 0, 3] == 0 and px[0, box - 1, 3] == 0, 'it fills the corners'
+
+
+def test_the_leafs_extent_is_what_the_leaf_measures(page):
+    """LEAF_W and LEAF_H are how anything places a leaf without drawing it
+    first -- the landing page sets a glass beside one. They are measured from
+    the leaf itself here, so a change to the leaflets cannot leave them stale.
+    """
+    from build_horizon import LEAF_H, LEAF_W, _leaf
+
+    runs = _leaf(100)
+    xs = [p[0] for r in runs for p in r]
+    ys = [p[1] for r in runs for p in r]
+    assert round((max(xs) - min(xs)) / 100, 3) == LEAF_W
+    assert round((max(ys) - min(ys)) / 100, 3) == LEAF_H

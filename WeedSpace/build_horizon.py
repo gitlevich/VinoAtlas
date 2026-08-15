@@ -20,8 +20,13 @@ is the only thing in the view that can say what is near and what is behind.
 import json
 import math
 import pathlib
+import sys
+import urllib.parse
 
 HERE = pathlib.Path(__file__).parent
+# the rasteriser is shared with the shop and with the landing page, so it lives
+# in scripts/ rather than in either of the two things that draw with it
+sys.path.append(str(HERE.parent / 'scripts'))
 D = json.loads((HERE / 'navdata.json').read_text())
 
 def _rgb(h, sat, lit):
@@ -144,7 +149,126 @@ DATA['near'], DATA['far'] = NEAR, FAR
 print('effect hues:', {i['w']: i['hue'] for i in D['items'] if i['kind'] == 'feel'})
 
 
+# ---- the leaf -------------------------------------------------------------
+# Seven leaflets, the centre one longest and vertical, the pairs shortening and
+# sweeping outward until the last pair sits below horizontal; the sawtooth edge
+# is most of what makes it recognisable. These numbers are the leaf, and they
+# are written once: the page's canvas leaf takes them by substitution and the
+# favicon is drawn from them here. A tab icon that had its own copy would be a
+# drawing OF the mark rather than the mark itself, and the two would drift.
+ANG = [0, -0.66, 0.66, -1.26, 1.26, -1.82, 1.82]
+LEN = [1.0, 0.87, 0.87, 0.64, 0.64, 0.42, 0.42]
+TEETH = 7                       # steps along a leaflet; odd ones stand proud
+STEM = 0.52                     # how far the stem drops below the crown
+
+def _leaf(R):
+    """The outline, by the same construction the canvas uses, as (x, y) runs."""
+    runs = []
+    for a, ln in zip(ANG, LEN):
+        th = -math.pi / 2 + a
+        L, w = R * ln, R * 0.115 * (1 - 0.22 * abs(a))
+        ux, uy = math.cos(th), math.sin(th)
+        px, py = -uy, ux
+        pts = [(0.0, 0.0)]
+        for side in (1, -1):
+            steps = range(1, TEETH + 1) if side == 1 else range(TEETH, 0, -1)
+            for i in steps:
+                u = i / TEETH
+                d = w * math.sin(u ** 0.5 * math.pi) * (1 if i % 2 else 0.58) * side
+                pts.append((ux * L * u + px * d, uy * L * u + py * d))
+        pts.append((0.0, 0.0))
+        runs.append(pts)
+    return runs
+
+LEAF_W, LEAF_H = 1.219, 1.105     # the crown's extent, in R, measured below
+
+
+LEAF_GREEN = [(0, (112, 66, 54)), (1, (112, 62, 34))]   # heart, then the tips
+LEAF_STROKE = 0.045                                    # of R, as the canvas strokes it
+
+
+def leaf_parts(R, cx, cy):
+    """WHERE THE CROWN IS, at radius R about (cx, cy), and nothing about how to
+    draw it. Seven runs of points, the heart they radiate from, and the two
+    greens. Everything that draws a leaf reads this -- the SVG writer below and
+    the rasteriser next door -- so there is one leaf and not one per renderer.
+    """
+    runs = _leaf(100)
+    xs = [p[0] for r in runs for p in r]
+    ys = [p[1] for r in runs for p in r]
+    k = R / 100
+    ox = cx - (min(xs) + max(xs)) / 2 * k
+    oy = cy - (min(ys) + max(ys)) / 2 * k
+    return dict(runs=[[(p[0] * k + ox, p[1] * k + oy) for p in r] for r in runs],
+                heart=(ox, oy), r=R, stroke=LEAF_STROKE * R, stops=LEAF_GREEN)
+
+
+def leaf_svg(R, cx, cy, ink='l'):
+    """The crown as a gradient and a path.
+
+    Green at the heart bleeding out to a deeper green at the tips, which is the
+    page's own gradient with the accent taken out of it. The canvas strokes the
+    leaf with its own fill at 4.5% of R, because a seven-leaflet serrated star
+    encloses very little for the outline it carries; in a tab that is the
+    difference between a leaf and a green smudge, so this strokes it too, by the
+    same fraction. Round joins are the one departure: at sixteen pixels a mitred
+    sawtooth is aliasing, not teeth."""
+    m = leaf_parts(R, cx, cy)
+    put = lambda p: f'{p[0]:.2f} {p[1]:.2f}'
+    d = ' '.join('M' + put(r[0]) + 'L' + 'L'.join(put(p) for p in r[1:]) + 'Z'
+                 for r in m['runs'])
+    stops = ''.join(f'<stop offset="{o}" stop-color="hsl({h},{s}%,{l}%)"/>'
+                    for o, (h, s, l) in m['stops'])
+    return (f'<radialGradient id="{ink}" gradientUnits="userSpaceOnUse"'
+            f' cx="{m["heart"][0]:.2f}" cy="{m["heart"][1]:.2f}" r="{m["r"]:.2f}">'
+            f'{stops}</radialGradient>'
+            f'<path d="{d}" fill="url(#{ink})" stroke="url(#{ink})"'
+            f' stroke-width="{m["stroke"]:.2f}" stroke-linejoin="round"/>')
+
+
+def leaf_raster(canvas, R, cx, cy):
+    """The same crown, in pixels. Fill then stroke, in that order and with the
+    same paint, exactly as the canvas leaf is drawn."""
+    import raster
+
+    m = leaf_parts(R, cx, cy)
+    paint = raster.Radial(*m['heart'], m['r'],
+                          [(o, raster.hsl(*c)) for o, c in m['stops']])
+    canvas.fill(m['runs'], paint)
+    for run in m['runs']:
+        canvas.stroke(run, m['stroke'], paint, closed=True)
+
+
+def _favicon(box=32, pad=0.5):
+    """The leaf, fitted to a tab. Green, because that is what says weed before
+    anything is read -- and the accent a leaf carries in the field is the ground
+    one weed stands on, which no icon for the whole space can honestly wear. So
+    the bleed at the tips is green too: darker, not other.
+
+    The blades only. The stem is a third of the mark's height and, at sixteen
+    pixels, under one pixel wide -- it would spend a third of the icon on a
+    thing nobody could see, and shrink the part they can by a quarter. It is
+    also the part that carries the accent, which is the part an icon cannot
+    have. Nothing else is dropped: this is the whole crown, tooth for tooth."""
+    R = (box - 2 * pad) / max(LEAF_W, LEAF_H)
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{box}" height="{box}"'
+           f' viewBox="0 0 {box} {box}">'
+           + leaf_svg(R, box / 2, box / 2) + '</svg>')
+    return 'data:image/svg+xml,' + urllib.parse.quote(svg)
+
+
+def _favicon_png(box=32, pad=0.5):
+    """The same leaf in pixels, for Safari, which does not take an SVG icon."""
+    import raster
+
+    canvas = raster.Canvas(box)
+    leaf_raster(canvas, (box - 2 * pad) / max(LEAF_W, LEAF_H), box / 2, box / 2)
+    return canvas.uri()
+
+
 PAGE = """<title>From Where You Stand</title>
+<link rel=icon href="__ICONPNG__" sizes="32x32">
+<link rel=icon type="image/svg+xml" href="__ICON__">
 <style>
 :root{
   --ground:#000; --panel:#0e0e0e; --line:#282828;
@@ -176,6 +300,25 @@ h1{margin:0;padding:14px 14px 3px;font-size:13.5px;font-weight:600}
 .s i{width:11px;height:11px;border-radius:3px;border:1.5px solid;flex:none;opacity:.85}
 .s[aria-checked=yes]{color:var(--ink);font-weight:600}
 /* the fill is the word's own colour, set where the row is built */
+/* Naming one. The field is text and text is the one thing here that IS read,
+   so it gets its selection back. */
+#find{padding:0 14px 9px;flex:none}
+#q{width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:6px;padding:6px 9px;font:inherit;font-size:12.5px;
+  -webkit-user-select:text;user-select:text}
+#q::placeholder{color:var(--ink-3)}
+#q:focus{outline:none;border-color:#414141}
+#q::selection{background:#2c4a63}
+#hits{margin-top:6px;max-height:29vh;overflow-y:auto}
+/* Each name wears the colour of the ground that weed stands on -- the same
+   accent its leaf carries out in the field -- so the row and the thing are
+   recognised as one, the way the smell rows already are. */
+#hits .h{padding:3px 7px;border-radius:4px;cursor:pointer;font-size:12.5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hits .h:hover,#hits .h.on{background:#1b1b1b}
+#hits .h.mark{font-weight:600;background:#212121}
+#hits .h.mark::after{content:'\\2022';float:right;color:var(--ink-2)}
+#hits .say{padding:3px 7px;color:var(--ink-3);font-size:11.5px}
 button{background:var(--panel);color:var(--ink-2);border:1px solid var(--line);
   border-radius:6px;padding:5px 10px;font:inherit;font-size:11.5px;cursor:pointer}
 button:hover{color:var(--ink);border-color:#414141}
@@ -199,6 +342,8 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
 #facing.wide{padding:0 26px}
 #facing .lead{color:var(--ink-3);font-size:11px;letter-spacing:.09em;text-transform:uppercase}
 #facing .set{font-size:15px;margin-top:3px;line-height:1.55}
+#facing .set span{white-space:nowrap}
+.gl{width:14px;height:14px;vertical-align:-2px;margin-right:1px}
 #facing .odds{color:var(--ink-3);font-size:12px;margin-top:6px}
 #cues{position:absolute;right:16px;top:14px;text-align:right;pointer-events:none;
   font-size:11.5px;color:var(--ink-3);line-height:1.65;max-width:238px}
@@ -230,6 +375,12 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
     <h1>What do you smell?</h1>
     <p class=lede>Tick what is in the jar and you will be turned to face it.
       Or drag the view and look around.</p>
+    <div class=grp>By name</div>
+    <div id=find>
+      <input id=q placeholder="a strain you already know" autocomplete=off
+             spellcheck=false aria-label="find a strain by name">
+      <div id=hits></div>
+    </div>
     <div class=grp>Smells</div>
     <div class=scroll id=list></div>
     <div id=foot>
@@ -542,6 +693,8 @@ function draw() {
        has to be plainly there, so the floor rises and the gain with it. */
     let a = Math.max(0.72, Math.min(1, 13 * t.lean / q.dist) * q.edge * attend);
     if (held && !held.has(t)) a *= 0.34;          // it slid out of frame on the way
+    /* You asked for this one by name, so it is never the thing that faded. */
+    if (t === found) a = 1;
     strains.push({ t, q, a,
                    R: Math.max(3.2, (118 * t.lean / q.dist) * (WIDE / FOV) ** 0.5) * q.edge });
   }
@@ -587,8 +740,7 @@ function draw() {
          you at a glance that it is a weed. Lightness still tracks how much the
          weed commits, so the field does not flatten into one mass. The profile
          is no longer legible from the outline; the hover panel carries it. */
-      const ANG = [0, -0.66, 0.66, -1.26, 1.26, -1.82, 1.82];
-      const LEN = [1.0, 0.87, 0.87, 0.64, 0.64, 0.42, 0.42];
+      const ANG = __ANG__, LEN = __LEN__;
       const lit2 = 46 + 20 * t.lean;
       g.beginPath();
       for (let k = 0; k < 7; k++) {
@@ -642,6 +794,21 @@ function draw() {
       g.beginPath(); g.arc(q.x, q.y, Math.max(1.4, R * 0.15), 0, 6.2832);
       g.fillStyle = `hsla(${t.a},90%,${lit2 + 24}%,${a})`; g.fill();
     }
+    /* THE ONE YOU NAMED, RINGED.
+
+       Not a brighter leaf and not a different colour: every part of how a weed
+       is drawn already carries a claim -- green that it is a weed, lightness
+       how far it commits, the accent the ground it stands on -- so a mark made
+       out of any of them would say something false about the weed in order to
+       say something true about your search. The ring is yours, not the weed's,
+       so it is drawn in no colour this space uses, and dark under light so it
+       holds against the black and against a bright country alike. */
+    if (t === found) {
+      const cy = q.y - R * 0.45, rr = Math.max(15, R * 1.35);
+      g.beginPath(); g.arc(q.x, cy, rr, 0, 6.2832);
+      g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 3.6; g.stroke();
+      g.strokeStyle = 'rgba(255,255,255,.82)'; g.lineWidth = 1.4; g.stroke();
+    }
     t.node = [q.x, q.y, R, a];
   }
 
@@ -659,11 +826,24 @@ function draw() {
   seen.sort((a, b) => (a.sky !== b.sky) ? (a.sky ? -1 : 1)
                     : a.sky ? a.it.str - b.it.str : b.p.dist - a.p.dist);
 
-  const drawn = [
-    [W / 2, H - 30, W, 86],          // the readout strip along the bottom
-    [W - 130, H - 130, 262, 262],    // the globe in the corner
-    [W - 124, 74, 260, 168],         // the note in the top corner
-  ];
+  /* THE PANELS, ASKED FOR RATHER THAN GUESSED.
+
+     These three are real windows lying over the canvas, and a name painted
+     under one is a name that was not painted. They were three constants, and
+     the constants were wrong: the globe's put its top edge 27px below where the
+     panel actually starts, which is exactly the band a centred mark's name
+     lands in -- so facing a weed by name printed its name underneath the globe.
+     A guess also cannot know that the globe closes, or that it can be dragged
+     anywhere in the view. The elements know all of it, so they are asked. */
+  const panel = el => {
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return null;          // closed, or not laid out yet
+    const v = c.getBoundingClientRect();
+    return [r.left - v.left + r.width / 2, r.top - v.top + r.height / 2, r.width, r.height];
+  };
+  const panels = [document.getElementById('facing'), document.getElementById('cues'),
+                  showMini ? globe : null].filter(Boolean).map(panel).filter(Boolean);
+  const drawn = panels.slice();
   for (const { it, p } of seen) {
     const feel = it.kind === 'feel';
     const said = state.has(it.w);
@@ -791,6 +971,34 @@ function draw() {
     it.hit = [p.x, p.y, w, sz + face];
   }
 
+  /* ITS NAME, AT ANY WIDTH. Every other name here arrives by leaning in, and
+     is dropped when it would land on something. This one cannot be: a weed you
+     asked for by name, and then cannot see the name of, has not been found. It
+     is placed first, so the names that may be dropped are dropped around it. */
+  if (found && found.node) {
+    const [x, y, R] = found.node;
+    const fs = 13, cy = y - R * 0.45, rr = Math.max(15, R * 1.35);
+    g.font = `600 ${fs}px ui-sans-serif,sans-serif`;
+    g.textAlign = 'left';
+    const tw = g.measureText(found.n).width;
+    /* It cannot be dropped, so it moves instead. The panels are real windows
+       over the canvas -- the globe especially, which parks in the corner the
+       crosshair is nearest when you face something -- and a name painted under
+       one is a name that was not painted. Right if there is room, otherwise
+       left. This is the globe's own rule for its labels: a label that has moved
+       a little beats a label that is not there. */
+    const clear = px => !panels.some(b =>
+      px < b[0] + b[2] / 2 && px + tw + 10 > b[0] - b[2] / 2
+      && cy - fs < b[1] + b[3] / 2 && cy + fs > b[1] - b[3] / 2);
+    const right = x + rr + 7, left = x - rr - 7 - tw;
+    const bx = clear(right) || !clear(left) ? right : left;
+    g.fillStyle = 'rgba(0,0,0,.62)';
+    g.beginPath(); g.roundRect(bx - 5, cy - fs * 0.8, tw + 10, fs * 1.55, 4); g.fill();
+    g.fillStyle = '#fff';
+    g.fillText(found.n, bx, cy + fs * 0.34);
+    drawn.push([bx + tw / 2, cy, tw + 10, fs * 1.55]);
+  }
+
   /* Strain names, once the words have taken what they need. Leaning in spreads
      the nodes apart, so more names fit -- the labels arrive by themselves. */
   if (FOV < WIDE * 0.80) {
@@ -799,13 +1007,19 @@ function draw() {
     g.font = `${fs.toFixed(1)}px ui-sans-serif,sans-serif`;
     g.textAlign = 'left';
     for (const t of lit) {
+      if (t === found) continue;                  // already named, above
       const [x, y, r] = t.node;
       const tw = g.measureText(t.n).width;
       const bx = x + r + 4, by = y - fs / 2;
       if (drawn.some(b => bx < b[0] + b[2] / 2 + 4 && bx + tw > b[0] - b[2] / 2 - 4
                        && by < b[1] + b[3] / 2 + 3 && by + fs > b[1] - b[3] / 2 - 3)) continue;
       drawn.push([bx + tw / 2, y, tw, fs]);
-      g.fillStyle = `hsla(${t.h},58%,${t.l}%,.72)`;
+      /* The colour of the ground it stands on. This read `t.h` and `t.l`, which
+         no strain has ever carried -- an invalid colour string, which canvas
+         silently declines, so every strain name was painted in whatever colour
+         the last mark happened to leave behind. The accent is the field this
+         weed actually has, and it is the one its own stem is drawn in. */
+      g.fillStyle = `hsla(${t.a},58%,72%,.72)`;
       g.fillText(t.n, bx, y + fs / 3);
     }
   }
@@ -824,6 +1038,59 @@ function bundle(F) {
   return { smells: near.filter(o => o.i.kind === 'smell').map(o => o.i).slice(0, 5),
            feels: near.filter(o => o.i.kind === 'feel').map(o => o.i).slice(0, 4),
            wide, off };
+}
+
+/* WHAT KIND OF THING EACH ONE IS, in the line that names them together.
+
+   This strip lists smells and feelings in one breath, and until now the only
+   things separating them were a wider gap and their colour -- and colour here
+   means DIRECTION, not kind, so two words the same shade can be different kinds
+   of thing entirely. Read it and you cannot tell what you are being told: that
+   the jar smells of honey, or that the weed will make you giggly.
+
+   So each word carries the mark it already wears in the world: a smell is
+   three rising waves, a feeling is a nebula. Not a legend, not a letter -- the
+   same glyph, so it is recognised rather than decoded, and looking up from the
+   line to the sky finds the same two shapes there.
+
+   What the glyph does NOT carry is magnitude: out there a wave's waver says how
+   weakly a word holds its bearing and a nebula's heart says how sharply, and at
+   fourteen pixels that is noise. Here the glyph says kind, and says nothing
+   else.
+
+   Two proportions are opened out from the sky's, and for the reason the page
+   already draws a far-off weed with three leaflets instead of seven: below a
+   size, holding the ratios costs the shape. The three waves stand at 0.40 of
+   their height apart out there and at 1.5px strokes they merge into one
+   squiggle here, so they are spread and thinned; the nebula's lobes are a
+   twelfth of the alpha they carry in a gradient that has room to fall off, so
+   they are raised until the cloud survives at all. The SHAPES are the sky's --
+   three rising strokes, three offset lobes and a bright heart. */
+function mark(it) {
+  const c = `hsl(${it.hue},${it.sat}%,${it.lit}%)`;
+  const svg = s => `<svg class=gl viewBox="0 0 14 14" aria-hidden=true>${s}</svg>`;
+  if (it.kind === 'feel') {
+    const NR = 4.7;             // three offset lobes and a bright heart
+    /* Every value quoted, and the last one especially. Unquoted, the trailing
+       slash of a self-closing tag is read as part of the value -- the tag never
+       closes, the next glyph element becomes its CHILD, and a shape inside a
+       shape does not draw. That shipped: three lobes and three waves each drew
+       one. */
+    return svg([[0, 0, 1.0], [0.32, -0.22, 0.74], [-0.30, 0.20, 0.66]].map(
+        ([ox, oy, rr]) => `<circle cx="${(7 + ox * NR).toFixed(2)}"`
+          + ` cy="${(7 + oy * NR).toFixed(2)}" r="${(NR * rr).toFixed(2)}"`
+          + ` fill="${c}" fill-opacity=".34"/>`).join('')
+      + `<circle cx="7" cy="7" r="${(NR * 0.22).toFixed(2)}" fill="${c}"/>`);
+  }
+  const R = 6, wig = 0.95;      // three rising waves, the middle one its own colour
+  return svg([-1, 0, 1].map(k => {
+    const x = 7 + k * R * 0.62;
+    return `<path d="M${x.toFixed(2)} ${7 + R}C${(x + R*0.34*wig).toFixed(2)}`
+      + ` ${(7 + R*0.34).toFixed(2)} ${(x - R*0.34*wig).toFixed(2)}`
+      + ` ${(7 - R*0.34).toFixed(2)} ${x.toFixed(2)} ${7 - R}"`
+      + ` fill="none" stroke="${c}" stroke-width="${k ? 1 : 1.3}"`
+      + ` stroke-linecap="round" stroke-opacity="${k ? 0.6 : 1}"/>`;
+  }).join(''));
 }
 
 function readout() {
@@ -859,9 +1126,11 @@ function readout() {
   box.innerHTML = (smells.length || feels.length)
     ? `<div class=lead>${wide ? `open country &mdash; nearest is ${off}&deg; round`
                               : 'this way'}</div><div class=set>`
-      + smells.map(s => `<span style="color:hsl(${s.hue},${s.sat}%,${s.lit}%)">${s.w}</span>`).join(' &nbsp;')
+      + smells.map(s => `<span style="color:hsl(${s.hue},${s.sat}%,${s.lit}%)">`
+          + `${mark(s)}${s.w}</span>`).join(' &nbsp;')
       + (feels.length ? ' &nbsp;&nbsp;' + feels.map(f =>
-          `<span style="color:hsl(${f.hue},${f.sat}%,${f.lit}%)">${f.w}</span>`).join(' &nbsp;') : '')
+          `<span style="color:hsl(${f.hue},${f.sat}%,${f.lit}%)">`
+          + `${mark(f)}${f.w}</span>`).join(' &nbsp;') : '')
       + `</div>` + odds
     : `<div class=lead>open country</div>`
       + `<div class=set style="color:var(--ink-3)">keep turning</div>` + odds;
@@ -900,6 +1169,93 @@ for (const s of SMELLS) {
   };
   list.append(row);
 }
+
+/* ---- A WEED YOU ALREADY KNOW ---------------------------------------------
+
+   Everything else in this panel runs one way: from what is in the jar, or from
+   the state you want, out to the weeds that lie that way. This runs the other
+   way. You arrive holding the name, and what you do not have is where it
+   stands -- so naming one turns you to face it and leaves it marked, and from
+   then on it is read the way any other place is read: what it is near, what
+   country it stands in, what else lies that way.
+
+   The mark stays until you clear it, because the question a name asks is not
+   "which one is it" -- you knew that -- but "what is around it", and that is
+   asked by turning away and coming back. */
+let found = null;
+const qbox = document.getElementById('q'), hits = document.getElementById('hits');
+const HITS = 14;                       // as many as fit without the panel taking over
+let shown = [], cursor = 0;
+const esc = s => s.replace(/[&<>"]/g,
+  ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+function matches(q) {
+  q = q.trim().toLowerCase();
+  if (!q) return [];
+  /* A name that BEGINS with what you typed is the one you meant, so it leads;
+     the rest follow rather than being mixed in with it. Ties go to the shorter
+     name, since the longer one contains it. Nothing here settles a tie by the
+     order the corpus happened to be in -- the last resort is the alphabet. */
+  return ST.map(t => ({ t, at: t.n.toLowerCase().indexOf(q) }))
+           .filter(o => o.at >= 0)
+           .sort((a, b) => a.at - b.at || a.t.n.length - b.t.n.length
+                        || (a.t.n < b.t.n ? -1 : 1))
+           .map(o => o.t);
+}
+
+function drawHits() {
+  const all = matches(qbox.value);
+  shown = all.slice(0, HITS);
+  cursor = Math.max(0, Math.min(cursor, shown.length - 1));
+  if (!qbox.value.trim()) { hits.innerHTML = ''; return; }
+  if (!all.length) {
+    hits.innerHTML = '<div class=say>no strain here by that name</div>';
+    return;
+  }
+  hits.innerHTML = shown.map((t, i) =>
+      `<div class="h${i === cursor ? ' on' : ''}${t === found ? ' mark' : ''}"`
+    + ` data-i=${i} style="color:hsl(${t.a},58%,72%)">${esc(t.n)}</div>`).join('')
+    + (all.length > shown.length
+       ? `<div class=say>and ${all.length - shown.length} more that carry it</div>` : '');
+}
+
+function goTo(t) {
+  found = t;
+  faceTo(t.pos);          // the space turns; you are not moved, only faced round
+  drawHits();
+  nudge();
+}
+
+function unmark() {
+  found = null;
+  drawHits();
+  nudge();
+}
+
+qbox.addEventListener('input', () => { cursor = 0; drawHits(); });
+hits.addEventListener('click', e => {
+  const row = e.target.closest('.h');
+  if (!row) return;
+  cursor = +row.dataset.i;
+  goTo(shown[cursor]);
+});
+qbox.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (shown.length) {
+      cursor = (cursor + (e.key === 'ArrowDown' ? 1 : shown.length - 1)) % shown.length;
+      drawHits();
+      if (hits.children[cursor]) hits.children[cursor].scrollIntoView({ block: 'nearest' });
+    }
+    e.preventDefault();
+  } else if (e.key === 'Enter') {
+    if (shown[cursor]) goTo(shown[cursor]);
+    e.preventDefault();
+  } else if (e.key === 'Escape') {
+    qbox.value = ''; cursor = 0; unmark();
+  }
+  /* the field is where letters go; w and s walk, and must not do it from here */
+  e.stopPropagation();
+});
 
 const view = document.getElementById('view');
 let down = false, lx = 0, ly = 0, moved = 0;
@@ -1009,17 +1365,22 @@ view.addEventListener('wheel', e => {
 }, { passive: false });
 document.getElementById('bWide').onclick = () => lean(WIDE / fovWant);
 addEventListener('keydown', e => {
+  /* Typing a name is typing, not walking. Without this, spelling "wedding
+     cake" walked you two thirds of a metre across the field. */
+  if (/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
   if (e.key === 'w' || e.key === 'ArrowUp') walk(0.3);
   else if (e.key === 's' || e.key === 'ArrowDown') walk(-0.3);
   else return;
 });
 
+/* One panel, one clear: the ticks, the name you typed, and the mark it left. */
 document.getElementById('bClear').onclick = () => {
   state.clear();
   [...list.children].forEach(r => {
     r.setAttribute('aria-checked', 'off');
     r.querySelector('i').style.background = '';
   });
+  qbox.value = ''; cursor = 0; found = null; drawHits();
   draw(); readout();
 };
 /* ---- the globe -----------------------------------------------------------
@@ -1270,10 +1631,23 @@ refit();
 </script>
 """
 
-out = HERE / 'horizon.html'
-out.write_text(PAGE.replace('__DATA__', json.dumps(DATA)))
-print('wrote', out, out.stat().st_size, 'bytes')
-print('sky: magnitudes run', min(i['str'] for i in DATA['items']),
-      'to', max(i['str'] for i in DATA['items']))
-print('field: weeds run', min(t['dist'] for t in DATA['strains']),
-      'to', max(t['dist'] for t in DATA['strains']), 'deep')
+def build():
+    out = HERE / 'horizon.html'
+    out.write_text(PAGE.replace('__DATA__', json.dumps(DATA))
+                       .replace('__ANG__', json.dumps(ANG))
+                       .replace('__LEN__', json.dumps(LEN))
+                       .replace('__ICON__', _favicon())
+                       .replace('__ICONPNG__', _favicon_png()))
+    print('wrote', out, out.stat().st_size, 'bytes')
+    print('sky: magnitudes run', min(i['str'] for i in DATA['items']),
+          'to', max(i['str'] for i in DATA['items']))
+    print('field: weeds run', min(t['dist'] for t in DATA['strains']),
+          'to', max(t['dist'] for t in DATA['strains']), 'deep')
+    return out
+
+
+# Writing the page is what running this file does, not what importing it does:
+# the leaf is wanted elsewhere -- the landing page draws it beside the glass --
+# and fetching a shape should not rewrite a page as a side effect.
+if __name__ == '__main__':
+    build()
