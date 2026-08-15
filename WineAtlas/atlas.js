@@ -57,19 +57,19 @@ function hex2hsl(h) {
   return [h2 * 60, s * 100, l * 100];
 }
 /* the band a hue may occupy so that it carries against the ground behind it */
-const fit = l => DARK ? Math.max(44, Math.min(78, l + 8)) : Math.max(24, Math.min(52, l - 10));
+const fit = l => DARK ? Math.max(52, Math.min(84, l + 12)) : Math.max(24, Math.min(52, l - 10));
 const tone = (hsl, a, dl) => `hsla(${hsl[0]},${hsl[1]}%,${fit(hsl[2]) + (dl || 0)}%,${a})`;
 /* A stem is a few pixels of a mark whose bowl carries the colour, so it keeps
    more of its own lightness than a name does -- pushed up into the band a label
    needs, every ground in the shop came out the same pale rose. */
 const near = (hsl, a) => `hsla(${hsl[0]},${hsl[1]}%,`
-  + `${DARK ? Math.max(36, Math.min(64, hsl[2])) : Math.max(26, Math.min(52, hsl[2] - 6))}%,${a})`;
+  + `${DARK ? Math.max(48, Math.min(74, hsl[2] + 8)) : Math.max(26, Math.min(52, hsl[2] - 6))}%,${a})`;
 /* The ten pole colours are muted by design -- they are the ends of sliders, seen
    against a card. Lifted far enough to carry as a light in the sky they lose
    their hue and every name goes white, so a mark in the sky keeps its lightness
    nearer the middle and takes back in saturation what it gives up in lift. */
 const vivid = (hsl, a, dl) => `hsla(${hsl[0]},${Math.min(92, hsl[1] + 22)}%,`
-  + `${DARK ? Math.max(52, Math.min(70, hsl[2])) + (dl || 0)
+  + `${DARK ? Math.max(58, Math.min(76, hsl[2] + 4)) + (dl || 0)
             : Math.max(28, Math.min(46, hsl[2] - 8)) - (dl || 0) * 0.5}%,${a})`;
 const INK = a => DARK ? `rgba(255,255,255,${a})` : `rgba(24,24,28,${a})`;
 const readTheme = () => {
@@ -101,12 +101,19 @@ function accentAt(p) {
    view is allowed to use these hues, so a glass is never mistaken for a place. */
 function pour(i) {
   const w = S.wines[i], m = w.maturity, body = w.weight;
+  /* A LIT GLASS, NOT A PHOTOGRAPH. Red at a given HSL lightness carries far less
+     luminance than gold at the same number -- red contributes a fifth of the luma
+     where green contributes seven tenths -- so a claret drawn "correctly" beside a
+     Chablis came out at 0.36 of the screen's range against 0.79, and four fifths
+     of this shop is red. Wine backlit glows; these are lifted until they do.
+     Reds stay plainly darker than whites, which is true, and stop being a stain
+     on the black, which is not. */
   if (WCOL[i] === 'white')                     // pale straw to deep amber
-    return [54 - 16 * m, 48 + 32 * m, (DARK ? 76 : 62) - 16 * m];
+    return [54 - 16 * m, 52 + 30 * m, (DARK ? 80 : 60) - 14 * m];
   if (WCOL[i] === 'rose')                      // salmon to onion skin
-    return [348 + 18 * m, 66 - 10 * m, (DARK ? 70 : 58) - 8 * m];
-  return [330 + 38 * m, 68 + 8 * (1 - m),      // purple through ruby to brick
-          (DARK ? 41 : 36) + 13 * (1 - body) + 6 * m];
+    return [348 + 18 * m, 70 - 10 * m, (DARK ? 76 : 56) - 8 * m];
+  return [332 + 36 * m, 66 + 8 * (1 - m),      // purple through ruby to brick
+          (DARK ? 54 : 35) + 11 * (1 - body) + 6 * m];
 }
 
 /* ---- the view ---------------------------------------------------------- */
@@ -345,13 +352,15 @@ function glass(x, y, R, i, a, mine) {
      own name, grape or region says so, and every one of those can be checked by
      reading it. */
   const fizz = fz;
+  /* YOURS IS A RING. It was a soft purple halo, and at the size a glass is
+     actually drawn -- a median six pixels -- a gradient falling to nothing over
+     a radius and a third is a smudge, not a mark: measured at 608 painted pixels
+     against 156, and invisible at a glance. A hard thin circle survives at six
+     pixels because it is an edge, and an edge is the one thing that does. */
   if (mine) {
-    const halo = g.createRadialGradient(x, y, 0, x, y, R*1.3);
-    halo.addColorStop(0, `rgba(${MARKRGB},${a*0.24})`);
-    halo.addColorStop(0.5, `rgba(${MARKRGB},${a*0.11})`);
-    halo.addColorStop(1, `rgba(${MARKRGB},0)`);
-    g.fillStyle = halo;
-    g.beginPath(); g.arc(x, y, R*1.3, 0, 6.2832); g.fill();
+    g.strokeStyle = `rgba(${MARKRGB},${Math.min(1, a * 0.95)})`;
+    g.lineWidth = Math.max(1, R * 0.10);
+    g.beginPath(); g.arc(x, y - R*0.10, R*1.22, 0, 6.2832); g.stroke();
   }
   const bowl = () => {
     g.beginPath();
@@ -368,14 +377,14 @@ function glass(x, y, R, i, a, mine) {
   g.fillStyle = `hsla(${wine[0]},${wine[1]}%,${wine[2]}%,${Math.min(1, a * 1.3)})`;
   g.fillRect(x - rw - 1, line, rw*2 + 2, bot - line + 1);
   if (fine) {
-    g.fillStyle = INK(a * (DARK ? 0.10 : 0.07));
+    g.fillStyle = INK(a * (DARK ? 0.14 : 0.07));
     g.fillRect(x - rw - 1, top - 1, rw*2 + 2, line - top + 1);
     /* one highlight down the left of the bowl, which is what makes it read as
        glass rather than as a filled shape */
-    g.fillStyle = INK(a * (DARK ? 0.32 : 0.18));
+    g.fillStyle = INK(a * (DARK ? 0.44 : 0.18));
     g.fillRect(x - rw*0.86, top + dep*0.14, Math.max(1, R*0.07), dep*0.60);
     if (fizz) {                                  // the bubbles, once they can be seen
-      g.fillStyle = INK(a * (DARK ? 0.55 : 0.30));
+      g.fillStyle = INK(a * (DARK ? 0.70 : 0.30));
       for (const [bx, by, br] of [[-0.22, 0.68, 0.055], [0.20, 0.52, 0.045],
                                   [-0.05, 0.36, 0.05], [0.24, 0.80, 0.04]]) {
         g.beginPath();
@@ -386,7 +395,7 @@ function glass(x, y, R, i, a, mine) {
   }
   g.restore();
   if (fine) {
-    g.strokeStyle = INK(a * (DARK ? 0.40 : 0.34));
+    g.strokeStyle = INK(a * (DARK ? 0.55 : 0.34));
     g.lineWidth = Math.max(0.8, R*0.05);
     bowl(); g.stroke();
   }
@@ -451,7 +460,7 @@ function draw() {
        as it should -- how far a wine is from middling is not a function of where
        the reader is standing -- and the whole of that reading is carried by how
        plainly it is drawn instead. */
-    let a = Math.max(DARK ? 0.55 : 0.72, Math.min(1, 0.32 + 1.6 * m.lean) * q.edge * attend);
+    let a = Math.max(DARK ? 0.72 : 0.78, Math.min(1, 0.42 + 1.6 * m.lean) * q.edge * attend);
     if (held && !held.has(m)) a *= 0.34;
     let R = Math.max(1.8, (54 * m.lean / q.dist) * Math.pow(WIDE/FOV, 0.5)) * q.edge;
     const asked = !onlyThese || onlyThese.has(m.i);
@@ -503,8 +512,8 @@ function draw() {
        how far off it is. */
     const sz = sky ? 11 + 6 * it.str
                    : Math.max(9.5, Math.min(19, 74 * it.str / p.dist)) + 4;
-    let a = sky ? Math.max(DARK ? 0.62 : 0.78, Math.min(1, 0.40 + 0.60 * it.str) * p.edge)
-                : Math.max(DARK ? 0.58 : 0.76, Math.min(1, 10 * it.str / p.dist) * p.edge);
+    let a = sky ? Math.max(DARK ? 0.74 : 0.80, Math.min(1, 0.48 + 0.52 * it.str) * p.edge)
+                : Math.max(DARK ? 0.74 : 0.78, Math.min(1, 10 * it.str / p.dist) * p.edge);
     if (!sky && held && m && !held.has(m)) a *= 0.34;
     /* the rule applies to the words too, or the question ends up brighter than
        the answer: ask for truffle and every other word goes on shouting while

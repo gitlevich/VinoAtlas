@@ -516,8 +516,16 @@
     ok(agent.key === 'kept-key', 'key survives reset');
     ok(chat.length === 0, 'chat cleared');
     const span = kindSpread(biggest);
+    /* Reset returns the ranges to the span of his own bottles in the type that is
+       open -- not to the whole scale. The line that used to follow this asserted
+       both at once, that every band equals the type's span AND that it equals
+       [0,1], which cannot both hold unless he bought across the whole of every
+       measure. It was left over from before reset opened on a type, and it is
+       what made this a standing failure rather than a question. */
     A.forEach(a => eq(band[a], span[a], 'opens on the largest type\'s own span, not an average'));
-    A.forEach(a => eq(band[a], [0, 1], a));
+    A.forEach(a => ok(band[a][0] <= band[a][1], a + ' is a range'));
+    A.forEach(a => near(point[a], (band[a][0] + band[a][1]) / 2,
+                        a + ': the middle is derived, never separate'));
     ok(ask.value === '', 'composer empty');
   });
 
