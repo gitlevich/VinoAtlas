@@ -558,42 +558,50 @@ function draw() {
       g.fillStyle = `hsla(${t.h},70%,${t.l}%,${a})`; g.fill();
       g.strokeStyle = `hsla(${t.h},75%,${t.l + 8}%,${a})`; g.lineWidth = 1; g.stroke();
     } else {
-      /* A LEAF, and still the profile. A cannabis leaf is palmate -- narrow
-         pointed leaflets fanning from one point -- which is the same object as
-         a spoke diagram drawn over part of a circle instead of all of it. So
-         the thirteen spokes become thirteen leaflets, each as long as that
-         effect is strong, and the shape people already recognise costs nothing:
-         two weeds that do the same thing still carry the same outline.
+      /* A CANNABIS LEAF, and still the profile.
 
-         Colour is NOT green. It stays the colour of the ground the weed stands
-         on, because in this space colour means direction and a field of
-         identically green leaves would throw that away. */
+         What makes the silhouette recognisable is not the number of leaflets,
+         it is the TAPER: the middle leaflet is longest and they shorten toward
+         the edges, each one a narrow lance rather than a wedge. Laying the
+         thirteen values out in list order gave a flat fan -- a palm frond.
+
+         So the values are sorted and laid centre-out, longest in the middle,
+         alternating sides. That keeps shape-identity, since the layout is a
+         function of the profile alone and two weeds that do the same thing
+         still draw the same outline; what it gives up is reading WHICH effect
+         from which leaflet, and the hover panel does that job properly anyway.
+         A taper on top guarantees the leaf reads even for a flat profile. */
       const N = t.r.length;
-      const SPAN = 3.15;                        // radians the fan covers, leaving a stem gap
-      const lobe = [];
-      for (let i = 0; i < N; i++) {
-        const th = -1.5708 + (i / (N - 1) - 0.5) * SPAN;
-        lobe.push({ th, rr: R * (0.30 + 0.70 * t.r[i] / 9) });
+      const rank = t.r.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]);
+      const slot = [];                       // centre outward: 0, +1, -1, +2, -2 ...
+      for (let k = 0; k < N; k++) slot.push(k === 0 ? 0 : (k % 2 ? (k + 1) / 2 : -k / 2));
+      const half = (N - 1) / 2;
+      const leaflet = [];
+      for (let k = 0; k < N; k++) {
+        const off = slot[k] / half;                       // -1 .. 1 across the fan
+        const th = -1.5708 + off * 1.62;                  // just past horizontal
+        const taper = 0.40 + 0.60 * Math.cos(off * 1.35);
+        leaflet.push({ th, rr: R * taper * (0.42 + 0.58 * rank[k][0] / 9) });
       }
+      leaflet.sort((a, b) => a.th - b.th);
       g.beginPath();
-      g.moveTo(q.x, q.y);
-      for (const { th, rr } of lobe) {
-        const wob = 0.075;                      // how wide a leaflet is at its base
-        g.quadraticCurveTo(q.x + Math.cos(th - wob) * rr * 0.55,
-                           q.y + Math.sin(th - wob) * rr * 0.55,
+      for (const { th, rr } of leaflet) {
+        const wob = 0.115;                                // a lance, widest a third along
+        g.moveTo(q.x, q.y);
+        g.quadraticCurveTo(q.x + Math.cos(th - wob) * rr * 0.38,
+                           q.y + Math.sin(th - wob) * rr * 0.38,
                            q.x + Math.cos(th) * rr, q.y + Math.sin(th) * rr);
-        g.quadraticCurveTo(q.x + Math.cos(th + wob) * rr * 0.55,
-                           q.y + Math.sin(th + wob) * rr * 0.55, q.x, q.y);
+        g.quadraticCurveTo(q.x + Math.cos(th + wob) * rr * 0.38,
+                           q.y + Math.sin(th + wob) * rr * 0.38, q.x, q.y);
       }
       g.closePath();
-      g.fillStyle = `hsla(${t.h},68%,${t.l}%,${a * 0.34})`; g.fill();
+      g.fillStyle = `hsla(${t.h},68%,${t.l}%,${a * 0.40})`; g.fill();
       g.strokeStyle = `hsla(${t.h},72%,${t.l}%,${a})`;
-      g.lineWidth = Math.max(1, R * 0.07); g.stroke();
-      /* the stem, which is what makes it read as a leaf rather than a burst */
+      g.lineWidth = Math.max(1, R * 0.06); g.stroke();
       g.beginPath();
       g.moveTo(q.x, q.y);
-      g.lineTo(q.x, q.y + R * 0.62);
-      g.lineWidth = Math.max(1, R * 0.09); g.stroke();
+      g.lineTo(q.x, q.y + R * 0.55);
+      g.lineWidth = Math.max(1, R * 0.08); g.stroke();
     }
     t.node = [q.x, q.y, R, a];
   }
@@ -666,37 +674,32 @@ function draw() {
       g.beginPath(); g.arc(p.x, my, R * 0.24, 0, 6.2832);
       g.fillStyle = `hsla(${it.hue},90%,${it.lit + 26}%,${a})`; g.fill();
     } else {
-      /* A SMELL RISES. The other two marks are closed shapes -- a feeling is a
-         ring with a lit core, a weed is a faceted polygon -- so the one thing
-         guaranteed to read as neither is a shape that never closes. Three open
-         strands leaving a source and going up.
+      /* A SMELL CURLS.
 
-         The strands also say something true. How far they spread apart is how
-         weakly the word holds its direction: a sharp smell rises as a tight
-         column, a vague one disperses on the way up. That is the same number
-         driving its size and brightness, said a third way. */
-      const R = face * 0.66;
-      const spread = 0.10 + 0.34 * (1 - it.str);        // vague words come apart
+         Straight strands over a dot read as an exclamation mark, which is what
+         the last version drew. What cannot be mistaken for punctuation, or for
+         a leaf, is a line that CHANGES DIRECTION on the way up -- vapour rising
+         off something. So each strand is an S: out one way, back the other,
+         leaving at the top. No dot at the base; the dot was the offender.
+
+         How wide the S opens is how weakly the word holds its direction. A sharp
+         smell rises in a tight ribbon, a vague one wanders. */
+      const R = face * 0.72;
+      const loose = 0.35 + 0.95 * (1 - it.str);
       g.lineCap = 'round';
-      g.lineWidth = Math.max(1.4, R * 0.19);
-      /* Below this the three strands overlap into a smudge that looks exactly
-         like a small leaf. One upright stroke survives to a couple of pixels and
-         a leaf never does, because a leaf is compact and filled. */
-      const strands = R < 7 ? [0] : [-1, 0, 1];
+      g.lineWidth = Math.max(1.3, R * 0.16);
+      const strands = R < 8 ? [0] : [-1, 0, 1];
       for (const k of strands) {
-        const lean = k * R * 0.20 * spread;
-        const sway = R * 0.16 * (k === 0 ? -1 : k);     // middle strand curls the other way
-        g.strokeStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a * (k ? 0.66 : 1)})`;
+        const side = k === 0 ? 1 : -1;                    // neighbours curl against the middle
+        const x0 = p.x + k * R * 0.30;
+        g.strokeStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a * (k ? 0.62 : 1)})`;
         g.beginPath();
-        g.moveTo(p.x + lean * 0.18, my + R * 1.15);
-        g.bezierCurveTo(p.x + lean * 0.5 - sway, my + R * 0.30,
-                        p.x + lean * 0.9 + sway, my - R * 0.30,
-                        p.x + lean * 1.9,        my - R * 1.35);
+        g.moveTo(x0, my + R * 1.05);
+        g.bezierCurveTo(x0 + side * R * 0.62 * loose, my + R * 0.42,
+                        x0 - side * R * 0.62 * loose, my - R * 0.30,
+                        x0 + side * R * 0.30 * loose, my - R * 1.05);
         g.stroke();
       }
-      /* the source it leaves from, so a strand is coming OFF something */
-      g.fillStyle = `hsla(${it.hue},${it.sat}%,${it.lit}%,${a})`;
-      g.beginPath(); g.ellipse(p.x, my + R * 1.24, R * 0.34, R * 0.11, 0, 0, 6.2832); g.fill();
     }
 
     if (said) {
@@ -901,7 +904,21 @@ view.addEventListener('dblclick', e => {
    Both arrive as wheel events; a trackpad pinch is a wheel with ctrlKey set. */
 view.addEventListener('wheel', e => {
   e.preventDefault();
-  if (e.ctrlKey || e.metaKey) { walk(e.deltaY > 0 ? -0.16 : 0.16); }
+  if (e.ctrlKey || e.metaKey) {
+    /* One gesture, and it must undo itself. Pinching in walks you forward until
+       the rim, and only then narrows the view; pinching out widens the view
+       first, and only then walks you back. That is last-in-first-out, so the
+       two directions retrace the same path -- and, more to the point, zooming
+       out always does SOMETHING. When pinch only ever walked, a view narrowed
+       by a double-click could not be widened by the gesture that ought to widen
+       it, and the zoom appeared to be broken. */
+    const out = e.deltaY > 0;
+    if (out) {
+      if (fovWant < WIDE * 0.995) lean(1.09); else walk(-0.16);
+    } else {
+      if (len(STAND) >= ROAM - 1e-6) lean(0.92); else walk(0.16);
+    }
+  }
   else if (e.shiftKey) { lean(e.deltaY > 0 ? 1.07 : 0.935); }
   else {
     /* Sideways was right and up-down was inverted -- reported from the

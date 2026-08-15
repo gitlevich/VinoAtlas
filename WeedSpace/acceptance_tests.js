@@ -98,7 +98,10 @@
   });
 
   await T('a pinch moves you through the field, and two fingers never do', async () => {
-    STAND = [0, 0, 0]; yaw = 1.2; await frame();
+    /* fovWant must be reset, not inherited. Pinching out widens a narrowed view
+       BEFORE it walks you back, so a test that starts with the view already
+       narrowed measures the wrong half of the gesture. */
+    STAND = [0, 0, 0]; yaw = 1.2; FOV = fovWant = WIDE; await frame();
 
     wheel({ deltaX: 40, deltaY: 40 }); await settle();
     ok(len(STAND) < 1e-9, 'two fingers moved you as well as turning you');
@@ -114,6 +117,29 @@
     ok(len(STAND) < far, 'pinching the other way did not bring you back');
 
     STAND = [0, 0, 0]; await frame();
+  });
+
+  await T('zooming out always does something', async () => {
+    /* The bug: pinch only ever walked, so a view narrowed by a double-click
+       could not be widened by the gesture that ought to widen it. In and out
+       are now last-in-first-out, so out always has something to undo. */
+    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await frame();
+    lean(0.62); FOV = fovWant; await frame();
+    ok(fovWant < WIDE * 0.7, 'the double-click did not narrow the view');
+    for (let i = 0; i < 4; i++) { wheel({ deltaY: 120, ctrlKey: true }); FOV = fovWant; }
+    await frame();
+    ok(fovWant > WIDE * 0.8, 'pinching out did not widen a narrowed view');
+
+    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await frame();
+    for (let i = 0; i < 24; i++) { wheel({ deltaY: -120, ctrlKey: true }); FOV = fovWant; }
+    const inTo = [len(STAND), fovWant];
+    ok(inTo[0] > 2.5 && inTo[1] < WIDE * 0.8, 'pinching in neither walked nor narrowed');
+    for (let i = 0; i < 24; i++) { wheel({ deltaY: 120, ctrlKey: true }); FOV = fovWant; }
+    await frame();
+    ok(fovWant > WIDE * 0.99 && len(STAND) < 0.3,
+       'in and out do not retrace: ended at ' + len(STAND).toFixed(2)
+       + ' / ' + (fovWant / WIDE).toFixed(2));
+    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await frame();
   });
 
   await T('walking redraws, and the middle button is gone', async () => {
