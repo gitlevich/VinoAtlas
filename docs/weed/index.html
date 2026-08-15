@@ -988,6 +988,29 @@ function drawMini() {
   mg.strokeStyle = 'rgba(255,255,255,.55)'; mg.lineWidth = 1.4; mg.stroke();
 }
 
+/* DOUBLE-CLICK THE GLOBE TO GO THERE.
+
+   The globe paints each pixel by turning disc coordinates into a direction --
+   u and v across the face, w out of it -- so the same arithmetic run backwards
+   turns a click into the direction it was painted from. Point at a region on
+   the globe and you are turned to face it in the world, which is the whole
+   reason the globe is worth having: it is the only view that shows you what is
+   BEHIND you, and now you can go there without hunting for it by dragging. */
+mini.addEventListener('dblclick', e => {
+  const r = mini.getBoundingClientRect(), s = GS / r.width;
+  const u = ((e.clientX - r.left) * s - GC) / GR;
+  const v = (GC - (e.clientY - r.top) * s) / GR;
+  const rr = u*u + v*v;
+  if (rr > 1) return;                       // outside the sphere, nothing is there
+  const w = Math.sqrt(1 - rr);
+  const F = frame(), fwd = unit(F.f), gr = unit(F.r), gu = unit(F.u);
+  faceTo([gr[0]*u + gu[0]*v + fwd[0]*w,
+          gr[1]*u + gu[1]*v + fwd[1]*w,
+          gr[2]*u + gu[2]*v + fwd[2]*w]);
+  e.stopPropagation(); e.preventDefault();
+  nudge();
+});
+
 /* dragging the globe IS turning your head -- identical to dragging the view */
 let gDown = false, glx = 0, gly = 0, gMoved = 0;
 mini.addEventListener('pointerdown', e => {

@@ -16,16 +16,22 @@
   const ok = (c, m) => { if (!c) throw new Error(m || 'assert'); };
   /* Two different waits, and confusing them is how a dead gesture shipped.
 
-     frame() draws for you. Use it after setting state directly (yaw = ...), when
+     paint() draws for you. Use it after setting state directly (yaw = ...), when
      what is under test is the geometry a draw produces. Drawing synchronously
      also keeps the suite fast in a hidden tab, where rAF is throttled to about
      once a second.
 
+     It is called paint, not frame, because the PAGE has a frame() -- it returns
+     the camera basis -- and a helper of the same name shadows it throughout the
+     suite. That shadowing already cost one test: `const F = frame()` handed back
+     a Promise, F.f was undefined, and the failure surfaced as an unreadable
+     "cannot read properties of undefined".
+
      settle() does NOT draw. Use it after a real gesture, so the page has to put
      the pixels up by itself. Every test that fires an event must use this one --
-     frame() would paper over exactly the bug where a handler changes the state
+     paint() would paper over exactly the bug where a handler changes the state
      and nothing ever reaches the screen. */
-  const frame = async () => { draw(); readout(); };
+  const paint = async () => { draw(); readout(); };
   const settle = () => new Promise(r => {
     let n = 0;
     const tick = () => (++n < 3 ? requestAnimationFrame(tick) : r());
@@ -53,7 +59,7 @@
     finally { W = w0; H = h0; draw(); }
   };
   const home = { yaw, pitch, fov: fovWant };
-  const look = async (y, p) => { yaw = y; pitch = p || 0; vYaw = vPitch = 0; await frame(); };
+  const look = async (y, p) => { yaw = y; pitch = p || 0; vYaw = vPitch = 0; await paint(); };
   const hueGap = (a, b) => Math.abs((a - b + 180) % 360 - 180);
   const drawn = () => ITEMS.filter(i => i.hit).length + ST.filter(t => t.node).length;
   /* `target` is where you are being turned to, held as [yaw, pitch] rather than
@@ -73,9 +79,9 @@
   await T('the field of view is a human one and leaning in narrows it', async () => {
     ok(Math.abs(WIDE - 120 * Math.PI / 180) < 1e-9, 'not 120 degrees');
     const wide = fovWant;
-    lean(0.6); await frame();
+    lean(0.6); await paint();
     ok(fovWant < wide, 'leaning in did not narrow the view');
-    lean(1 / 0.6); await frame();
+    lean(1 / 0.6); await paint();
   });
 
   const wheel = o => view.dispatchEvent(new WheelEvent('wheel',
@@ -86,7 +92,7 @@
        leave the screen untouched, and every geometry test will still pass
        because the harness drew for itself. This one refuses to draw and
        insists the page does it. */
-    STAND = [0, 0, 0]; yaw = 1.2; pitch = 0; await frame();
+    STAND = [0, 0, 0]; yaw = 1.2; pitch = 0; await paint();
     const y0 = yaw, p0 = pitch, d0 = DRAWS;
 
     wheel({ deltaX: 60 }); await settle();
@@ -117,7 +123,7 @@
     /* fovWant must be reset, not inherited. Pinching out widens a narrowed view
        BEFORE it walks you back, so a test that starts with the view already
        narrowed measures the wrong half of the gesture. */
-    STAND = [0, 0, 0]; yaw = 1.2; FOV = fovWant = WIDE; await frame();
+    STAND = [0, 0, 0]; yaw = 1.2; FOV = fovWant = WIDE; await paint();
 
     wheel({ deltaX: 40, deltaY: 40 }); await settle();
     ok(len(STAND) < 1e-9, 'two fingers moved you as well as turning you');
@@ -132,34 +138,34 @@
     wheel({ deltaY: 120, ctrlKey: true }); await settle();
     ok(len(STAND) < far, 'pinching the other way did not bring you back');
 
-    STAND = [0, 0, 0]; await frame();
+    STAND = [0, 0, 0]; await paint();
   });
 
   await T('zooming out always does something', async () => {
     /* The bug: pinch only ever walked, so a view narrowed by a double-click
        could not be widened by the gesture that ought to widen it. In and out
        are now last-in-first-out, so out always has something to undo. */
-    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await frame();
-    lean(0.62); FOV = fovWant; await frame();
+    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
+    lean(0.62); FOV = fovWant; await paint();
     ok(fovWant < WIDE * 0.7, 'the double-click did not narrow the view');
     for (let i = 0; i < 4; i++) { wheel({ deltaY: 120, ctrlKey: true }); FOV = fovWant; }
-    await frame();
+    await paint();
     ok(fovWant > WIDE * 0.8, 'pinching out did not widen a narrowed view');
 
-    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await frame();
+    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
     for (let i = 0; i < 24; i++) { wheel({ deltaY: -120, ctrlKey: true }); FOV = fovWant; }
     const inTo = [len(STAND), fovWant];
     ok(inTo[0] > 2.5 && inTo[1] < WIDE * 0.8, 'pinching in neither walked nor narrowed');
     for (let i = 0; i < 24; i++) { wheel({ deltaY: 120, ctrlKey: true }); FOV = fovWant; }
-    await frame();
+    await paint();
     ok(fovWant > WIDE * 0.99 && len(STAND) < 0.3,
        'in and out do not retrace: ended at ' + len(STAND).toFixed(2)
        + ' / ' + (fovWant / WIDE).toFixed(2));
-    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await frame();
+    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
   });
 
   await T('walking redraws, and the middle button is gone', async () => {
-    STAND = [0, 0, 0]; await frame();
+    STAND = [0, 0, 0]; await paint();
     let d = DRAWS;                              // count from BEFORE the act
     walk(1.5); await settle();
     ok(len(STAND) > 0, 'walking did not move you');
@@ -196,11 +202,11 @@
     /* Face the most populated quarter and narrow only as far as still leaves
        several feelings up. There are thirteen in the whole sky, so at 0.14 you
        see one or two and the comparison proves nothing either way. */
-    STAND = [0, 0, 0]; yaw = 3 * Math.PI / 8; pitch = 0; FOV = fovWant = WIDE; await frame();
+    STAND = [0, 0, 0]; yaw = 3 * Math.PI / 8; pitch = 0; FOV = fovWant = WIDE; await paint();
     const wide = size();
-    FOV = fovWant = WIDE * 0.35; await frame();
+    FOV = fovWant = WIDE * 0.35; await paint();
     const tight = size();
-    FOV = fovWant = WIDE; await frame();
+    FOV = fovWant = WIDE; await paint();
     const both = Object.keys(wide).filter(k => tight[k]);
     ok(both.length > 3, 'only ' + both.length + ' stars were up to check');
     both.forEach(k => ok(Math.abs(tight[k] - wide[k]) < 1e-6,
@@ -226,26 +232,26 @@
 
   await T('walking does not move a single star', async () => {
     const sky = () => Object.fromEntries(FEELS.filter(i => i.hit).map(i => [i.w, i.hit[0]]));
-    STAND = [0, 0, 0]; await frame();
+    STAND = [0, 0, 0]; await paint();
     const a = sky();
-    for (const step of [0.6, 1.2, -2.0, 3.0]) { walk(step); await frame(); }
+    for (const step of [0.6, 1.2, -2.0, 3.0]) { walk(step); await paint(); }
     const b = sky();
     let worst = 0, at = '';
     for (const w in a) if (b[w] && Math.abs(b[w] - a[w]) > worst) { worst = Math.abs(b[w] - a[w]); at = w; }
     ok(Object.keys(a).length > 8, 'no stars were up to check');
     ok(worst < 1e-9, at + ' moved ' + worst.toFixed(3) + 'px when the eye walked');
-    STAND = [0, 0, 0]; await frame();
+    STAND = [0, 0, 0]; await paint();
   });
 
   await T('a smell drifts with the weeds, because it is theirs', async () => {
     /* It is the WEEDS that smell, not the states. A feeling is a bearing you can
        want and so it hangs in the sky; a smell is something the weeds have, so
        it stands among them and moves as they move. */
-    STAND = [0, 0, 0]; yaw = 1.2; pitch = 0; await frame();
+    STAND = [0, 0, 0]; yaw = 1.2; pitch = 0; await paint();
     const grab = k => Object.fromEntries(ITEMS.filter(i => i.kind === k && i.hit).map(i => [i.w, i.hit[0]]));
     const weeds = () => Object.fromEntries(ST.filter(t => t.node).map(t => [t.n, t.node[0]]));
     const s0 = grab('smell'), f0 = grab('feel'), w0 = weeds();
-    walk(1.0); await frame();
+    walk(1.0); await paint();
     const s1 = grab('smell'), f1 = grab('feel'), w1 = weeds();
     const move = (a, b) => { const o = []; for (const k in a) if (b[k]) o.push(Math.abs(b[k] - a[k])); return o; };
     const avg = x => x.reduce((s, v) => s + v, 0) / x.length;
@@ -255,7 +261,7 @@
     ok(avg(sm) > 10, 'the smells did not drift at all: ' + avg(sm).toFixed(1) + 'px');
     ok(FEELS.every(f => f.dist === undefined), 'a feeling was given a distance');
     ok(SMELLS.every(s => s.dist > 0), 'a smell has no place in the field');
-    STAND = [0, 0, 0]; await frame();
+    STAND = [0, 0, 0]; await paint();
   });
 
   await T('turning your head slides near weeds past far ones', async () => {
@@ -267,8 +273,8 @@
     STAND = [0, 0, 0]; pitch = 0;
     const snap = () => Object.fromEntries(ST.filter(t => t.node).map(t => [t.n, [t.node[0], t.dist]]));
     const sky = () => Object.fromEntries(FEELS.filter(i => i.hit).map(i => [i.w, i.hit[0]]));
-    yaw = 1.20; await frame(); const a = snap(), s0 = sky();
-    yaw = 1.24; await frame(); const b = snap(), s1 = sky();
+    yaw = 1.20; await paint(); const a = snap(), s0 = sky();
+    yaw = 1.24; await paint(); const b = snap(), s1 = sky();
 
     const m = [];
     for (const n in a) if (b[n]) m.push({ d: a[n][1], px: b[n][0] - a[n][0] });
@@ -282,7 +288,7 @@
     ok(near > far * 1.2, 'turning your head moved the near third ' + near.toFixed(1)
        + 'px and the far third ' + far.toFixed(1) + 'px -- that is a pinhole, not a head');
     ok(far > star, 'the field did not move against the sky at all');
-    yaw = 1.2; await frame();
+    yaw = 1.2; await paint();
   });
 
   await T('a near weed sweeps faster than a far one', async () => {
@@ -290,9 +296,9 @@
        it is, and it is the only depth cue turning your head can never give */
     const snap = () => Object.fromEntries(ST.filter(t => t.node).map(t => [t.n, [t.node[0], t.dist]]));
     return atSize(900, 1100, async () => {
-    STAND = [0, 0, 0]; await frame();
+    STAND = [0, 0, 0]; await paint();
     const a = snap();
-    walk(1.2); await frame();
+    walk(1.2); await paint();
     const b = snap();
     const m = [];
     for (const n in a) if (b[n]) m.push({ d: a[n][1], px: Math.abs(b[n][0] - a[n][0]) });
@@ -300,7 +306,7 @@
     const third = Math.floor(m.length / 3);
     const avg = xs => xs.reduce((s, x) => s + x.px, 0) / xs.length;
     const near = avg(m.slice(0, third)), far = avg(m.slice(-third));
-    STAND = [0, 0, 0]; await frame();
+    STAND = [0, 0, 0]; await paint();
     ok(m.length > 60, 'too few weeds tracked through the step: ' + m.length);
     ok(near > far * 1.3, 'near weeds sweep ' + near.toFixed(1)
        + 'px, far ones ' + far.toFixed(1) + 'px -- that is not parallax');
@@ -313,7 +319,7 @@
        third-person view this space exists to refuse */
     STAND = [0, 0, 0];
     for (let i = 0; i < 60; i++) walk(0.5);           // press on at the rim
-    await frame();
+    await paint();
     ok(len(EYE) <= 5.0 + 1e-6, 'your eye left the field, reaching ' + len(EYE).toFixed(2));
     /* Counted in the SPACE, not on the screen. How many marks a draw puts up
        depends on the window; how many weeds lie in a thirty-degree sector
@@ -325,7 +331,7 @@
       bins[((Math.floor(((ang + Math.PI) / 6.2832) * 12) % 12) + 12) % 12]++;
     }
     const worst = Math.min(...bins), at = bins.indexOf(worst) * 30;
-    STAND = [0, 0, 0]; await frame();
+    STAND = [0, 0, 0]; await paint();
     /* Lowered from 55. The rim moved out to buy a walk worth taking, and the
        cost was stated rather than hidden: out there the sparsest direction holds
        a few weeds instead of twenty. What must still be true is that it is never
@@ -336,11 +342,11 @@
 
   await T('walking back to the middle puts everything where it was', async () => {
     const snap = () => JSON.stringify(ST.filter(t => t.node).map(t => t.node[0].toFixed(3)));
-    STAND = [0, 0, 0]; await frame();
+    STAND = [0, 0, 0]; await paint();
     const a = snap();
-    walk(2.0); await frame();
+    walk(2.0); await paint();
     ok(snap() !== a, 'walking changed nothing');
-    STAND = [0, 0, 0]; await frame();
+    STAND = [0, 0, 0]; await paint();
     ok(snap() === a, 'the middle is not where you left it');
   });
 
@@ -363,7 +369,7 @@
       return new Set([...held].filter(m => m.kind === 'smell').map(m => m.w));
     };
     const [f, r] = await atSize(900, 1100, async () => [go('focused'), go('relaxed')]);
-    STAND = [0, 0, 0]; held = null; await frame();
+    STAND = [0, 0, 0]; held = null; await paint();
 
     ok(f.size && r.size, 'nothing held either approach');
     ok(f.has('citrus'), 'citrus did not hold on the way to focused');
@@ -381,7 +387,7 @@
     while (approaching > 0 && guard-- > 0) { stepApproach(); draw(); }
     ok(len(STAND) > 2.5, 'the walk stopped at ' + len(STAND).toFixed(2) + ' -- too short to test anything');
     ok(len(STAND) <= 5.0 - 2.2 + 1e-6, 'the approach walked past the rim');
-    STAND = [0, 0, 0]; held = null; await frame();
+    STAND = [0, 0, 0]; held = null; await paint();
   });
 
   await T('the sky cannot fail an approach, which is why it is the reference', async () => {
@@ -391,7 +397,7 @@
     while (approaching > 0 && guard-- > 0) { stepApproach(); draw(); }
     ok(held, 'no approach was recorded');
     ok([...held].every(m => m.kind !== 'feel'), 'a feeling was entered into the test');
-    STAND = [0, 0, 0]; held = null; await frame();
+    STAND = [0, 0, 0]; held = null; await paint();
   });
 
   // -- nothing pops ----------------------------------------------------------
@@ -428,7 +434,7 @@
     let worstWeed = 1, worstWhere = '';
     const weedMids = [], wordMids = [];
     for (let a = 0; a < 6.2832; a += 0.7) {          // sample the whole sky
-      yaw = a; pitch = 0; await frame();
+      yaw = a; pitch = 0; await paint();
       const ws = [], ds = [];
       for (const t of ST) {
         if (!t.node) continue;
@@ -635,12 +641,12 @@
     const g = document.getElementById('globe');
     const before = g.style.display;
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }));
-    await frame();
+    await paint();
     ok(g.style.display !== before, 'G did not toggle the globe');
     const names = document.getElementById('names');
     ok(+getComputedStyle(names).zIndex > +getComputedStyle(g).zIndex, 'the globe covers the hover');
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }));
-    await frame();
+    await paint();
   });
 
   await T('the X closes the globe, and G brings it back', async () => {
@@ -651,7 +657,7 @@
        So this fires the real sequence, down then up, and insists on the effect. */
     const gx = document.getElementById('gx');
     if (globe.style.display === 'none') { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' })); }
-    await frame();
+    await paint();
     ok(globe.style.display !== 'none', 'the globe would not open to begin with');
 
     const r = gx.getBoundingClientRect();
@@ -660,11 +666,11 @@
     gx.dispatchEvent(new PointerEvent('pointerdown', at));
     gx.dispatchEvent(new PointerEvent('pointerup', at));
     gx.dispatchEvent(new MouseEvent('click', at));
-    await frame();
+    await paint();
     ok(globe.style.display === 'none', 'the X did not close the globe');
     ok(typeof wDown === 'undefined' || !wDown, 'pressing the X started a drag');
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' })); await frame();
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' })); await paint();
     ok(globe.style.display !== 'none', 'G did not bring the globe back');
   });
 
@@ -685,6 +691,46 @@
     ok(probe(0, -R * 0.7), 'the blades above the node are not hoverable');
     ok(probe(-R * 0.75, -R * 0.35), 'the outer leaflets are not hoverable');
     ok(!probe(0, -R * 3), 'the hotspot reaches far past the leaf');
+  });
+
+  await T('double-clicking the globe takes you there', async () => {
+    /* The globe paints each pixel by turning disc coordinates into a direction;
+       the same arithmetic backwards turns a click into the direction it was
+       painted from. This checks the round trip: project a known feeling ONTO
+       the globe, click exactly there, and insist you are aimed back at it.
+
+       It is the only view that shows what is behind you, so being able to go
+       there without hunting by drag is most of its value. */
+    if (globe.style.display === 'none') { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' })); }
+    STAND = [0, 0, 0]; yaw = 0; pitch = 0; target = null; await paint(); drawMini();
+
+    const F = frame(), fwd = unit(F.f), gr = unit(F.r), gu = unit(F.u);
+    let checked = 0;
+    for (const f of FEELS) {
+      const d = unit(f.pos);
+      const u = dot(d, gr), v = dot(d, gu), w = dot(d, fwd);
+      if (w < 0.15) continue;                         // on the far side of the globe
+      const r = mini.getBoundingClientRect(), s = GS / r.width;
+      const cx = r.left + (GC + u * GR) / s, cy = r.top + (GC - v * GR) / s;
+      target = null;
+      mini.dispatchEvent(new MouseEvent('dblclick',
+        { clientX: cx, clientY: cy, bubbles: true, cancelable: true }));
+      ok(target, 'double-clicking ' + f.w + ' on the globe aimed at nothing');
+      const wantYaw = Math.atan2(d[2], d[0]), wantPitch = Math.asin(d[1]);
+      const dy = Math.atan2(Math.sin(target[0] - wantYaw), Math.cos(target[0] - wantYaw));
+      ok(Math.abs(dy) < 0.03 && Math.abs(target[1] - wantPitch) < 0.03,
+         'clicking ' + f.w + ' aimed at [' + target.map(x => x.toFixed(2)) + '] not its own bearing');
+      checked++;
+    }
+    ok(checked >= 4, 'only ' + checked + ' feelings were on the near face to test');
+
+    /* outside the disc is not a place */
+    const r = mini.getBoundingClientRect();
+    target = null;
+    mini.dispatchEvent(new MouseEvent('dblclick',
+      { clientX: r.left + 2, clientY: r.top + 2, bubbles: true, cancelable: true }));
+    ok(!target, 'a click off the sphere still aimed somewhere');
+    target = null; yaw = home.yaw; pitch = home.pitch; await paint();
   });
 
   await T('the globe paints a feeling where the world puts it', async () => {
@@ -732,16 +778,16 @@
   });
 
   await T('picking a smell fills its chip and clearing empties it', async () => {
-    document.getElementById('bClear').click(); await frame();
+    document.getElementById('bClear').click(); await paint();
     const row = [...document.querySelectorAll('#list .s')]
       .find(r => r.textContent.trim() === 'citrus');
     const chip = row.querySelector('i');
     ok(!chip.style.background, 'the chip started filled');
-    row.click(); await frame();
+    row.click(); await paint();
     ok(chip.style.background, 'picking did not fill the chip');
     ok(getComputedStyle(chip).backgroundColor
        === getComputedStyle(row.querySelector('span')).color, 'filled with the wrong colour');
-    document.getElementById('bClear').click(); await frame();
+    document.getElementById('bClear').click(); await paint();
     ok(!chip.style.background, 'clear left the chip filled');
   });
 
@@ -750,12 +796,12 @@
     const row = [...document.querySelectorAll('#list .s')]
       .find(r => r.textContent.trim() === 'citrus');
     ok(row, 'citrus is not in the list');
-    row.click(); await frame();
+    row.click(); await paint();
     ok(state.has('citrus'), 'the pick was not recorded');
     ok(row.getAttribute('aria-checked') === 'yes', 'the row does not read as picked');
     ok(target !== null, 'nothing was aimed at');
     aimsAt(target, SMELLS.find(s => s.w === 'citrus').pos, 'citrus');
-    row.click(); await frame();
+    row.click(); await paint();
     ok(!state.has('citrus'), 'the pick would not clear');
   });
 
@@ -764,27 +810,27 @@
     const rows = [...document.querySelectorAll('#list .s')];
     const a = rows.find(r => r.textContent.trim() === 'citrus');
     const b = rows.find(r => r.textContent.trim() === 'earthy');
-    a.click(); b.click(); await frame();
+    a.click(); b.click(); await paint();
     ok(state.size === 2, 'both picks did not stick');
     const dir = ['citrus', 'earthy'].map(w => SMELLS.find(s => s.w === w).pos);
     const want = [0, 1, 2].map(k => dir.reduce((s, p) => s + p[k] / Math.hypot(...p), 0));
     aimsAt(target, want, 'the middle of citrus and earthy');
-    a.click(); b.click(); await frame();
+    a.click(); b.click(); await paint();
     ok(state.size === 0, 'the picks would not clear');
   });
 
   await T('clearing puts every pick back', async () => {
     [...document.querySelectorAll('#list .s')].slice(0, 3).forEach(r => r.click());
-    await frame();
+    await paint();
     ok(state.size === 3);
-    document.getElementById('bClear').click(); await frame();
+    document.getElementById('bClear').click(); await paint();
     ok(state.size === 0, 'clear left something behind');
     ok([...document.querySelectorAll('#list .s')]
       .every(r => r.getAttribute('aria-checked') === 'off'), 'a row still reads as picked');
   });
 
   yaw = home.yaw; pitch = home.pitch; fovWant = home.fov; vYaw = vPitch = 0;
-  await frame();
+  await paint();
 
   const bad = R.filter(r => r.startsWith('FAIL'));
   console.log(R.join('\n'));
