@@ -108,12 +108,16 @@ function pour(i) {
      of this shop is red. Wine backlit glows; these are lifted until they do.
      Reds stay plainly darker than whites, which is true, and stop being a stain
      on the black, which is not. */
+  /* Lifted for brightness once and taken too far: at 54 to 71 per cent lightness
+     a red is salmon, not wine. Back into wine's own range -- ruby through garnet
+     to brick -- and the light comes from saturation and from the glasses being
+     bigger, not from washing the colour out. */
   if (WCOL[i] === 'white')                     // pale straw to deep amber
-    return [54 - 16 * m, 52 + 30 * m, (DARK ? 80 : 60) - 14 * m];
-  if (WCOL[i] === 'rose')                      // salmon to onion skin
-    return [348 + 18 * m, 70 - 10 * m, (DARK ? 76 : 56) - 8 * m];
-  return [332 + 36 * m, 66 + 8 * (1 - m),      // purple through ruby to brick
-          (DARK ? 54 : 35) + 11 * (1 - body) + 6 * m];
+    return [52 - 14 * m, 58 + 28 * m, (DARK ? 74 : 58) - 13 * m];
+  if (WCOL[i] === 'rose')                      // onion skin
+    return [352 + 14 * m, 62 - 6 * m, (DARK ? 68 : 54) - 6 * m];
+  return [348 + 32 * m, 74 - 6 * m,            // ruby through garnet to brick
+          (DARK ? 46 : 32) + 9 * (1 - body) + 4 * m];
 }
 
 /* ---- the view ---------------------------------------------------------- */
@@ -330,7 +334,45 @@ function ground(F) {
    painted with -- so a glass says what it is AND where it is without being read.
    Bottles on the reader's own account carry a ring behind them, in the purple
    this page uses for him everywhere else. */
+/* WHAT HE BOUGHT IS A BOTTLE; WHAT THE SHOP HAS IS A GLASS.
+   Three badges were tried against the glass and all three failed. A halo at six
+   pixels is a smudge. A ring reads, being an edge, but says only "this one". A
+   tick reads too, and it lay across the bowl, and it says "done", not "bought" --
+   and at a distance it stopped looking like a glass at all.
+   No badge, then. A bottle is the thing you buy and a glass is the thing you are
+   offered, so the mark changes rather than being decorated: no overlay, nothing
+   distorted, the wine's own colour kept in both, and the two silhouettes -- a
+   tall shouldered thing against a cup on a stem -- separate at three pixels. */
+function bottle(x, y, R, i, a) {
+  const w = R*0.62, h = R*1.9, top = y - h*0.55, bot = y + h*0.45, sh = top + h*0.34;
+  const wine = pour(i);
+  g.beginPath();
+  g.moveTo(x - w*0.24, top); g.lineTo(x + w*0.24, top);
+  g.lineTo(x + w*0.24, sh - h*0.06);
+  g.quadraticCurveTo(x + w/2, sh, x + w/2, sh + h*0.10);
+  g.lineTo(x + w/2, bot); g.lineTo(x - w/2, bot); g.lineTo(x - w/2, sh + h*0.10);
+  g.quadraticCurveTo(x - w/2, sh, x - w*0.24, sh - h*0.06);
+  g.closePath();
+  const A1 = Math.min(1, a*1.3);
+  const lq = g.createLinearGradient(x - w/2, 0, x + w/2, 0);
+  lq.addColorStop(0,    `hsla(${wine[0]},${wine[1]+4}%,${Math.max(14, wine[2]-12)}%,${A1})`);
+  lq.addColorStop(0.34, `hsla(${wine[0]},${wine[1]-6}%,${Math.min(88, wine[2]+14)}%,${A1})`);
+  lq.addColorStop(0.62, `hsla(${wine[0]},${wine[1]}%,${wine[2]}%,${A1})`);
+  lq.addColorStop(1,    `hsla(${wine[0]+4},${wine[1]+4}%,${Math.max(12, wine[2]-16)}%,${A1})`);
+  g.fillStyle = lq;                    // glass turned to the light down one side
+  g.fill();
+  /* the capsule, in the colour of the ground it stands on -- the one thing the
+     stem used to carry and the only place left to put it */
+  g.fillStyle = near(hex2hsl(WACC[i]), a);
+  g.fillRect(x - w*0.26, top, w*0.52, h*0.13);
+  if (R >= 6.5) {                       // a label, once there is room for one
+    g.fillStyle = INK(a * (DARK ? 0.30 : 0.20));
+    g.fillRect(x - w/2, sh + h*0.20, w, h*0.20);
+  }
+}
+
 function glass(x, y, R, i, a, mine) {
+  if (mine) return bottle(x, y, R, i, a);
   const fz = FIZZ[i];
   const rw = R*(fz ? 0.30 : 0.50), top = y - R*(fz ? 0.98 : 0.84);
   const bot = y + R*(fz ? 0.20 : 0.12), dep = bot - top;
@@ -365,8 +407,24 @@ function glass(x, y, R, i, a, mine) {
   /* THE COLOUR IS THE POINT and is drawn past the strength of the rest of the
      mark, because what colour a wine is is the first thing anybody reads about a
      bottle and it is carried by three or four pixels. */
-  g.fillStyle = `hsla(${wine[0]},${wine[1]}%,${wine[2]}%,${Math.min(1, a * 1.3)})`;
+  /* LIQUID, NOT PAINT. A flat fill is a coloured shape; wine in a bowl is lighter
+     where the surface meets the air and deepest at the base, and it carries a
+     small bright point where the light lands. Two stops and a dot do it. */
+  const A1 = Math.min(1, a * 1.3);
+  const lq = g.createLinearGradient(x, line, x, bot);
+  lq.addColorStop(0,    `hsla(${wine[0]},${wine[1]-6}%,${Math.min(88, wine[2]+16)}%,${A1})`);
+  lq.addColorStop(0.35, `hsla(${wine[0]},${wine[1]}%,${wine[2]}%,${A1})`);
+  lq.addColorStop(1,    `hsla(${wine[0]+4},${wine[1]+4}%,${Math.max(14, wine[2]-14)}%,${A1})`);
+  g.fillStyle = lq;
   g.fillRect(x - rw - 1, line, rw*2 + 2, bot - line + 1);
+  if (R >= 5) {
+    const hl = g.createRadialGradient(x - rw*0.42, line + (bot-line)*0.30, 0,
+                                      x - rw*0.42, line + (bot-line)*0.30, R*0.30);
+    hl.addColorStop(0, `hsla(${wine[0]},${wine[1]-10}%,96%,${A1*0.55})`);
+    hl.addColorStop(1, `hsla(${wine[0]},${wine[1]}%,96%,0)`);
+    g.fillStyle = hl;
+    g.fillRect(x - rw - 1, line, rw*2 + 2, bot - line + 1);
+  }
   if (fine) {
     g.fillStyle = INK(a * (DARK ? 0.14 : 0.07));
     g.fillRect(x - rw - 1, top - 1, rw*2 + 2, line - top + 1);
@@ -390,26 +448,6 @@ function glass(x, y, R, i, a, mine) {
     g.lineWidth = Math.max(0.8, R*0.05);
     bowl(); g.stroke();
   }
-  /* YOU HAVE BOUGHT THIS: a tick beside the glass. It was a soft purple halo
-     first, which at six pixels is a smudge and not a mark, and then a ring --
-     which reads, being an edge, but says nothing: a circle round a thing is only
-     "this one", and the page already knows which one you are pointing at. A tick
-     is the mark for having it. */
-  if (mine) {
-    /* with a floor, so it stays a tick when the glass shrinks rather than
-       shrinking with it into a nick */
-    const u = Math.max(2.9, R*0.66);
-    const tx = x + rw + Math.max(1.6, R*0.30), ty = top + dep*0.30;
-    g.strokeStyle = `rgba(${MARKRGB},1)`;
-    g.lineWidth = Math.max(1.7, R * 0.22);
-    g.lineCap = 'round'; g.lineJoin = 'round';
-    g.beginPath();
-    g.moveTo(tx - u*0.85, ty);
-    g.lineTo(tx - u*0.2, ty + u*0.72);
-    g.lineTo(tx + u*0.9, ty - u*0.8);
-    g.stroke();
-  }
-
   /* stem and foot, in the colour of the ground the glass stands on */
   g.strokeStyle = near(hex2hsl(WACC[i]), a);
   g.lineWidth = Math.max(1, R*0.085);
@@ -910,10 +948,9 @@ function hsl2rgb(h, s, l) {
 function drawMini() {
   if (!showMini || !live) return;
   const F = frame(), fwd = unit(F.f), gr = unit(F.r), gu = unit(F.u);
-  /* taken at full strength: on a ball the size of a postage stamp a muted hex
-     is no colour at all, and ten of them averaged is beige */
-  const rgb = POLES.map(p => hsl2rgb(p.hsl[0], Math.min(96, p.hsl[1] + 28),
-                                     Math.max(46, Math.min(64, p.hsl[2] + 2))));
+  /* taken as they are: these are wine colours already, and boosting them is
+     what turned tawny into orange and pale rose into magenta */
+  const rgb = POLES.map(p => hsl2rgb(p.hsl[0], p.hsl[1], p.hsl[2]));
   const px = gimg.data;
   for (let j = 0; j < GS; j++) {
     const v = (GC - j) / GR;
@@ -947,16 +984,25 @@ function drawMini() {
          sphere. A light off to one side gives it a terminator and a limb, and
          those are what say sphere without anything being written down. */
       const lam = Math.max(0, u*LIGHT[0] + v*LIGHT[1] + w*LIGHT[2]);
-      const lit = 0.14 + 0.96 * Math.pow(lam, 0.8);
-      const limb = 0.52 + 0.48 * w;
-      const seen = 0.55 + 0.45 * vis;          // outside your field, quieter
-      const spec = 110 * Math.pow(lam, 44);    // one small highlight, not a blowout
+      const lit = 0.20 + 0.90 * Math.pow(lam, 0.75);
+      const limb = 0.55 + 0.45 * w;
+      const seen = 0.58 + 0.42 * vis;          // outside your field, quieter
+      /* LIQUID, NOT MATTE. Three things do it and none of them alone: a broad
+         sheen over the lit side, one tight highlight where the light lands, and
+         a rim that brightens as the surface turns away -- which is what light
+         does at the edge of anything wet or glazed and never on chalk. */
+      const sheen = 46 * Math.pow(lam, 3.2);
+      const spec = 150 * Math.pow(lam, 60);
+      const rim = 34 * Math.pow(1 - w, 3.4);
       if (DARK) {
-        const f = lit * limb * seen * 0.95;
-        px[k] = r*f + spec; px[k+1] = g2*f + spec; px[k+2] = b2*f + spec;
+        const f = lit * limb * seen;
+        px[k] = r*f + sheen + spec + rim*0.9;
+        px[k+1] = g2*f + sheen + spec + rim*0.6;
+        px[k+2] = b2*f + sheen*1.15 + spec + rim;
       } else {
         const wash = (1 - lit*limb) * 0.5 + (1 - vis) * 0.22;
-        px[k] = r + (250-r)*wash; px[k+1] = g2 + (250-g2)*wash; px[k+2] = b2 + (250-b2)*wash;
+        px[k] = r + (250-r)*wash + spec*0.5; px[k+1] = g2 + (250-g2)*wash + spec*0.5;
+        px[k+2] = b2 + (250-b2)*wash + spec*0.5;
       }
       px[k+3] = 255;
     }

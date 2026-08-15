@@ -102,9 +102,17 @@ def bearing(a):
 # ---------------------------------------------------------------- the poles
 # Each measure is one line through the middle with a name at each end. The
 # colours are the page's own: the ends of the slider the reader already drags.
-ENDC = {'weight': ['#d98f97', '#c4485e'], 'grip': ['#c9b183', '#b0702f'],
-        'oak': ['#b8ab94', '#c98a3e'], 'fruit': ['#9ebf3b', '#c9538f'],
-        'maturity': ['#87a733', '#96502a']}
+# A WINE PALETTE, and why it is not the slider's.
+# The Find tab's slider ends are muted swatches sitting on a pale card, and they
+# are his. Lifted far enough to carry as regions on a black ball they turned into
+# orange, magenta and olive -- plastic, not wine. These are the colours wine
+# actually comes in: straw, gold, garnet, leather, amber, tawny, purple. Same
+# order, same meaning, and the sliders in the Find tab are untouched.
+ENDC = {'weight':   ['#e2c9a4', '#7d1f2b'],   # pale straw -> deep garnet
+        'grip':     ['#dcc57e', '#7c4a24'],   # pale gold  -> leather
+        'oak':      ['#cfd0a6', '#b9762c'],   # unoaked    -> toasted amber
+        'fruit':    ['#adbf5a', '#5d1c46'],   # green-gold -> dark berry
+        'maturity': ['#a8265a', '#9a5a2c']}   # young ruby -> tawny brick
 
 POLES = []
 for a in AXES:

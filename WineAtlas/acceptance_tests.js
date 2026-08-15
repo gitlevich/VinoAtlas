@@ -718,6 +718,34 @@
     S.wines.forEach((w, k) => { if (AT.MINE[k]) ok(OWNED.has(w.id), w.name); });
   });
 
+  await T('what he bought is a bottle, what the shop has is a glass', () => {
+    /* No badge. Three were tried on top of the glass -- a halo, a ring, a tick --
+       and they were a smudge, a meaningless circle, and something that stopped
+       looking like a glass from a distance. The mark itself changes instead. */
+    const ctx = cvA.getContext('2d'), dpr = cvA.width / AT.W;
+    const shape = (k, own) => {
+      ctx.clearRect(0, 0, AT.W, AT.H);
+      AT.glass(AT.W/2, AT.H/2, 20, k, 1, own);
+      const span = dy => {
+        const row = ctx.getImageData(0, Math.round((AT.H/2 + dy) * dpr), cvA.width, 1).data;
+        let lo = -1, hi = -1;
+        for (let x = 0; x < cvA.width; x++) if (row[x*4+3] > 24) { if (lo < 0) lo = x; hi = x; }
+        return lo < 0 ? 0 : (hi - lo) / dpr;
+      };
+      return { top: span(-14), foot: span(14) };
+    };
+    const k = S.wines.findIndex((w, i) => !ATD.fizz[i]);
+    const bottle = shape(k, true), glass = shape(k, false);
+    AT.draw();
+    /* a glass is wide at the rim and stands on a foot wider than its stem; a
+       bottle is narrow at the neck and the same width all the way down */
+    ok(glass.top > glass.foot * 1.4,
+       `glass: rim ${glass.top.toFixed(1)} over foot ${glass.foot.toFixed(1)}`);
+    ok(bottle.top < bottle.foot,
+       `bottle: neck ${bottle.top.toFixed(1)} under body ${bottle.foot.toFixed(1)}`);
+    ok(bottle.top < glass.top * 0.6, 'and the two are told apart at the top');
+  });
+
   await T('a glass answers the pointer over the whole glass', async () => {
     AT.STAND = [0, 0, 0]; AT.draw();
     const big = AT.WMARK.filter(m => m.node).sort((a, b) => b.node[2] - a.node[2])[0];

@@ -112,12 +112,13 @@ def test_every_measure_is_named_at_both_ends_and_the_ends_are_opposite(src, out)
         assert lo['str'] == hi['str']
 
 
-def test_a_pole_wears_the_colour_of_its_own_end_of_its_own_slider(out):
-    """The ten colours are the reader's, off the sliders in the Find tab. If they
-    ever drift apart the sky stops agreeing with the controls."""
-    ends = {'weight': ['#d98f97', '#c4485e'], 'grip': ['#c9b183', '#b0702f'],
-            'oak': ['#b8ab94', '#c98a3e'], 'fruit': ['#9ebf3b', '#c9538f'],
-            'maturity': ['#87a733', '#96502a']}
+def test_a_pole_wears_a_colour_wine_comes_in(out):
+    """Straw, gold, garnet, leather, amber, tawny, purple -- not the Find tab's
+    slider swatches, which are muted for a pale card and turn to orange and
+    magenta when they are lifted enough to carry on a black ball."""
+    ends = {'weight': ['#e2c9a4', '#7d1f2b'], 'grip': ['#dcc57e', '#7c4a24'],
+            'oak': ['#cfd0a6', '#b9762c'], 'fruit': ['#adbf5a', '#5d1c46'],
+            'maturity': ['#a8265a', '#9a5a2c']}
     for p in out['poles']:
         assert p['col'] == ends[p['ax']][p['end']]
 
