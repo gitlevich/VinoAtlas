@@ -68,16 +68,18 @@ screen: each becomes a drawer on the side it holds on the page, and both stand
 the same height. The globe stands aside for the sommelier rather than being sat
 on, unless the reader has dragged it somewhere himself.
 
-A panel closes by the chevron in its own head, on the page and on the full
-screen alike; on the page the rail it leaves behind opens it again, and on the
-full screen a toggle in the bar does. The chevron was hidden there on the
-reasoning that the bar already carried a toggle, and the question that came back
-was how to fold anything at all: the one gesture the reader knows had been
-moved. Two ways to shut a drawer is not a fault; one way, moved, is. Each bar
-toggle carries the same chevron, pointing the way its panel is about to go —
-away while it is open, out from the edge while it is shut — because a button
-that says only its own name reads as something to do, not as something that is
-on or off.
+**A panel folds the same way wherever it stands.** The chevron in its own head
+closes it, and the rail it leaves behind — the full height of the drawer, at the
+edge it folded into, carrying its name — opens it again. Both were at first
+replaced on the full screen by a toggle in the bar, and both replacements failed
+in the same way: first the question was how to fold anything at all, then that
+they would not come back. A 26-pixel button in the corner of a very large
+picture is easy to say and easy to miss. The bar toggles stay as well, each
+carrying that same chevron and pointing the way its panel is about to go — away
+while it is open, out from the edge while it is shut — because a button that
+says only its own name reads as something to do, not as something that is on or
+off. Against the shop, which is black, the rail carries its own ground; a
+panel-coloured strip on black is a way back nobody finds.
 
 **On the crowd.** 1,652 glasses is a lot to be standing among, and three things
 answer it. The view **opens at 74°** rather than the 120° a head takes in, which

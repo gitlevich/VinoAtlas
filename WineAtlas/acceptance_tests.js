@@ -1253,12 +1253,25 @@
     eq(getComputedStyle(ch).display, 'none', 'its own chevron folds it away');
     eq(el('atlasSomm').getAttribute('aria-pressed'), 'false', 'and the bar says so');
     ok(box(el('atlasGlobe')).right > c.left, 'and the globe takes the corner back');
-    el('atlasSomm').click();
-    ok(getComputedStyle(ch).display !== 'none', 'the bar brings it back');
-    eq(el('atlasSomm').getAttribute('aria-pressed'), 'true', 'and says that too');
+    /* THE WAY BACK IS THE EDGE IT LEFT. A 26-pixel button in the corner of a
+       very large picture was the only way back, and the report was that they
+       would not come back at all. The rail comes too: the full height of the
+       drawer, at its own edge, carrying its name -- and against the shop, which
+       is black, so it brings its own ground. */
+    const rail = el('atlasChatTab'), rb = box(rail);
+    ok(getComputedStyle(rail).display !== 'none', 'the rail stands where it stood');
+    ok(box(cvA).right - rb.right < 20, 'at the edge it folded into');
+    ok(rb.height > box(cvA).height * 0.7, 'the height of the drawer, not of a button');
+    ok(getComputedStyle(rail).backgroundColor !== getComputedStyle(cvA).backgroundColor,
+       'and is not the colour of the shop behind it');
+    ok(box(el('atlasGlobe')).right <= rb.left, 'the globe clears the rail as well');
+    rail.click();
+    ok(getComputedStyle(ch).display !== 'none', 'the rail brings it back');
+    eq(el('atlasSomm').getAttribute('aria-pressed'), 'true', 'and the bar says so');
     el('atlasSomm').click();
     eq(getComputedStyle(ch).display, 'none', 'the bar folds it too');
     el('atlasSomm').click();
+    ok(getComputedStyle(ch).display !== 'none', 'and brings it back');
     /* the two fold independently */
     el('atlasList').click();
     eq(getComputedStyle(sd).display, 'none', 'the words alone');
@@ -1267,6 +1280,7 @@
     el('atlasBig').click();
     ok(!cvA.parentElement.contains(ch), 'and back to its own column on the way out');
     ok(getComputedStyle(ch).display !== 'none', 'still there');
+    ok(!cvA.parentElement.contains(el('atlasChatTab')), 'the rail goes home with it');
     } finally {
       if (cvA.parentElement.classList.contains('big')) el('atlasBig').click();
       if (getComputedStyle(ch).display === 'none') el('atlasChatTab').click();

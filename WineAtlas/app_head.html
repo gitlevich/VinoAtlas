@@ -464,8 +464,14 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-view.big .atlas-side,
 .atlas-view.big>.chat{position:absolute;top:50px;bottom:58px;z-index:6;
   box-shadow:0 10px 34px rgba(0,0,0,.45)}
-.atlas-view.big .atlas-side{left:12px;width:262px;padding:13px 14px;
+.atlas-view.big .atlas-side{left:12px;width:262px;padding:11px 13px;
   border-radius:10px;background:var(--panel);border:1px solid var(--rule)}
+/* a drawer's head is a label and a chevron, not a band of nothing: on the full
+   screen the shop is what the room is for, so the panels give their inches back */
+.atlas-view.big .atlas-side .panelhead{margin-bottom:6px}
+.atlas-view.big .atlas-side h2{margin-bottom:4px}
+.atlas-view.big>.chat{padding:11px 13px}
+.atlas-view.big>.chat .chathead{margin-bottom:7px}
 /* the sommelier is already a card and brings its own ground; it is only put
    where it goes. What was said grows into the height it is given and scrolls
    there -- the card itself must not scroll, or the box you type in goes below
@@ -475,10 +481,31 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-view.big>.chat #msgs{height:auto;flex:1 1 auto;min-height:0;resize:none}
 .atlas-view.big.nowords .atlas-side,
 .atlas-view.big.nochat>.chat{display:none}
+/* THE WAY BACK IS THE EDGE THE PANEL LEFT. A folded panel leaves a rail where it
+   stood, on the page and on the full screen alike -- a strip the height of the
+   drawer carrying its name, at the edge it will come back from. The toggle in
+   the bar is a 26-pixel button in a corner of a very large picture, which is
+   easy to say and easy to miss: folded, the report was that they would not come
+   back at all. */
+/* and it has to be SEEN. In its column a rail stands against the page; here it
+   stands against the shop, which is black, and a panel-coloured strip on black
+   is a way back nobody finds. It carries its own ground and its own edge. */
+.atlas-view.big .atlas-rail{position:absolute;top:50px;bottom:58px;width:26px;z-index:6;
+  justify-content:center;background:var(--raise);border-color:var(--ink-3);color:var(--ink-2);
+  box-shadow:0 10px 34px rgba(0,0,0,.55)}
+.atlas-view.big .atlas-rail:hover{color:var(--ink);border-color:var(--ink)}
+.atlas-view.big #atlasWordsTab{left:12px}
+.atlas-view.big #atlasChatTab{right:12px}
+.atlas-view.big.nowords #atlasWordsTab,
+.atlas-view.big.nochat #atlasChatTab{display:flex}
 .atlas-view.big .atlas-side h2{margin-bottom:8px}
 .atlas-view.big .awlist{max-height:none}
-/* the ball is a reference and must not be sat on: it stands aside for the
-   sommelier, unless the reader has dragged it somewhere himself */
+/* The ball is a reference and must not be sat on. Something always stands at
+   that edge on the full screen -- the sommelier open, or the rail it folded
+   into -- so the ball clears whichever it is. Unless the reader has dragged it
+   somewhere himself, in which case he has placed it. */
+.atlas-view.big #atlasGlobe{right:46px}
+.atlas-view.big #atlasFacing{padding:0 282px 0 26px}
 .atlas-view.big:not(.nochat) #atlasGlobe{right:354px}
 .atlas-view.big:not(.nochat) #atlasFacing{padding:0 594px 0 26px}
 /* what-you-can-do is asked for and then dismissed, so it stands over the panel
@@ -526,6 +553,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
      rather than the shop doing so; either one folds and it opens right up. */
   .atlas-view.big .atlas-side{width:176px;padding:11px 12px}
   .atlas-view.big>.chat{width:268px}   /* narrower and what he types runs under the tally */
+  .atlas-view.big #atlasFacing{padding:0 216px 0 14px}
   .atlas-view.big:not(.nochat) #atlasGlobe{right:292px}
   .atlas-view.big:not(.nochat) #atlasFacing{padding:0 304px 0 14px}
 }

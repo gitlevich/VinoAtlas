@@ -1332,6 +1332,13 @@ function fill(on) {
      inside it, on the side it holds on the page, and both go back to their own
      columns on the way out */
   if (want) view.appendChild(side); else sideHome.insertBefore(side, sideHome.firstChild);
+  /* and the rail each one leaves behind travels with it, because the way back
+     from a folded panel is the edge it folded into, wherever that edge is.
+     Each goes home beside its own panel, so the reading order stays: words,
+     the shop, the sommelier. */
+  if (want) { view.appendChild(el('atlasWordsTab')); view.appendChild(el('atlasChatTab')); }
+  else { sideHome.insertBefore(el('atlasWordsTab'), side);
+         sideHome.insertBefore(el('atlasChatTab'), view); }
   chatAt(want ? 'screen' : live ? 'atlas' : 'find');
   view.classList.toggle('big', want);
   view.classList.toggle('words', want && !atlasGrid.classList.contains('nowords'));
