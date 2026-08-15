@@ -1074,11 +1074,12 @@ function drawMini() {
 
   /* meridians and parallels, drawn all the way round: the half facing you is
      plain, the half behind you is faint, and that difference IS the sphere */
-  const curve = pts => {
+  const curve = (pts, strong) => {
     for (let k = 0; k + 1 < pts.length; k++) {
       const a = pts[k], b = pts[k+1], front = (a.w + b.w) > 0;
-      mg.strokeStyle = ink(front ? (DARK ? 0.42 : 0.34) : (DARK ? 0.12 : 0.10));
-      mg.lineWidth = front ? 1 : 0.85;
+      mg.strokeStyle = ink(front ? (DARK ? (strong ? 0.66 : 0.42) : (strong ? 0.52 : 0.34))
+                                 : (DARK ? (strong ? 0.20 : 0.12) : (strong ? 0.17 : 0.10)));
+      mg.lineWidth = front ? (strong ? 1.5 : 1) : (strong ? 1.1 : 0.85);
       mg.beginPath(); mg.moveTo(a.x, a.y); mg.lineTo(b.x, b.y); mg.stroke();
     }
   };
@@ -1096,7 +1097,7 @@ function drawMini() {
       const lo = t * 6.2832 / 96;
       pts.push(at([Math.cos(la)*Math.cos(lo), Math.sin(la), Math.cos(la)*Math.sin(lo)]));
     }
-    curve(pts);
+    curve(pts, la === 0);                    // the equator IS the horizon
   }
   mg.strokeStyle = ink(DARK ? 0.5 : 0.4); mg.lineWidth = 1.2;
   mg.beginPath(); mg.arc(GC, GC, GR, 0, 6.2832); mg.stroke();
@@ -1122,40 +1123,10 @@ function drawMini() {
     }
   }
 
-  /* WHAT IS UNDER THE CROSSHAIR, PUT ON THE BALL. The globe says which way you
-     are facing; it did not say what you are facing AT. */
-  const near0 = [];
-  for (const m of WMARK) {
-    if (!m.node) continue;
-    const d = Math.hypot(m.node[0] - W/2, m.node[1] - H/2);
-    if (d < 46) near0.push({ m, d });
-  }
-  near0.sort((a, b) => a.d - b.d);
-  const put0 = [];
-  for (const { m } of near0.slice(0, 6)) {
-    const q = at(unit(here(m.pos)));
-    if (q.w <= 0.02) continue;
-    let px0 = q.x, py0 = q.y, k = 0;
-    while (k < 8 && put0.some(o => Math.hypot(o[0]-px0, o[1]-py0) < 11)) { k++; px0 += 9; }
-    put0.push([px0, py0]);
-    const wine = pour(m.i), fill = `hsl(${wine[0]},${wine[1]}%,${wine[2]}%)`;
-    mg.save();
-    mg.shadowColor = 'rgba(0,0,0,.85)'; mg.shadowBlur = 4;
-    mg.fillStyle = fill;
-    if (MINE[m.i]) {
-      mg.fillRect(px0 - 1.4, py0 - 7, 2.8, 4.4);
-      mg.beginPath(); mg.roundRect(px0 - 3.4, py0 - 3.2, 6.8, 10.4, 1.6); mg.fill();
-      mg.strokeStyle = ink(0.9); mg.lineWidth = 1;
-      mg.beginPath(); mg.roundRect(px0 - 3.4, py0 - 3.2, 6.8, 10.4, 1.6); mg.stroke();
-    } else {
-      mg.beginPath(); mg.moveTo(px0 - 3.6, py0 - 4.4); mg.lineTo(px0 + 3.6, py0 - 4.4);
-      mg.lineTo(px0, py0 + 3.2); mg.closePath(); mg.fill();
-      mg.strokeStyle = ink(0.9); mg.lineWidth = 1; mg.stroke();
-      mg.beginPath(); mg.moveTo(px0, py0 + 3.2); mg.lineTo(px0, py0 + 6.4);
-      mg.moveTo(px0 - 2.6, py0 + 6.6); mg.lineTo(px0 + 2.6, py0 + 6.6); mg.stroke();
-    }
-    mg.restore();
-  }
+  /* The wines under the crosshair were drawn on here too, and they are not any
+     more: the ball is the frame, and putting the subject on the frame made two
+     drawings of one thing. The horizon stays -- the equator of this cage is the
+     world's, the same line the ring of ticks draws out in the view. */
 
   /* the rim of what you can see: the ground inside it is your field */
   mg.beginPath();
