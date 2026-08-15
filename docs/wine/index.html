@@ -1046,7 +1046,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='706bc642';
+const BUILD='59085697';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -2924,10 +2924,17 @@ function drawMini() {
 
   /* the ball itself: a faint disc so the cage reads as a surface and not as wire
      floating in nothing */
-  const bg = mg.createRadialGradient(GC - GR*0.3, GC - GR*0.3, 0, GC, GC, GR);
-  bg.addColorStop(0, DARK ? 'rgba(255,255,255,.055)' : 'rgba(20,20,28,.05)');
-  bg.addColorStop(1, DARK ? 'rgba(255,255,255,.012)' : 'rgba(20,20,28,.015)');
+  const bg = mg.createRadialGradient(GC - GR*0.34, GC - GR*0.38, GR*0.05, GC, GC, GR);
+  bg.addColorStop(0,   DARK ? 'rgba(255,255,255,.10)'  : 'rgba(20,20,28,.07)');
+  bg.addColorStop(0.62,DARK ? 'rgba(255,255,255,.035)' : 'rgba(20,20,28,.03)');
+  bg.addColorStop(1,   DARK ? 'rgba(255,255,255,.005)' : 'rgba(20,20,28,.012)');
   mg.fillStyle = bg;
+  mg.beginPath(); mg.arc(GC, GC, GR, 0, 6.2832); mg.fill();
+  /* a hint of a limb, so the cage is stretched over something */
+  const lb = mg.createRadialGradient(GC, GC, GR*0.72, GC, GC, GR);
+  lb.addColorStop(0, 'rgba(0,0,0,0)');
+  lb.addColorStop(1, DARK ? 'rgba(0,0,0,.55)' : 'rgba(20,20,28,.16)');
+  mg.fillStyle = lb;
   mg.beginPath(); mg.arc(GC, GC, GR, 0, 6.2832); mg.fill();
 
   /* meridians and parallels, drawn all the way round: the half facing you is
@@ -2941,8 +2948,15 @@ function drawMini() {
       mg.beginPath(); mg.moveTo(a.x, a.y); mg.lineTo(b.x, b.y); mg.stroke();
     }
   };
-  for (let m = 0; m < 8; m++) {                    // meridians, every 22.5 degrees
-    const lon = m * Math.PI / 8, pts = [];
+  /* HALF THE SPHERE HAD NO MERIDIANS ON IT. A meridian drawn from pole to pole
+     covers one longitude only, and these ran from 0 to 7/8 of a half-turn -- so
+     they filled one half of the ball and left the other bare, which is what made
+     them look like something meaningful pointing one way. They are not: this is a
+     plain cage, and its axis is the one the world already has. The poles it
+     converges on are OLD overhead and YOUNG underfoot, and its equator is the
+     horizon. Twelve now, right the way round. */
+  for (let m = 0; m < 12; m++) {                   // meridians, every 30 degrees
+    const lon = m * Math.PI / 6, pts = [];
     for (let t = 0; t <= 72; t++) {
       const la = -Math.PI/2 + t * Math.PI / 72;
       pts.push(at([Math.cos(la)*Math.cos(lon), Math.sin(la), Math.cos(la)*Math.sin(lon)]));
@@ -2991,11 +3005,26 @@ function drawMini() {
      drawings of one thing. The horizon stays -- the equator of this cage is the
      world's, the same line the ring of ticks draws out in the view. */
 
-  /* the rim of what you can see: the ground inside it is your field */
+  /* WHAT YOU CAN SEE IS A WINDOW CUT IN THE BALL, not a circle floating in the
+     middle of it. The set of bearings inside your field is a cap of the sphere,
+     and its edge is a circle lying ON the surface -- so the ground outside it is
+     veiled, which is the true statement (you are not looking there), and the edge
+     itself carries a soft band of light either side of a crisp line, the way the
+     rim of a lens does. Dots said nothing and sat nowhere. */
+  const capR = GR * Math.sin(FOV/2);
   mg.beginPath();
-  mg.arc(GC, GC, GR * Math.sin(FOV/2), 0, 6.2832);
-  mg.strokeStyle = ink(DARK ? 0.5 : 0.42);
-  mg.setLineDash([3, 3]); mg.lineWidth = 1.2; mg.stroke(); mg.setLineDash([]);
+  mg.arc(GC, GC, GR, 0, 6.2832);
+  mg.arc(GC, GC, capR, 0, 6.2832, true);            // the window, left clear
+  mg.fillStyle = DARK ? 'rgba(0,0,0,.44)' : 'rgba(22,22,30,.13)';
+  mg.fill('evenodd');
+  const lens = mg.createRadialGradient(GC, GC, capR*0.82, GC, GC, capR*1.20);
+  lens.addColorStop(0,    ink(0));
+  lens.addColorStop(0.5,  ink(DARK ? 0.16 : 0.12));
+  lens.addColorStop(1,    ink(0));
+  mg.fillStyle = lens;
+  mg.beginPath(); mg.arc(GC, GC, capR*1.20, 0, 6.2832); mg.fill();
+  mg.strokeStyle = ink(DARK ? 0.62 : 0.5); mg.lineWidth = 1.1;
+  mg.beginPath(); mg.arc(GC, GC, capR, 0, 6.2832); mg.stroke();
 
   /* ONE NAME, AND ONLY WHERE YOU ARE POINTING. Ten labels nailed to a
      postage-stamp ball covered the thing they were labelling. */
