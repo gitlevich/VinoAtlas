@@ -61,42 +61,57 @@ def test_no_dead_word_is_drawn_or_used_as_a_signpost(baked, page):
         assert f'"w": "{w}"' not in page
 
 
-def test_a_weed_is_a_green_leaf_and_carries_no_colour_of_its_own(page, strains):
-    """A weed is drawn as a cannabis leaf, flatly green, because it has to be
-    recognisable without being read. What that costs is stated rather than
-    hidden: a weed's colour no longer tells you which country it stands in.
-    Position still does. Lightness still tracks how much it commits, so the
-    field does not flatten into one mass.
+def test_a_weed_is_a_green_leaf_with_the_colour_of_its_ground(page, strains, baked):
+    """Both constraints at once. The body is green so the leaf is recognisable
+    without being read; the edge and the stem carry the blend of the feeling
+    regions it stands among, so it still says which country it is in. A flat
+    green leaf gave that up; a fully-coloured mark never looked like a leaf.
 
-    So the per-weed hues are not shipped at all. They are still real properties
-    of the arrangement and still checked in test_pipeline.py -- they are simply
-    not something this page says any more, and a page that ships a field it does
-    not use will eventually state it by accident.
+    The accent is the same blend the globe paints with, so the two views agree
+    about a place -- and it is checked by recomputing it here rather than by
+    trusting the field.
     """
-    assert "hsla(112,58%," in page, "the leaf is not green"
+    assert "hsla(112,58%," in page, "the leaf body is not green"
     assert "THE CANNABIS LEAF" in page
-    for t in strains:
-        for gone in ("h", "l", "bh"):
-            assert gone not in t, f"{t['n']} still carries '{gone}'"
+    assert "the edge is the ground it stands on" in page
+    assert "hsla(${t.a},80%," in page, "the edge lost the accent"
     assert "34 + 20 * t.lean" in page, "lightness no longer tracks commitment"
+    for s in strains:
+        assert "a" in s, f"{s['n']} has no accent"
+        for gone in ("h", "l", "bh"):
+            assert gone not in s, f"{s['n']} still carries the retired '{gone}'"
+
+    feels = [i for i in baked["items"] if i["kind"] == "feel"]
+    pos = [(unit(f["pos"]), f["hue"]) for f in feels]
+    for s in strains:
+        d = unit(s["pos"])
+        cos = [float(d @ fd) for fd, _ in pos]
+        best = max(cos)
+        vx = vy = 0.0
+        for (_, hue), c in zip(pos, cos):
+            w = math.exp((c - best) * 11)
+            vx += w * math.cos(math.radians(hue))
+            vy += w * math.sin(math.radians(hue))
+        want = math.degrees(math.atan2(vy, vx)) % 360
+        assert gap(s["a"], want) < 0.5, s["n"]
 
 
-def test_the_name_sits_above_the_glyph_and_clear_of_it(page):
-    """The glyph used to sit above the word and they overlapped every time --
-    not marginally but by construction. The nose reaches 0.74 of its radius
-    below its own centre while the gap allowed for it was smaller than that at
-    every size, so no font size could have escaped it.
+def test_the_accent_actually_tells_the_countries_apart(strains, baked):
+    """An accent that came out the same everywhere would be decoration. Weeds
+    standing under different feelings must wear visibly different edges."""
+    feels = {f["w"]: unit(f["pos"]) for f in baked["items"] if f["kind"] == "feel"}
 
-    Now the name is on top and the clearance comes from how far each glyph
-    actually hangs down, per kind, because a ring, a nose and a leaf do not
-    extend alike. The gap is sz * 0.34 against a descender of about sz * 0.22,
-    so it is positive at every size rather than at some of them.
-    """
-    assert "THE NAME ON TOP, THE GLYPH BENEATH IT" in page
-    assert "const my = p.y + sz * 0.34 + drop;" in page, "the glyph is above the word again"
-    assert "p.y - sz * 0.75 - face * 0.42" not in page, "the old overlapping layout is back"
-    assert "const drop = feel ? face * 0.88 : face * 0.78;" in page, \
-        "one shared guess is being used for glyphs that do not extend alike"
+    def under(word):
+        d = feels[word]
+        return [s["a"] for s in strains if unit(s["pos"]) @ d > 0.9]
+
+    happy, relaxed = under("happy"), under("relaxed")
+    assert len(happy) > 5 and len(relaxed) > 5, "too few weeds to compare"
+    assert gap(np.median(happy), np.median(relaxed)) > 60, \
+        "happy and relaxed country wear the same edge"
+    # 18 distinct ten-degree buckets, half the wheel. Measured, not guessed --
+    # the first bound here was 20 and simply wrong.
+    assert len({round(s["a"] / 10) for s in strains}) >= 16, "the accents have collapsed"
 
 
 def test_a_smell_is_a_nose(page):

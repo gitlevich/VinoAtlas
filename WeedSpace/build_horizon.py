@@ -83,7 +83,7 @@ DATA = {k: D[k] for k in ('axes', 'items', 'chance', 'total', 'effectOrder')}
 # in test_pipeline.py -- it is simply not a thing this page says any more.
 DATA['strains'] = [{'n': t['n'], 'r': t['r'],
                     'p': [t['p'][0], t['p'][2], t['p'][1]]}
-                   for t in D['strains']]
+                   for t in D['strains']]   # 'a', the accent hue, is added below
 # Hue follows the direction a word lies in, so words sitting together get
 # neighbouring colours and words sitting apart get separated ones. Nothing is
 # assigned by hand: the arrangement does it.
@@ -95,15 +95,27 @@ for i in D['items']:
     i['lit'] = _even(ang, (58 if i['kind'] == 'feel' else 71) + 14 * lift)
     i['sat'] = 74 if i['kind'] == 'feel' else 58
 HUE = {i['w']: (i['hue'], i['lit']) for i in D['items'] if i['kind'] == 'feel'}
-# A weed used to take the colour of the ground it stood on, blended from the
-# feeling regions around it. That is gone: a weed is drawn as a green cannabis
-# leaf now, so the blend has no consumer, and a build that computes a field
-# nothing reads is a field that will eventually be read by mistake. The colour
-# geometry of the arrangement itself is unchanged and still tested in
-# test_pipeline.py -- it is simply not something this page says about a weed.
+# A weed is a GREEN LEAF WITH AN ACCENT. The body is green so it is recognisable
+# without being read; the edge and the stem carry the colour of the ground it
+# stands on -- the same blend of nearby feeling regions the globe paints with --
+# so it still says which country it is in. Recognisable and located, which is
+# what a flat green leaf gave up and a fully-coloured mark never had.
 def _unit(v):
     n = math.dist(v, [0, 0, 0]) or 1
     return [c / n for c in v]
+
+FEELPOS = [(_unit(i['pos']), i['hue']) for i in D['items'] if i['kind'] == 'feel']
+BLEND = 11
+for t in DATA['strains']:
+    d = _unit(t['p'])
+    cosines = [sum(a * b for a, b in zip(d, fd)) for fd, _ in FEELPOS]
+    best = max(cosines)
+    vx = vy = 0.0
+    for (fd, hue), cos in zip(FEELPOS, cosines):
+        w = math.exp((cos - best) * BLEND)
+        th = math.radians(hue)
+        vx += w * math.cos(th); vy += w * math.sin(th)
+    t['a'] = round(math.degrees(math.atan2(vy, vx)) % 360, 1)   # the accent
 # Weeds fill the body of the sphere, and you move through them. A word is a
 # bearing with no location at all, so it goes to the sky: fixed, unreachable,
 # unmoved by anything you do. A weed is a thing at a place, and its place has a
@@ -559,7 +571,8 @@ function draw() {
       }
       g.closePath();
       g.fillStyle = `hsla(112,60%,${lit3}%,${a})`; g.fill();
-      g.strokeStyle = `hsla(112,70%,${lit3 + 18}%,${a})`; g.lineWidth = 1; g.stroke();
+      g.strokeStyle = `hsla(${t.a},80%,${lit3 + 28}%,${a})`;
+      g.lineWidth = 1.3; g.stroke();
     } else {
       /* THE CANNABIS LEAF, drawn as the thing people already know.
 
@@ -595,13 +608,14 @@ function draw() {
       }
       g.closePath();
       g.fillStyle = `hsla(112,58%,${lit2}%,${a})`; g.fill();
-      g.strokeStyle = `hsla(112,70%,${lit2 + 20}%,${a})`;
-      g.lineWidth = Math.max(1, R * 0.05); g.stroke();
+      /* the edge is the ground it stands on */
+      g.strokeStyle = `hsla(${t.a},80%,${lit2 + 30}%,${a})`;
+      g.lineWidth = Math.max(1.2, R * 0.075); g.stroke();
       g.beginPath();
       g.moveTo(q.x, q.y);
       g.lineTo(q.x, q.y + R * 0.52);
-      g.strokeStyle = `hsla(112,55%,${lit2 + 8}%,${a})`;
-      g.lineWidth = Math.max(1.2, R * 0.085); g.stroke();
+      g.strokeStyle = `hsla(${t.a},70%,${lit2 + 22}%,${a})`;
+      g.lineWidth = Math.max(1.2, R * 0.09); g.stroke();
     }
     t.node = [q.x, q.y, R, a];
   }
