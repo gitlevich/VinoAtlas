@@ -453,6 +453,25 @@
 
   // -- the globe and the world agree -----------------------------------------
 
+  await T('nothing in the page can be selected by accident', () => {
+    /* dragging the view is the main gesture; a drag that catches the legend or
+       the globe behind it turns half the screen blue */
+    const sel = el => getComputedStyle(el).webkitUserSelect || getComputedStyle(el).userSelect;
+    const must = [document.body, document.getElementById('globe'),
+                  document.getElementById('names'), document.getElementById('view'),
+                  document.querySelector('.lede'), document.querySelector('#list .s'),
+                  document.querySelector('h1'), document.getElementById('bClear')];
+    must.forEach(e => { ok(e, 'a checked element is missing'); ok(sel(e) === 'none', (e.id || e.className || e.tagName) + ' is selectable'); });
+
+    /* and prove it with a real selection attempt across the whole document */
+    const r = document.createRange();
+    r.selectNodeContents(document.body);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    const got = String(s).trim();
+    s.removeAllRanges();
+    ok(got === '', 'selecting the document still yielded ' + got.length + ' characters');
+  });
+
   await T('G toggles the globe, and the hover stays readable over it', async () => {
     const g = document.getElementById('globe');
     const before = g.style.display;

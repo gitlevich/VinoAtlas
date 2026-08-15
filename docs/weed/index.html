@@ -6,8 +6,13 @@
   --smell:#e5a44e; --feel:#2fd2e4;
 }
 *{box-sizing:border-box}
+/* Nothing here is text to be read off and copied: every word is a place you
+   look at or a thing you tick. Dragging the view is the main gesture, and a drag
+   that selects the legend behind it turns half the screen blue. */
 body{margin:0;background:var(--ground);color:var(--ink);overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
   font:13px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+::selection{background:transparent}
 #wrap{position:fixed;inset:0;display:grid;grid-template-columns:206px 1fr;gap:1px;
   background:var(--line)}
 .col{background:var(--ground);display:flex;flex-direction:column;overflow:hidden}
