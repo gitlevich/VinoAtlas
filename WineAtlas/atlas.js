@@ -352,16 +352,7 @@ function glass(x, y, R, i, a, mine) {
      own name, grape or region says so, and every one of those can be checked by
      reading it. */
   const fizz = fz;
-  /* YOURS IS A RING. It was a soft purple halo, and at the size a glass is
-     actually drawn -- a median six pixels -- a gradient falling to nothing over
-     a radius and a third is a smudge, not a mark: measured at 608 painted pixels
-     against 156, and invisible at a glance. A hard thin circle survives at six
-     pixels because it is an edge, and an edge is the one thing that does. */
-  if (mine) {
-    g.strokeStyle = `rgba(${MARKRGB},${Math.min(1, a * 0.95)})`;
-    g.lineWidth = Math.max(1, R * 0.10);
-    g.beginPath(); g.arc(x, y - R*0.10, R*1.22, 0, 6.2832); g.stroke();
-  }
+
   const bowl = () => {
     g.beginPath();
     g.moveTo(x - rw, top);
@@ -399,6 +390,26 @@ function glass(x, y, R, i, a, mine) {
     g.lineWidth = Math.max(0.8, R*0.05);
     bowl(); g.stroke();
   }
+  /* YOU HAVE BOUGHT THIS: a tick beside the glass. It was a soft purple halo
+     first, which at six pixels is a smudge and not a mark, and then a ring --
+     which reads, being an edge, but says nothing: a circle round a thing is only
+     "this one", and the page already knows which one you are pointing at. A tick
+     is the mark for having it. */
+  if (mine) {
+    /* with a floor, so it stays a tick when the glass shrinks rather than
+       shrinking with it into a nick */
+    const u = Math.max(2.9, R*0.66);
+    const tx = x + rw + Math.max(1.6, R*0.30), ty = top + dep*0.30;
+    g.strokeStyle = `rgba(${MARKRGB},1)`;
+    g.lineWidth = Math.max(1.7, R * 0.22);
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath();
+    g.moveTo(tx - u*0.85, ty);
+    g.lineTo(tx - u*0.2, ty + u*0.72);
+    g.lineTo(tx + u*0.9, ty - u*0.8);
+    g.stroke();
+  }
+
   /* stem and foot, in the colour of the ground the glass stands on */
   g.strokeStyle = near(hex2hsl(WACC[i]), a);
   g.lineWidth = Math.max(1, R*0.085);
@@ -441,7 +452,10 @@ function draw() {
     if (!q) continue;
     m.seen = true;
     const off = Math.hypot(q.x - W/2, q.y - H/2) / (Math.min(W, H) * 0.62);
-    const attend = 1 / (1 + off*off*1.5);
+    /* Attention falls off toward the edge of the eye, but not off a cliff. At
+       the full field almost everything IS off-centre, and a square law took the
+       whole shop down with it -- zoom out and the wines stopped being wines. */
+    const attend = 1 / (1 + off*off*0.55);
     /* A wine that commits to nothing is a SMALLER thing, not merely a nearer
        one. The uncommitted ones sit near the middle and so near you, and plain
        1/distance would make the blandest wine in the shop the biggest object in
@@ -460,31 +474,23 @@ function draw() {
        as it should -- how far a wine is from middling is not a function of where
        the reader is standing -- and the whole of that reading is carried by how
        plainly it is drawn instead. */
-    let a = Math.max(DARK ? 0.72 : 0.78, Math.min(1, 0.42 + 1.6 * m.lean) * q.edge * attend);
+    let a = Math.max(DARK ? 0.82 : 0.82, Math.min(1, 0.52 + 1.5 * m.lean) * q.edge * attend);
     if (held && !held.has(m)) a *= 0.34;
-    let R = Math.max(1.8, (54 * m.lean / q.dist) * Math.pow(WIDE/FOV, 0.5)) * q.edge;
+    /* the floor is on the drawn size, so the fade toward the edge of the eye
+       cannot take a glass below it */
+    let R = Math.max(3.2, (54 * m.lean / q.dist) * Math.pow(WIDE/FOV, 0.5) * q.edge);
     const asked = !onlyThese || onlyThese.has(m.i);
     if (!asked) { a = Math.max(0.13, a * 0.22); R *= 0.6; }
     shown.push({ m, q, a, R, asked });
   }
   shown.sort((x, y) => y.q.dist - x.q.dist);
   for (const { m, q, a, R, asked } of shown) {
-    if (R < 3.0) {
-      /* far off, a wine is a small filled bowl on a foot -- still a glass in
-         outline, never a soft dot, which would read as an aroma */
-      const wine = pour(m.i), fz = FIZZ[m.i];
-      g.beginPath();
-      g.moveTo(q.x - R*(fz ? 0.36 : 0.62), q.y - R*(fz ? 0.85 : 0.70));
-      g.lineTo(q.x + R*(fz ? 0.36 : 0.62), q.y - R*(fz ? 0.85 : 0.70));
-      g.lineTo(q.x, q.y + R*(fz ? 0.75 : 0.55));
-      g.closePath();
-      g.fillStyle = `hsla(${wine[0]},${wine[1]}%,${wine[2]}%,${a})`; g.fill();
-      if (MINE[m.i] && asked) {
-        g.strokeStyle = `rgba(${MARKRGB},${a*0.85})`; g.lineWidth = 1; g.stroke();
-      }
-    } else {
-      glass(q.x, q.y, R, m.i, a, MINE[m.i] && asked);
-    }
+    /* THERE IS NO SMALL FORM ANY MORE. Below three pixels a wine used to become
+       a plain triangle, and zoomed out that was nearly the whole shop: the colour
+       survived and everything else -- the vessel, the flute, the tick -- was
+       gone. The floor on R is above the size the triangle existed for, so a wine
+       is always a glass. */
+    glass(q.x, q.y, R, m.i, a, MINE[m.i] && asked);
     m.node = [q.x, q.y, R, a];
   }
 
@@ -888,6 +894,8 @@ addEventListener('keydown', e => {
    arrangement rather than a diagram of it. Your heading is always the centre of
    the disc, which makes dragging the globe the same act as turning your head. */
 const GS = 224, GR = 102, GC = 112;
+/* a light up and to the left, so the ball has a terminator and a limb */
+const LIGHT = (v => { const n = Math.hypot(...v); return v.map(x => x/n); })([-0.42, 0.52, 0.74]);
 let showMini = true;
 const gimg = mg.createImageData(GS, GS);
 function hsl2rgb(h, s, l) {
@@ -902,7 +910,10 @@ function hsl2rgb(h, s, l) {
 function drawMini() {
   if (!showMini || !live) return;
   const F = frame(), fwd = unit(F.f), gr = unit(F.r), gu = unit(F.u);
-  const rgb = POLES.map(p => hsl2rgb(p.hsl[0], p.hsl[1], fit(p.hsl[2])));
+  /* taken at full strength: on a ball the size of a postage stamp a muted hex
+     is no colour at all, and ten of them averaged is beige */
+  const rgb = POLES.map(p => hsl2rgb(p.hsl[0], Math.min(96, p.hsl[1] + 28),
+                                     Math.max(46, Math.min(64, p.hsl[2] + 2))));
   const px = gimg.data;
   for (let j = 0; j < GS; j++) {
     const v = (GC - j) / GR;
@@ -921,22 +932,31 @@ function drawMini() {
       }
       let r = 0, g2 = 0, b2 = 0, tot = 0;
       for (let q = 0; q < POLES.length; q++) {
-        const wq = Math.exp((t[q] - bs) * 15);
-        if (wq < 0.012) continue;
+        /* REGIONS, NOT AN AVERAGE. Four of the ten poles lie within fourteen
+           degrees of each other, so a soft blend returns their mean and the whole
+           face goes beige. */
+        const wq = Math.exp((t[q] - bs) * 45);
+        if (wq < 0.004) continue;
         r += rgb[q][0]*wq; g2 += rgb[q][1]*wq; b2 += rgb[q][2]*wq; tot += wq;
       }
       const edge = Math.cos(FOV / 2);
       const vis = w >= edge ? 1 : Math.max(0, 1 - (edge - w) / 0.10);
-      /* It is a reference, not the subject: painted solid over most of its panel
-         it would be the brightest thing on the screen by an order of magnitude,
-         sitting in the corner of a nearly empty field. */
       r /= tot; g2 /= tot; b2 /= tot;
+      /* A BALL, LIT. It was shaded by depth alone -- brightest dead centre,
+         falling evenly to the rim -- which is what a disc looks like, not a
+         sphere. A light off to one side gives it a terminator and a limb, and
+         those are what say sphere without anything being written down. */
+      const lam = Math.max(0, u*LIGHT[0] + v*LIGHT[1] + w*LIGHT[2]);
+      const lit = 0.14 + 0.96 * Math.pow(lam, 0.8);
+      const limb = 0.52 + 0.48 * w;
+      const seen = 0.55 + 0.45 * vis;          // outside your field, quieter
+      const spec = 110 * Math.pow(lam, 44);    // one small highlight, not a blowout
       if (DARK) {
-        const shade = 0.66 * (0.28 + 0.60*w) * (0.40 + 0.60*vis);
-        px[k] = r*shade; px[k+1] = g2*shade; px[k+2] = b2*shade;
+        const f = lit * limb * seen * 0.95;
+        px[k] = r*f + spec; px[k+1] = g2*f + spec; px[k+2] = b2*f + spec;
       } else {
-        const wash = (1 - w) * 0.62 + (1 - vis) * 0.30;
-        px[k] = r + (250 - r)*wash; px[k+1] = g2 + (250 - g2)*wash; px[k+2] = b2 + (250 - b2)*wash;
+        const wash = (1 - lit*limb) * 0.5 + (1 - vis) * 0.22;
+        px[k] = r + (250-r)*wash; px[k+1] = g2 + (250-g2)*wash; px[k+2] = b2 + (250-b2)*wash;
       }
       px[k+3] = 255;
     }
