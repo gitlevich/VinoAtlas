@@ -36,6 +36,14 @@ Three kinds of thing live there, and the difference between them is the design.
   it is from middling, so the middle of the shop is where the unremarkable wines
   are and you are standing in it.
 
+**On moving.** Turning is measured in fields, not in pixels: a drag across the
+pane turns you by one and a half of whatever you can see, which is 7.8° per
+hundred pixels at rest and 0.9° at the closest the view goes. A fixed
+radians-per-pixel made the same drag sweep eight times further leaned in than
+leaned out. Walking glides — a pinch sets where you are heading and the view
+eases there, so the motion is made of time rather than of the wheel's event
+stream. The rim is 3.8 from the middle and the field closes to 9°.
+
 **On the crowd.** 1,652 glasses is a lot to be standing among, and three things
 answer it. The view **opens at 74°** rather than the 120° a head takes in, which
 is two and a half times fewer marks at once and a quarter more size on each — and
@@ -94,7 +102,7 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **86 of 90 pass**; the four that
+Every test name states an acceptance criterion. **89 of 93 pass**; the four that
 do not are the open design question below, not defects.
 
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from

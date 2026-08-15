@@ -132,6 +132,20 @@ function frame() {
   return { f: [cp*cy, sp, cp*sy], r: [-sy, 0, cy], u: [-sp*cy, cp, -sp*sy] };
 }
 
+/* TURNING IS MEASURED IN FIELDS, NOT IN PIXELS. The rate was a fixed 0.0032
+   radians a pixel whatever the field, and a radian is worth W/FOV pixels -- so
+   leaning in from 74 degrees to 9 made the same drag sweep the scene eight times
+   further, and the closer you looked the more violently it moved. A hundred
+   pixels turned 18.3 degrees at either end.
+
+   Now it is proportional to the field, set so that a drag right across the pane
+   turns you by one and a half of whatever you can see: 10.4 degrees per hundred
+   pixels at rest, 0.8 at the closest the view goes. Half again over grabbing the
+   scene and pulling it, which is 1.0, so a swipe still gets you somewhere; and
+   the coast after a flick is damped more gently to match. */
+const TURN = 1.5;
+const rate = () => TURN * FOV / (W || 1);
+
 /* A flat pinhole cannot carry 120 degrees -- it stretches the edges into the
    thing that feels wrong. This maps ANGLE to screen the way a panorama does, so
    a degree turned is the same number of pixels wherever you look. Apparent size
@@ -144,7 +158,12 @@ function place(P, F) {
   const ppr = W / FOV;
   const y = H/2 - ph * ppr;
   if (y < -60 || y > H + 60) return null;
-  const off = Math.abs(th) / (FOV / 2);
+  /* Attention falls off toward the edge of vision, as it does in a head -- and it
+     stops falling at the edge. The slack in the cull above is a fixed 0.05
+     radians, which is a sliver of a wide field and a third of a narrow one, so at
+     nine degrees this ran past 1 and returned NEGATIVE: marks drawn at a negative
+     radius, inside out. Clamped at both ends. */
+  const off = Math.min(1, Math.abs(th) / (FOV / 2));
   return { x: W/2 + th * ppr, y, ppr, dist: len(P),
            edge: 1 - 0.55 * Math.pow(Math.max(0, off - 0.35) / 0.65, 1.6) };
 }
@@ -154,7 +173,16 @@ function place(P, F) {
    things really do slide past far ones. That is the depth cue a room gives you
    for free and a bare origin throws away. The neck must stay shorter than the
    nearest glass -- 2.87 here -- or turning would swing the eye through the shop. */
-const NECK = 2.2, REACH = 5.0, ROAM = REACH - NECK;
+/* The rim was 5.0, which left 2.8 to walk. Out to 6.0 there is a third as far
+   again to go, which is most of what "let me come closer" asks for -- the rest
+   is the field of view, which now closes to nine degrees instead of seventeen.
+
+   The price, stated rather than asserted away: the shop THINS out there. Sampled
+   over 1,440 headings from the rim, 1.3% of them held nothing at all at the old
+   rim and 7.6% do at this one, almost all of them looking steeply up or down,
+   where the shop is only its own age axis. You can get somewhere empty now. You
+   still cannot get outside. */
+const NECK = 2.2, REACH = 6.0, ROAM = REACH - NECK;
 let STAND = [0, 0, 0], EYE = [0, 0, 0];
 const eyeAt = F => { EYE = [STAND[0] + F.f[0]*NECK, STAND[1] + F.f[1]*NECK, STAND[2] + F.f[2]*NECK]; };
 const here = P => [P[0] - EYE[0], P[1] - EYE[1], P[2] - EYE[2]];
@@ -197,8 +225,30 @@ function walk(step) {
   /* the shop closes around you rather than ending: press on at the rim and you
      slide along it instead of stepping outside and looking in */
   if (n > ROAM) for (let i = 0; i < 3; i++) p[i] *= ROAM / n;
-  STAND = p;
+  STAND = p; standWant = null;
   nudge();
+}
+
+/* WALKING GLIDES. A wheel arrives as a burst of small separate events, and a
+   fixed jump on each of them is a stutter however small the jump is: the motion
+   is made of the event stream rather than of time. So the gesture sets where you
+   are heading and the loop eases you there, the same way the field of view is
+   already eased. The step the gesture asks for is halved to match, since the
+   glide keeps going after the fingers stop. */
+let standWant = null;
+function glide(step) {
+  const F = frame(), b = standWant || STAND;
+  const p = [b[0] + F.f[0]*step, b[1] + F.f[1]*step, b[2] + F.f[2]*step];
+  const n = len(p);
+  if (n > ROAM) for (let i = 0; i < 3; i++) p[i] *= ROAM / n;
+  standWant = p;
+}
+function easeStand() {
+  if (!standWant) return false;
+  const d = [standWant[0] - STAND[0], standWant[1] - STAND[1], standWant[2] - STAND[2]];
+  if (len(d) < 0.0015) { STAND = standWant; standWant = null; return false; }
+  STAND = [STAND[0] + d[0]*0.16, STAND[1] + d[1]*0.16, STAND[2] + d[2]*0.16];
+  return true;
 }
 function faceTo(d) {
   const n = len(d) || 1;
@@ -702,7 +752,7 @@ cv.addEventListener('pointermove', e => {
   if (!down) return;
   const dx = e.clientX - lx, dy = e.clientY - ly;
   moved += Math.abs(dx) + Math.abs(dy);
-  vYaw = -dx * 0.0032; vPitch = dy * 0.0032;
+  vYaw = -dx * rate(); vPitch = dy * rate();
   yaw += vYaw; pitch = Math.max(-PIT, Math.min(PIT, pitch + vPitch));
   lx = e.clientX; ly = e.clientY;
   nudge();
@@ -764,7 +814,7 @@ cv.addEventListener('pointerup', e => {
 
 function lean(factor, towardX, towardY) {
   const before = fovWant;
-  fovWant = Math.max(WIDE * 0.14, Math.min(WIDE, fovWant * factor));
+  fovWant = Math.max(WIDE * 0.075, Math.min(WIDE, fovWant * factor));
   if (towardX !== undefined && fovWant < before) {
     const ppr = W / before;
     const th = (towardX - W/2) / ppr, ph = (H/2 - towardY) / ppr;
@@ -794,18 +844,22 @@ cv.addEventListener('wheel', e => {
        then walks back. Last-in-first-out, so the two directions retrace the same
        path -- and so that zooming out always does something. */
     const out = e.deltaY > 0;
-    if (out) { if (fovWant < OPEN * 0.995) lean(1.09); else walk(-0.16); }
-    else { if (len(STAND) >= ROAM - 1e-6) lean(0.92); else walk(0.16); }
+    const at = standWant || STAND;
+    if (out) { if (fovWant < OPEN * 0.995) lean(1.055); else glide(-0.11); }
+    else { if (len(at) >= ROAM - 1e-6) lean(0.948); else glide(0.11); }
   } else if (e.shiftKey) {
-    lean(e.deltaY > 0 ? 1.07 : 0.935);
+    lean(e.deltaY > 0 ? 1.045 : 0.957);
   } else {
     /* The two axes do not share a sign here, because a trackpad's horizontal and
        vertical deltas do not share one once "natural" scrolling is in play. Do
        not tidy these into one sign; that is what made it wrong. */
     target = null; vYaw = vPitch = 0;
-    yaw -= e.deltaX * 0.0032;
-    pitch = Math.max(-PIT, Math.min(PIT, pitch + e.deltaY * 0.0032));
+    yaw -= e.deltaX * rate();
+    pitch = Math.max(-PIT, Math.min(PIT, pitch + e.deltaY * rate()));
   }
+  /* one frame of the glide happens here and now, so the gesture always shows
+     something even where the animation clock is stopped */
+  step();
   nudge();
 }, { passive: false });
 
@@ -1055,7 +1109,8 @@ matchMedia('(prefers-color-scheme:dark)').addEventListener('change', () => { if 
    wants to advance the view by hand asks for a step. */
 function step() {
   let moving = false;
-  if (Math.abs(fovWant - FOV) > 0.0004) { FOV += (fovWant - FOV)*0.16; moving = true; }
+  if (easeStand()) moving = true;
+  if (Math.abs(fovWant - FOV) > 0.0004) { FOV += (fovWant - FOV)*0.12; moving = true; }
   else if (FOV !== fovWant) { FOV = fovWant; moving = true; }
   if (target) {
     let dy = target[0] - yaw;
@@ -1063,10 +1118,10 @@ function step() {
     while (dy < -Math.PI) dy += 2*Math.PI;
     const dp = target[1] - pitch;
     if (Math.abs(dy) < 0.0015 && Math.abs(dp) < 0.0015) target = null;
-    else { yaw += dy*0.16; pitch += dp*0.16; moving = true; }
+    else { yaw += dy*0.12; pitch += dp*0.12; moving = true; }
   } else if (Math.abs(vYaw) > 0.00004 || Math.abs(vPitch) > 0.00004) {
     yaw += vYaw; pitch = Math.max(-PIT, Math.min(PIT, pitch + vPitch));
-    vYaw *= 0.92; vPitch *= 0.92; moving = true;
+    vYaw *= 0.95; vPitch *= 0.95; moving = true;
   }
   if (approaching > 0) { stepApproach(); moving = true; }
   if (moving) { draw(); readout(); drawMini(); }
@@ -1097,7 +1152,9 @@ return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, r
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },
          get FOV() { return FOV; }, set FOV(v) { FOV = fovWant = v; },
-         get STAND() { return STAND; }, set STAND(v) { STAND = v; },
+         glide, easeStand,
+         get STAND() { return STAND; }, set STAND(v) { STAND = v; standWant = null; },
+         get standWant() { return standWant; },
          get EYE() { return EYE; },
          get held() { return held; }, set held(v) { held = v; },
          get live() { return live; },

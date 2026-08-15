@@ -651,9 +651,14 @@
     ok(Math.hypot(...AT.STAND) <= AT.ROAM + 1e-6, 'held at the rim');
     ok(Math.hypot(...AT.EYE) <= AT.REACH + 1e-6, 'and so is the eye');
     const rim = Math.min(...sweep());
-    ok(rim > 0, 'every way you turn at the rim there are still wines');
-    /* and the price is stated rather than hidden: out there the shop is thinner */
+    /* and the price is stated rather than hidden: out there the shop is thinner.
+       It is NOT true that every view from the rim holds something -- sampled over
+       1,440 headings, 7.6% of them hold nothing, almost all looking steeply up or
+       down where the shop is only its own age axis. What holds is that you cannot
+       get outside it, and that the middle is the fuller place to stand. */
     ok(rim < middle, `sparsest heading: ${rim} at the rim against ${middle} in the middle`);
+    ok(middle > 8, `and the middle is never empty: ${middle}`);
+    ok(Math.max(...sweep()) > 200, 'the shop is still all round you, just further off');
   });
 
   await T('every measure is named at both ends, and the ends are opposite', () => {
@@ -834,6 +839,55 @@
     frames(60);
     ok(el('atlasWide').style.display === 'none', 'and goes again');
     ok(Math.abs(AT.FOV - AT.OPEN) < 0.02, 'back at the field it opened at');
+  });
+
+  await T('turning is measured in fields, so leaning in does not fling you round', () => {
+    /* A fixed radians-per-pixel meant the same drag swept the scene eight times
+       further at nine degrees than at seventy-four: the closer you looked, the
+       more violently it moved. The rate is proportional to the field now. */
+    const spin = fov => {
+      AT.FOV = fov; AT.yaw = 0; AT.pitch = 0;
+      cvA.dispatchEvent(new WheelEvent('wheel',
+        { deltaX: 100, deltaY: 0, bubbles: true, cancelable: true }));
+      const d = Math.abs(AT.yaw); AT.yaw = 0; return d;
+    };
+    const open = spin(AT.OPEN), close = spin(AT.WIDE * 0.075);
+    ok(close < open / 5, `${(close*57.3).toFixed(2)} deg against ${(open*57.3).toFixed(2)} leaned out`);
+    /* and what it is proportional TO: a drag across the pane turns you by one and
+       a half of whatever you can see, at either end */
+    for (const fov of [AT.OPEN, AT.WIDE * 0.3, AT.WIDE * 0.075])
+      near(Math.round(spin(fov) * AT.W / 100 / fov * 100) / 100, 1.5);
+    AT.FOV = AT.OPEN;
+  });
+
+  await T('walking glides: a pinch sets where you are going, not where you are', () => {
+    AT.STAND = [0, 0, 0]; AT.FOV = AT.OPEN; AT.yaw = 0; AT.pitch = 0;
+    cvA.dispatchEvent(new WheelEvent('wheel',
+      { deltaY: -3, ctrlKey: true, bubbles: true, cancelable: true }));
+    ok(AT.standWant, 'it set a destination');
+    const want = AT.len(AT.standWant), first = AT.len(AT.STAND);
+    ok(first > 0, 'and moved on the frame the gesture arrived');
+    ok(first < want * 0.4, `no jump: ${first.toFixed(3)} of ${want.toFixed(3)}`);
+    frames(80);
+    ok(Math.abs(AT.len(AT.STAND) - want) < 0.01, 'and arrived');
+    ok(!AT.standWant, 'the glide is done');
+    AT.STAND = [0, 0, 0];
+  });
+
+  await T('you can get closer than you could, and still not outside', () => {
+    ok(AT.ROAM > 3.5, `${AT.ROAM.toFixed(1)} to walk`);
+    ok(AT.REACH - AT.NECK === AT.ROAM);
+    /* and the view closes further than it did -- nine degrees, not seventeen */
+    AT.FOV = AT.OPEN;
+    for (let i = 0; i < 60; i++) AT.lean(0.9);
+    frames(120);
+    ok(AT.FOV < AT.WIDE * 0.09, `closes to ${(AT.FOV*57.3).toFixed(1)} degrees`);
+    /* nothing is drawn inside out down there: the fall-off toward the edge of
+       vision used to run past 1 at a narrow field and return a NEGATIVE radius */
+    AT.STAND = [0, 0, 0]; AT.draw();
+    const rs = AT.WMARK.filter(m => m.node).map(m => m.node[2]);
+    ok(rs.length && Math.min(...rs) > 0, 'every mark has a positive size');
+    AT.FOV = AT.OPEN;
   });
 
   await T('the shop can fill the screen, and esc gives the page back', () => {
