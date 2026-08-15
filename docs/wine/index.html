@@ -282,22 +282,26 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 /* A DRAWER, WITH A HANDLE LEFT BEHIND. Closed, the column narrows to a rail that
    still carries the panel's name, so the way back is the thing you are looking
    at rather than a button somewhere else. */
+/* every one of them on the SAME ROW: a rail and the panel it replaces share a
+   column, and without this the grid stacked them into rows of their own and left
+   a band of nothing above the shop */
+.atlas>*{grid-row:1}
 #atlasWordsTab,.atlas-side{grid-column:1}
 .atlas-view{grid-column:2}
 .chat,#atlasChatTab{grid-column:3}
-.atlas.nowords{grid-template-columns:34px minmax(0,1fr) 330px}
-.atlas.nochat{grid-template-columns:236px minmax(0,1fr) 34px}
-.atlas.nowords.nochat{grid-template-columns:34px minmax(0,1fr) 34px}
+.atlas.nowords{grid-template-columns:26px minmax(0,1fr) 330px;column-gap:8px}
+.atlas.nochat{grid-template-columns:236px minmax(0,1fr) 26px;column-gap:8px}
+.atlas.nowords.nochat{grid-template-columns:26px minmax(0,1fr) 26px;column-gap:8px}
 .atlas.nowords>.atlas-side{display:none}
 .atlas.nochat>.chat{display:none}
 .atlas-rail{display:none;flex-direction:column;align-items:center;justify-content:flex-start;
-  gap:10px;padding:12px 0;cursor:pointer;font:inherit;border-radius:13px;
+  gap:7px;padding:8px 0;cursor:pointer;font:inherit;border-radius:9px;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-3);transition:.12s}
 .atlas.nowords>#atlasWordsTab,.atlas.nochat>#atlasChatTab{display:flex}
 .atlas-rail:hover{color:var(--ink);border-color:var(--ink-3)}
 .atlas-rail:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
-.atlas-rail svg{width:16px;height:16px;flex:none}
-.atlas-rail b{writing-mode:vertical-rl;font-size:11px;font-weight:600;letter-spacing:.11em;
+.atlas-rail svg{width:13px;height:13px;flex:none}
+.atlas-rail b{writing-mode:vertical-rl;font-size:9.5px;font-weight:600;letter-spacing:.10em;
   text-transform:uppercase}
 .three .atlas-shut{display:none}
 .atlas-shut{display:flex;align-items:center;justify-content:center;width:24px;height:24px;
@@ -401,6 +405,10 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 #atlasName .mtrk i{display:block;height:100%;border-radius:2px}
 #atlasName .mnm{font-size:11px;color:var(--ink-2);white-space:nowrap}
 #atlasName .mend{font-size:10.5px;color:var(--ink-3);white-space:nowrap;text-align:right}
+/* offered, not buried: the one thing the sommelier can do in this space that
+   nobody would think to ask for */
+#atlasOffer{margin-bottom:10px}
+#atlasOffer[hidden]{display:none}
 /* FILL THE SCREEN. 1,652 wines in a pane a thousand pixels wide is about one
    glass every forty pixels, and a glass is where the colour of the wine is. The
    overlay is the same view with two and a half times the room; nothing about the
@@ -595,6 +603,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         Anthropic or OpenAI you picked above — nothing else is sent. Your key is saved in this browser only,
         stays across visits, and goes only to them.</p>
       </div>
+      <div id="atlasOffer" hidden><button class="chip" id="atlasTour">Walk me through my ten orders</button></div>
       <div class="msgswrap"><div id="msgs"></div>
         <span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M11 7 7 11h4zM11 2 2 11h2.5L11 4.5z"/></svg></span></div>
       <div id="askOn">
@@ -1107,7 +1116,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='3e64925d';
+const BUILD='17275f4d';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -1390,6 +1399,7 @@ The user may name a measure with #weight #grip #oak #fruit #age; "more #oak" mea
 Answer with JSON only, nothing else:
 {"say":"one short plain sentence answering the user","point":{"weight":n,"grip":n,"oak":n,"fruit":n,"maturity":n},"hold":{"oak":[0,0.3]},"act":{"tab":"find","kind":0,"heading":true,"hideOwned":false,"hideVoted":false,"pin":"exact wine name","show":"sigil","like":["exact wine name"],"writeTaste":true}}
 "say" is required: one short plain sentence for the user. Send "point" only when the user's words move the point; send "hold" only for a stated hard requirement, as [low, high] on 0..1.
+"atlas" drives the space in the Atlas tab, and it opens that tab first: {"face":"a pole, a word in the list, or a wine by name"} turns him to face it, {"faceTo":[x,y,z]} turns him to a bearing, {"zoom":0..1} sets how close he is looking (0 the whole field, 1 the closest), {"walk":0.5} steps him forward and a negative number back, {"tick":["cedar"],"untick":["citrus"]} light the wines described that way, {"clear":true} unticks everything, {"point":"a wine by name"} turns to it and opens its card, {"words":false} and {"sommelier":false} fold the side panels, {"screen":true} fills the window. "tour" takes him through his ten orders in that space, oldest to newest, saying what moved between each -- offer it when he asks how his buying has changed, or how to read the Atlas.
 "act" drives the page itself -- everything the user can click except his marks and Reset. Each field is optional: "tab" opens a section (find = the finder; palate = his wines against the shelf; move = how his buying changed; pop = what happens to a drinker's first decade; how = what the words mean), "kind" presses one of his four kind buttons (0 to 3, the order listed above), "heading" sets the point to where his buying is heading, "hideOwned"/"hideVoted" set the finder's filters, "pin" holds a named wine's shape on his radar (null releases it), "show" brings one part of the page into view and rings it -- one of: sigil (the whole taste card), measures (the five band sliders), shape (the five-cornered drawing of his taste), list (the wines found), ask (this sommelier panel), kinds (his four buying kinds), filters (the two hiding switches), marks (the button that downloads his marks). "like" sets the point to the middle of the named wines, exactly as if he had named them himself; "writeTaste" measures the bands his own buying stays inside and writes them into this box for him to correct. Use "act" when his words ask to see, learn, or do something, never to decorate. Everything he can do here, you can do -- except marking a wine right or wrong, and Reset. Those are his: his marks are the measurement, and you must never cast them.
 In "say", the only measure names allowed are: body, tannin grip, oak, fruit character, age. The JSON key for age is "maturity"; in speech it is always age. The interface calls the point "the wine you are asking for" -- use that phrase when you refer to it, never "the point".
 
@@ -1446,6 +1456,11 @@ function applyAct(act){
   }
   if(act.writeTaste){el('mySigil').click(); flash(el('mySigil'));}
   if(act.show) showPart(act.show);
+  /* the Atlas is a place, and everything the reader can do in it the sommelier
+     can do too -- turn, walk, change the field, tick a word, point at a bottle,
+     fold a panel, fill the screen. Marking a wine right or wrong stays his. */
+  if(act.atlas){ if(el('s-atlas').hidden) el('t-atlas').click(); ATLAS.act(act.atlas); }
+  if(act.tour) ATLAS.tour();
   if('pin' in act){
     const w=act.pin?S.wines.find(x=>x.name.toLowerCase()===String(act.pin).toLowerCase()):null;
     pinned=w?w.id:null;
@@ -3327,6 +3342,22 @@ function step() {
     vYaw *= 0.95; vPitch *= 0.95; moving = true;
   }
   if (approaching > 0) { stepApproach(); moving = true; }
+  if (tourQ && !target) { if (tourStep()) moving = true; }
+  /* POINTING AT A NEAR BOTTLE TAKES MORE THAN ONE TURN. Where a thing lies is
+     measured from the EYE, and the eye rides a neck -- so turning toward it MOVES
+     it. Told once, the head landed sixty degrees off a bottle two and a half
+     units away. The bearing is taken again every frame until it stops changing,
+     which is what a head does when it looks at something close. */
+  if (pointWant !== null) {
+    const d = unit(here(WPOS[pointWant]));
+    const off = Math.acos(Math.max(-1, Math.min(1, dot(unit(frame().f), d))));
+    if (off > 0.004 && ++pointTries < 400) { faceTo(d); moving = true; }
+    else {
+      const m = WMARK[pointWant];
+      if (m && m.node) hoverAt(m.node[0], m.node[1]);
+      pointWant = null; pointTries = 0;
+    }
+  }
   if (moving) { draw(); readout(); drawMini(); }
   return moving;
 }
@@ -3342,8 +3373,116 @@ function step() {
   if (n) { const d = unit(v); yaw = Math.atan2(d[2], d[0]); pitch = Math.asin(d[1]); }
 })();
 
+/* ---- what an agent can do here -------------------------------------------
+   Parity: everything the reader can do in this space, the sommelier can do too.
+   It turns the head, walks, changes the field, ticks and unticks words, points
+   at a bottle, folds the panels and fills the screen. It cannot mark a wine
+   right or wrong -- that is his, everywhere on this page. */
+function named(what) {
+  const s0 = String(what).toLowerCase().trim();
+  const pole = POLES.find(p => p.w.toLowerCase() === s0);
+  if (pole) return pole.dir;
+  const term = TERMS.find(t => t.w.toLowerCase() === s0);
+  if (term) return unit(term.pos);
+  const i = S.wines.findIndex(w => w.name.toLowerCase() === s0);
+  if (i >= 0) return unit(here(WPOS[i]));
+  return null;
+}
+let pointWant = null, pointTries = 0;
+function setWord(w, on) {
+  const row = [...wordList.children].find(r => r.dataset.w === String(w).toLowerCase());
+  if (!row) return;
+  if (state.has(row.dataset.w) !== !!on) row.click();
+}
+function act(a) {
+  if (!a || typeof a !== 'object') return;
+  if (a.words !== undefined) fold('nowords', !a.words);
+  if (a.sommelier !== undefined) fold('nochat', !a.sommelier);
+  if (a.screen !== undefined) fill(!!a.screen);
+  if (a.clear) el('atlasClear').click();
+  if (Array.isArray(a.tick)) a.tick.forEach(w => setWord(w, true));
+  if (Array.isArray(a.untick)) a.untick.forEach(w => setWord(w, false));
+  if (a.face) { const d = named(a.face); if (d) faceTo(d); }
+  if (Array.isArray(a.faceTo) && a.faceTo.length === 3) faceTo(a.faceTo);
+  if (typeof a.zoom === 'number') {
+    fovWant = FOV = WIDE * Math.exp(-Math.max(0, Math.min(1, a.zoom)) * LSPAN);
+    el('atlasWide').style.display = fovWant < OPEN * 0.99 ? '' : 'none';
+    showZoom();
+  }
+  if (typeof a.walk === 'number') glide(a.walk);
+  if (a.point) {
+    const i = S.wines.findIndex(w => w.name.toLowerCase() === String(a.point).toLowerCase());
+    if (i >= 0) { pointWant = i; pointTries = 0; }
+  }
+  nudge();
+}
+
+/* ---- the tour ------------------------------------------------------------
+   Ten orders, oldest to newest, each one a place in this space: the middle of
+   the bottles it actually held. Standing at each in turn and being told what
+   moved between it and the last is the same statement the How-your-buying-changed
+   chart makes, made from inside instead of from above. */
+let tourQ = null, tourWait = 0;
+const orderMid = o => {
+  const idx = (o.ids || []).map(id => S.wines.findIndex(w => w.id === id)).filter(k => k >= 0);
+  if (!idx.length) return null;
+  const v = [0, 0, 0];
+  for (const k of idx) { const u = unit(WPOS[k]); v[0] += u[0]; v[1] += u[1]; v[2] += u[2]; }
+  return unit(v);
+};
+function tour() {
+  const os = (S.orders || []).filter(o => o.ids && o.ids.length);
+  if (!os.length) return;
+  const q = [];
+  q.push({ say: `Ten orders, oldest to newest. I will stand you at each one in turn:`
+             + ` where you are looking is the middle of the bottles it held.`,
+           zoom: 0.30, wait: 26 });
+  os.forEach((o, k) => {
+    const d = orderMid(o);
+    if (!d) return;
+    let say = `<b>Order ${o.n}</b> — ${o.ids.length} `
+            + (o.ids.length === 1 ? 'bottle' : 'bottles') + '. ';
+    if (k === 0) {
+      say += A.map(a => `${S.labels[a].toLowerCase()} ${o[a].toFixed(2)}`).join(', ') + '.';
+    } else {
+      const prev = os[k - 1];
+      const moved = A.map(a => ({ a, d: o[a] - prev[a] }))
+        .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))[0];
+      say += Math.abs(moved.d) < 0.04
+        ? 'much where the last one was.'
+        : `${S.labels[moved.a].toLowerCase()} moved toward `
+          + `<b>${S.ends[moved.a][moved.d > 0 ? 1 : 0]}</b>`
+          + ` (${prev[moved.a].toFixed(2)} to ${o[moved.a].toFixed(2)}).`;
+    }
+    q.push({ say, faceTo: d, zoom: 0.34, wait: 30 });
+  });
+  const first = os[0], last = os[os.length - 1];
+  const shift = A.map(a => ({ a, d: last[a] - first[a] }))
+    .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))[0];
+  q.push({ say: `Across the ten, what moved most is <b>${S.labels[shift.a].toLowerCase()}</b>:`
+             + ` ${first[shift.a].toFixed(2)} to ${last[shift.a].toFixed(2)}, toward`
+             + ` <b>${S.ends[shift.a][shift.d > 0 ? 1 : 0]}</b>.`
+             + ` Everything with a tick beside it is a bottle you bought.`,
+           zoom: 0.18, wait: 0 });
+  tourQ = q; tourWait = 0;
+  el('t-atlas').click();
+}
+function tourStep() {
+  if (!tourQ) return false;
+  if (tourWait > 0) { tourWait--; return true; }
+  const s0 = tourQ.shift();
+  if (!s0) { tourQ = null; return false; }
+  if (s0.say) addMsg('assistant', s0.say);
+  act({ faceTo: s0.faceTo, zoom: s0.zoom });
+  tourWait = s0.wait || 24;
+  return true;
+}
+
+el('atlasTour').onclick = () => tour();
+
 function show(on) {
   live = on;
+  el('atlasOffer').hidden = !on;          // offered where it means something
   chatHere(on && !view.classList.contains('big'));
   if (!on) fill(false);
   else refit();
@@ -3356,7 +3495,8 @@ return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, r
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },
          get FOV() { return FOV; }, set FOV(v) { FOV = fovWant = v; },
-         glide, easeStand, showZoom, zOf, FOVMIN, help, countRows,
+         glide, easeStand, showZoom, zOf, FOVMIN, help, countRows, act, tour, named,
+         get touring() { return !!tourQ; },
          get askedNothing() { return askedNothing; },
          get STAND() { return STAND; }, set STAND(v) { STAND = v; standWant = null; },
          get standWant() { return standWant; },

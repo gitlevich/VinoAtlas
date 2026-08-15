@@ -366,7 +366,7 @@
     ask.value = ''; ask.dispatchEvent(new Event('input'));
     // every verb the agent has, and the two exclusions that must not appear
     const verbs = [...new Set(applyAct.toString().match(/act\.(\w+)/g).map(v => v.slice(4)))].sort();
-    eq(verbs, ['heading','hideOwned','hideVoted','kind','like','pin','show','tab','writeTaste'],
+    eq(verbs, ['atlas','heading','hideOwned','hideVoted','kind','like','pin','show','tab','tour','writeTaste'],
       'the agent has exactly the user-facing verbs');
     ok(!verbs.includes('mark') && !verbs.includes('vote'), 'marks stay his');
     ['resetMarks','resetChat','resetTaste'].forEach(id =>
@@ -1051,6 +1051,64 @@
     ok(el('atlasGlobe').contains(el('atlasZoom')), 'the handle lives in the globe');
     ok(box('atlasZoom').top >= box('atlasMini').bottom - 1, 'under the ball, not beside it');
     el('atlasBig').click();
+  });
+
+  await T('everything the reader can do in the space, the sommelier can do', () => {
+    /* Parity. It turns, walks, changes the field, ticks a word, folds a panel,
+       fills the screen and points at a bottle. It cannot mark a wine right or
+       wrong -- that is his, everywhere on this page. */
+    el('atlasClear').click();
+    applyAct({ atlas: { face: 'heavily oaked', zoom: 0.4 } });
+    frames(220);
+    const p = AT.POLES.find(x => x.w === 'heavily oaked');
+    ok(AT.dot(AT.unit(AT.frame().f), p.dir) > 0.99, 'turned to the pole it was told');
+    ok(AT.FOV < AT.OPEN * 0.75, 'and set the field: ' + (AT.FOV*57.3).toFixed(0) + ' deg');
+    applyAct({ atlas: { tick: ['cedar'] } });
+    eq(AT.onlyThese.size, AT.TERMS.find(t => t.w === 'cedar').n, 'ticked a word');
+    applyAct({ atlas: { untick: ['cedar'] } });
+    eq(AT.onlyThese, null, 'and unticked it');
+    const grid = document.querySelector('.atlas');
+    applyAct({ atlas: { words: false } });
+    ok(grid.classList.contains('nowords'), 'folded the words away');
+    applyAct({ atlas: { words: true } });
+    ok(!grid.classList.contains('nowords'), 'and back');
+    const was = AT.len(AT.STAND);
+    applyAct({ atlas: { walk: 0.6 } });
+    frames(60);
+    ok(AT.len(AT.STAND) > was + 0.1, 'walked');
+    const k = S.wines.findIndex(w => OWNED.has(w.id));
+    applyAct({ atlas: { point: S.wines[k].name } });
+    frames(240);
+    const to = AT.unit(AT.here(ATD.pos[k]));
+    ok(AT.dot(AT.unit(AT.frame().f), to) > 0.99, 'turned to the bottle it was told');
+    /* and a card is open on it -- or on whatever is nearest the pointer there,
+       since at this density the neighbour is sometimes the closer mark */
+    ok(el('atlasName').style.display === 'block', 'and opened a card');
+    /* and the one thing it must never do */
+    ok(!/\bvotes?\b/.test(applyAct.toString()), 'it cannot cast his marks');
+    AT.STAND = [0, 0, 0]; AT.FOV = AT.OPEN; el('atlasClear').click();
+  });
+
+  await T('the tour stands him at each of his ten orders and says what moved', () => {
+    const before = chat.length;
+    el('atlasTour').click();
+    ok(AT.touring, 'it started');
+    frames(1200);
+    ok(!AT.touring, 'and finished');
+    const said = chat.slice(before).map(m => m.text);
+    const orders = S.orders.filter(o => o.ids && o.ids.length).length;
+    eq(said.length, orders + 2, `an opening, ${orders} orders, and what it adds up to`);
+    for (let n = 1; n <= orders; n++)
+      ok(said.some(t => t.includes('Order ' + n)), 'order ' + n + ' is named');
+    /* what it says about the whole run is measured, not asserted */
+    const first = S.orders.find(o => o.ids && o.ids.length);
+    const last = S.orders.filter(o => o.ids && o.ids.length).pop();
+    const moved = A.map(a => ({ a, d: last[a] - first[a] }))
+      .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))[0];
+    const end = said[said.length - 1];
+    ok(end.includes(S.labels[moved.a].toLowerCase()), 'names the measure that moved most');
+    ok(end.includes(S.ends[moved.a][moved.d > 0 ? 1 : 0]), 'and which way, in his own words');
+    ok(!/percentile|sigil|invariant/i.test(said.join(' ')), 'in the reader\'s vocabulary');
   });
 
   await T('the zoom handle drives the view, and the view drives the handle', () => {

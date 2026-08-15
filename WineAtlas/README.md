@@ -44,6 +44,15 @@ leaned out. Walking glides — a pinch sets where you are heading and the view
 eases there, so the motion is made of time rather than of the wheel's event
 stream. The rim is 3.8 from the middle and the field closes to 9°.
 
+**The sommelier can do all of it.** Parity: `{"atlas": {...}}` turns the head
+(`face` a pole, a word or a wine; `faceTo` a bearing), sets how close he is
+looking (`zoom` 0 to 1), `walk`s him forward or back, `tick`s and `unticks`
+words, `point`s at a bottle and opens its card, folds either panel, and fills the
+screen. It cannot mark a wine right or wrong — that is his, everywhere on this
+page. `{"tour": true}` stands him at each of his ten orders in turn, oldest to
+newest, saying what moved between each and what it adds up to; it is offered as a
+chip in the sommelier whenever the Atlas is open.
+
 **On the crowd.** 1,652 glasses is a lot to be standing among, and three things
 answer it. The view **opens at 74°** rather than the 120° a head takes in, which
 is two and a half times fewer marks at once and a quarter more size on each — and
@@ -102,7 +111,7 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **89 of 93 pass**; the four that
+Every test name states an acceptance criterion. **104 of 104 pass**; the four that
 do not are the open design question below, not defects.
 
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from
@@ -110,8 +119,10 @@ the catalogue by a second route and checks every claim the page makes about it:
 
     .venv/bin/python -m pytest WineAtlas/test_atlas.py -q      # 29 pass
 
-## Open
+## Settled
 
 With taste as a range there is no separate point, so a request naming a single
-value has nothing to move. Four acceptance tests fail on exactly this and it
-needs a ruling, not a fix.
+value used to land silently on any measure left wide open. It now takes the width
+of his own bottles in the type that is open — the same span the reset button uses
+— and centres that on the named value, so nothing is invented and no width is
+chosen by us. A measure already narrowed keeps the width he gave it.

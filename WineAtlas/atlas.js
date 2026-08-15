@@ -1419,6 +1419,22 @@ function step() {
     vYaw *= 0.95; vPitch *= 0.95; moving = true;
   }
   if (approaching > 0) { stepApproach(); moving = true; }
+  if (tourQ && !target) { if (tourStep()) moving = true; }
+  /* POINTING AT A NEAR BOTTLE TAKES MORE THAN ONE TURN. Where a thing lies is
+     measured from the EYE, and the eye rides a neck -- so turning toward it MOVES
+     it. Told once, the head landed sixty degrees off a bottle two and a half
+     units away. The bearing is taken again every frame until it stops changing,
+     which is what a head does when it looks at something close. */
+  if (pointWant !== null) {
+    const d = unit(here(WPOS[pointWant]));
+    const off = Math.acos(Math.max(-1, Math.min(1, dot(unit(frame().f), d))));
+    if (off > 0.004 && ++pointTries < 400) { faceTo(d); moving = true; }
+    else {
+      const m = WMARK[pointWant];
+      if (m && m.node) hoverAt(m.node[0], m.node[1]);
+      pointWant = null; pointTries = 0;
+    }
+  }
   if (moving) { draw(); readout(); drawMini(); }
   return moving;
 }
@@ -1434,8 +1450,116 @@ function step() {
   if (n) { const d = unit(v); yaw = Math.atan2(d[2], d[0]); pitch = Math.asin(d[1]); }
 })();
 
+/* ---- what an agent can do here -------------------------------------------
+   Parity: everything the reader can do in this space, the sommelier can do too.
+   It turns the head, walks, changes the field, ticks and unticks words, points
+   at a bottle, folds the panels and fills the screen. It cannot mark a wine
+   right or wrong -- that is his, everywhere on this page. */
+function named(what) {
+  const s0 = String(what).toLowerCase().trim();
+  const pole = POLES.find(p => p.w.toLowerCase() === s0);
+  if (pole) return pole.dir;
+  const term = TERMS.find(t => t.w.toLowerCase() === s0);
+  if (term) return unit(term.pos);
+  const i = S.wines.findIndex(w => w.name.toLowerCase() === s0);
+  if (i >= 0) return unit(here(WPOS[i]));
+  return null;
+}
+let pointWant = null, pointTries = 0;
+function setWord(w, on) {
+  const row = [...wordList.children].find(r => r.dataset.w === String(w).toLowerCase());
+  if (!row) return;
+  if (state.has(row.dataset.w) !== !!on) row.click();
+}
+function act(a) {
+  if (!a || typeof a !== 'object') return;
+  if (a.words !== undefined) fold('nowords', !a.words);
+  if (a.sommelier !== undefined) fold('nochat', !a.sommelier);
+  if (a.screen !== undefined) fill(!!a.screen);
+  if (a.clear) el('atlasClear').click();
+  if (Array.isArray(a.tick)) a.tick.forEach(w => setWord(w, true));
+  if (Array.isArray(a.untick)) a.untick.forEach(w => setWord(w, false));
+  if (a.face) { const d = named(a.face); if (d) faceTo(d); }
+  if (Array.isArray(a.faceTo) && a.faceTo.length === 3) faceTo(a.faceTo);
+  if (typeof a.zoom === 'number') {
+    fovWant = FOV = WIDE * Math.exp(-Math.max(0, Math.min(1, a.zoom)) * LSPAN);
+    el('atlasWide').style.display = fovWant < OPEN * 0.99 ? '' : 'none';
+    showZoom();
+  }
+  if (typeof a.walk === 'number') glide(a.walk);
+  if (a.point) {
+    const i = S.wines.findIndex(w => w.name.toLowerCase() === String(a.point).toLowerCase());
+    if (i >= 0) { pointWant = i; pointTries = 0; }
+  }
+  nudge();
+}
+
+/* ---- the tour ------------------------------------------------------------
+   Ten orders, oldest to newest, each one a place in this space: the middle of
+   the bottles it actually held. Standing at each in turn and being told what
+   moved between it and the last is the same statement the How-your-buying-changed
+   chart makes, made from inside instead of from above. */
+let tourQ = null, tourWait = 0;
+const orderMid = o => {
+  const idx = (o.ids || []).map(id => S.wines.findIndex(w => w.id === id)).filter(k => k >= 0);
+  if (!idx.length) return null;
+  const v = [0, 0, 0];
+  for (const k of idx) { const u = unit(WPOS[k]); v[0] += u[0]; v[1] += u[1]; v[2] += u[2]; }
+  return unit(v);
+};
+function tour() {
+  const os = (S.orders || []).filter(o => o.ids && o.ids.length);
+  if (!os.length) return;
+  const q = [];
+  q.push({ say: `Ten orders, oldest to newest. I will stand you at each one in turn:`
+             + ` where you are looking is the middle of the bottles it held.`,
+           zoom: 0.30, wait: 26 });
+  os.forEach((o, k) => {
+    const d = orderMid(o);
+    if (!d) return;
+    let say = `<b>Order ${o.n}</b> — ${o.ids.length} `
+            + (o.ids.length === 1 ? 'bottle' : 'bottles') + '. ';
+    if (k === 0) {
+      say += A.map(a => `${S.labels[a].toLowerCase()} ${o[a].toFixed(2)}`).join(', ') + '.';
+    } else {
+      const prev = os[k - 1];
+      const moved = A.map(a => ({ a, d: o[a] - prev[a] }))
+        .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))[0];
+      say += Math.abs(moved.d) < 0.04
+        ? 'much where the last one was.'
+        : `${S.labels[moved.a].toLowerCase()} moved toward `
+          + `<b>${S.ends[moved.a][moved.d > 0 ? 1 : 0]}</b>`
+          + ` (${prev[moved.a].toFixed(2)} to ${o[moved.a].toFixed(2)}).`;
+    }
+    q.push({ say, faceTo: d, zoom: 0.34, wait: 30 });
+  });
+  const first = os[0], last = os[os.length - 1];
+  const shift = A.map(a => ({ a, d: last[a] - first[a] }))
+    .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))[0];
+  q.push({ say: `Across the ten, what moved most is <b>${S.labels[shift.a].toLowerCase()}</b>:`
+             + ` ${first[shift.a].toFixed(2)} to ${last[shift.a].toFixed(2)}, toward`
+             + ` <b>${S.ends[shift.a][shift.d > 0 ? 1 : 0]}</b>.`
+             + ` Everything with a tick beside it is a bottle you bought.`,
+           zoom: 0.18, wait: 0 });
+  tourQ = q; tourWait = 0;
+  el('t-atlas').click();
+}
+function tourStep() {
+  if (!tourQ) return false;
+  if (tourWait > 0) { tourWait--; return true; }
+  const s0 = tourQ.shift();
+  if (!s0) { tourQ = null; return false; }
+  if (s0.say) addMsg('assistant', s0.say);
+  act({ faceTo: s0.faceTo, zoom: s0.zoom });
+  tourWait = s0.wait || 24;
+  return true;
+}
+
+el('atlasTour').onclick = () => tour();
+
 function show(on) {
   live = on;
+  el('atlasOffer').hidden = !on;          // offered where it means something
   chatHere(on && !view.classList.contains('big'));
   if (!on) fill(false);
   else refit();
@@ -1448,7 +1572,8 @@ return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, r
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },
          get FOV() { return FOV; }, set FOV(v) { FOV = fovWant = v; },
-         glide, easeStand, showZoom, zOf, FOVMIN, help, countRows,
+         glide, easeStand, showZoom, zOf, FOVMIN, help, countRows, act, tour, named,
+         get touring() { return !!tourQ; },
          get askedNothing() { return askedNothing; },
          get STAND() { return STAND; }, set STAND(v) { STAND = v; standWant = null; },
          get standWant() { return standWant; },

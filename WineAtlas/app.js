@@ -580,6 +580,7 @@ The user may name a measure with #weight #grip #oak #fruit #age; "more #oak" mea
 Answer with JSON only, nothing else:
 {"say":"one short plain sentence answering the user","point":{"weight":n,"grip":n,"oak":n,"fruit":n,"maturity":n},"hold":{"oak":[0,0.3]},"act":{"tab":"find","kind":0,"heading":true,"hideOwned":false,"hideVoted":false,"pin":"exact wine name","show":"sigil","like":["exact wine name"],"writeTaste":true}}
 "say" is required: one short plain sentence for the user. Send "point" only when the user's words move the point; send "hold" only for a stated hard requirement, as [low, high] on 0..1.
+"atlas" drives the space in the Atlas tab, and it opens that tab first: {"face":"a pole, a word in the list, or a wine by name"} turns him to face it, {"faceTo":[x,y,z]} turns him to a bearing, {"zoom":0..1} sets how close he is looking (0 the whole field, 1 the closest), {"walk":0.5} steps him forward and a negative number back, {"tick":["cedar"],"untick":["citrus"]} light the wines described that way, {"clear":true} unticks everything, {"point":"a wine by name"} turns to it and opens its card, {"words":false} and {"sommelier":false} fold the side panels, {"screen":true} fills the window. "tour" takes him through his ten orders in that space, oldest to newest, saying what moved between each -- offer it when he asks how his buying has changed, or how to read the Atlas.
 "act" drives the page itself -- everything the user can click except his marks and Reset. Each field is optional: "tab" opens a section (find = the finder; palate = his wines against the shelf; move = how his buying changed; pop = what happens to a drinker's first decade; how = what the words mean), "kind" presses one of his four kind buttons (0 to 3, the order listed above), "heading" sets the point to where his buying is heading, "hideOwned"/"hideVoted" set the finder's filters, "pin" holds a named wine's shape on his radar (null releases it), "show" brings one part of the page into view and rings it -- one of: sigil (the whole taste card), measures (the five band sliders), shape (the five-cornered drawing of his taste), list (the wines found), ask (this sommelier panel), kinds (his four buying kinds), filters (the two hiding switches), marks (the button that downloads his marks). "like" sets the point to the middle of the named wines, exactly as if he had named them himself; "writeTaste" measures the bands his own buying stays inside and writes them into this box for him to correct. Use "act" when his words ask to see, learn, or do something, never to decorate. Everything he can do here, you can do -- except marking a wine right or wrong, and Reset. Those are his: his marks are the measurement, and you must never cast them.
 In "say", the only measure names allowed are: body, tannin grip, oak, fruit character, age. The JSON key for age is "maturity"; in speech it is always age. The interface calls the point "the wine you are asking for" -- use that phrase when you refer to it, never "the point".
 
@@ -636,6 +637,11 @@ function applyAct(act){
   }
   if(act.writeTaste){el('mySigil').click(); flash(el('mySigil'));}
   if(act.show) showPart(act.show);
+  /* the Atlas is a place, and everything the reader can do in it the sommelier
+     can do too -- turn, walk, change the field, tick a word, point at a bottle,
+     fold a panel, fill the screen. Marking a wine right or wrong stays his. */
+  if(act.atlas){ if(el('s-atlas').hidden) el('t-atlas').click(); ATLAS.act(act.atlas); }
+  if(act.tour) ATLAS.tour();
   if('pin' in act){
     const w=act.pin?S.wines.find(x=>x.name.toLowerCase()===String(act.pin).toLowerCase()):null;
     pinned=w?w.id:null;

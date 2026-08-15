@@ -282,22 +282,26 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 /* A DRAWER, WITH A HANDLE LEFT BEHIND. Closed, the column narrows to a rail that
    still carries the panel's name, so the way back is the thing you are looking
    at rather than a button somewhere else. */
+/* every one of them on the SAME ROW: a rail and the panel it replaces share a
+   column, and without this the grid stacked them into rows of their own and left
+   a band of nothing above the shop */
+.atlas>*{grid-row:1}
 #atlasWordsTab,.atlas-side{grid-column:1}
 .atlas-view{grid-column:2}
 .chat,#atlasChatTab{grid-column:3}
-.atlas.nowords{grid-template-columns:34px minmax(0,1fr) 330px}
-.atlas.nochat{grid-template-columns:236px minmax(0,1fr) 34px}
-.atlas.nowords.nochat{grid-template-columns:34px minmax(0,1fr) 34px}
+.atlas.nowords{grid-template-columns:26px minmax(0,1fr) 330px;column-gap:8px}
+.atlas.nochat{grid-template-columns:236px minmax(0,1fr) 26px;column-gap:8px}
+.atlas.nowords.nochat{grid-template-columns:26px minmax(0,1fr) 26px;column-gap:8px}
 .atlas.nowords>.atlas-side{display:none}
 .atlas.nochat>.chat{display:none}
 .atlas-rail{display:none;flex-direction:column;align-items:center;justify-content:flex-start;
-  gap:10px;padding:12px 0;cursor:pointer;font:inherit;border-radius:13px;
+  gap:7px;padding:8px 0;cursor:pointer;font:inherit;border-radius:9px;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-3);transition:.12s}
 .atlas.nowords>#atlasWordsTab,.atlas.nochat>#atlasChatTab{display:flex}
 .atlas-rail:hover{color:var(--ink);border-color:var(--ink-3)}
 .atlas-rail:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
-.atlas-rail svg{width:16px;height:16px;flex:none}
-.atlas-rail b{writing-mode:vertical-rl;font-size:11px;font-weight:600;letter-spacing:.11em;
+.atlas-rail svg{width:13px;height:13px;flex:none}
+.atlas-rail b{writing-mode:vertical-rl;font-size:9.5px;font-weight:600;letter-spacing:.10em;
   text-transform:uppercase}
 .three .atlas-shut{display:none}
 .atlas-shut{display:flex;align-items:center;justify-content:center;width:24px;height:24px;
@@ -401,6 +405,10 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 #atlasName .mtrk i{display:block;height:100%;border-radius:2px}
 #atlasName .mnm{font-size:11px;color:var(--ink-2);white-space:nowrap}
 #atlasName .mend{font-size:10.5px;color:var(--ink-3);white-space:nowrap;text-align:right}
+/* offered, not buried: the one thing the sommelier can do in this space that
+   nobody would think to ask for */
+#atlasOffer{margin-bottom:10px}
+#atlasOffer[hidden]{display:none}
 /* FILL THE SCREEN. 1,652 wines in a pane a thousand pixels wide is about one
    glass every forty pixels, and a glass is where the colour of the wine is. The
    overlay is the same view with two and a half times the room; nothing about the
