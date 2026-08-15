@@ -1120,7 +1120,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='fc0412d9';
+const BUILD='449196a6';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -1526,7 +1526,7 @@ async function send(){
     addMsg('assistant',sigilSay(sp)||'nothing to change');
     return;
   }
-  el('askNote').textContent='asking…';
+  el('askNote').textContent='…';
   try{
     const res=await callAgent(lensSystem(sp),chatMessages());
     if(res.usage) addSpend(res.usage);

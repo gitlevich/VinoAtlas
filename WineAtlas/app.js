@@ -703,7 +703,7 @@ async function send(){
     addMsg('assistant',sigilSay(sp)||'nothing to change');
     return;
   }
-  el('askNote').textContent='asking…';
+  el('askNote').textContent='…';
   try{
     const res=await callAgent(lensSystem(sp),chatMessages());
     if(res.usage) addSpend(res.usage);
