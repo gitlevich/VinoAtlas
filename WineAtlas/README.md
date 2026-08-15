@@ -64,10 +64,20 @@ possible, because there is nothing to describe until the call has been made.
 
 **Both panels come with it.** The words are what the view is written in and the
 sommelier can drive every control in it, so neither is left behind on the full
-screen: each becomes a drawer on the side it holds on the page, both stand the
-same height, and each folds by its own toggle — the two side by side in the bar,
-because they are peers. The globe stands aside for the sommelier rather than
-being sat on, unless the reader has dragged it somewhere himself.
+screen: each becomes a drawer on the side it holds on the page, and both stand
+the same height. The globe stands aside for the sommelier rather than being sat
+on, unless the reader has dragged it somewhere himself.
+
+A panel closes by the chevron in its own head, on the page and on the full
+screen alike; on the page the rail it leaves behind opens it again, and on the
+full screen a toggle in the bar does. The chevron was hidden there on the
+reasoning that the bar already carried a toggle, and the question that came back
+was how to fold anything at all: the one gesture the reader knows had been
+moved. Two ways to shut a drawer is not a fault; one way, moved, is. Each bar
+toggle carries the same chevron, pointing the way its panel is about to go —
+away while it is open, out from the edge while it is shut — because a button
+that says only its own name reads as something to do, not as something that is
+on or off.
 
 **On the crowd.** 1,652 glasses is a lot to be standing among, and three things
 answer it. The view **opens at 74°** rather than the 120° a head takes in, which

@@ -322,10 +322,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-shut:hover{color:var(--ink);background:var(--raise)}
 .atlas-shut:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 .atlas-shut svg{width:15px;height:15px;display:block}
-/* on the full screen each panel is folded by its own toggle in the bar, so the
-   chevron inside its head would be a second way to do the one thing */
-.atlas-view.big .atlas-side .panelhead .atlas-shut,
-.atlas-view.big>.chat .chathead .atlas-shut{display:none}
+/* The chevron in each panel's head closes it, on the page and on the full screen
+   alike. It was hidden here on the reasoning that the bar already carries a
+   toggle -- which left the one gesture the reader knows nowhere to be found, and
+   the question was how to fold anything at all. Two ways to shut a drawer is
+   not a fault; one way, moved, is. */
 /* the sommelier is text, and text is read and copied */
 .atlas .chat{-webkit-user-select:text;user-select:text}
 @media(max-width:1250px){.atlas,.atlas.nowords{grid-template-columns:236px minmax(0,1fr)}
@@ -449,10 +450,17 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   transition:opacity .12s,color .12s}
 .atlas-view.big .atlas-tab{display:flex}
 .atlas-tab[aria-pressed="false"]{opacity:.55}
-.atlas-tab[aria-pressed="true"]{opacity:1;color:var(--ink);border-color:var(--ink-3)}
+.atlas-tab[aria-pressed="true"]{opacity:1;color:var(--ink);border-color:var(--ink-3);
+  background:var(--raise)}
 .atlas-tab:hover{opacity:1;color:var(--ink)}
 .atlas-tab:focus-visible{outline:2px solid var(--mark);outline-offset:2px;opacity:1}
 .atlas-tab svg{width:14px;height:14px;display:block}
+/* WHICH WAY THE DRAWER WILL GO. A button that says only its own name reads as
+   something to do, not as something that is on or off -- so each carries the
+   same chevron its panel's head and its rail carry, pointing the way the panel
+   is about to move: away while it is open, out from the edge while it is shut. */
+.atlas-tab .fold{width:12px;height:12px;margin-left:1px;opacity:.8}
+.atlas-tab[aria-pressed="false"] .fold{transform:scaleX(-1)}
 .atlas-view.big .atlas-side,
 .atlas-view.big>.chat{position:absolute;top:50px;bottom:58px;z-index:6;
   box-shadow:0 10px 34px rgba(0,0,0,.45)}
@@ -809,12 +817,18 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
                stroke-linecap="round" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h10"/></svg>
           <span>the words</span>
+          <svg class="fold" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6"/></svg>
         </button>
         <button id="atlasSomm" class="atlas-tab" aria-label="Show or hide the sommelier">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4 5h16v11H9l-5 4z"/></svg>
           <span>sommelier</span>
+          <svg class="fold" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 6l6 6-6 6"/></svg>
         </button>
         </div>
         <button id="atlasAsk" class="atlas-ask" aria-label="What you can do here — H">?</button>
@@ -1155,7 +1169,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='bd63129e';
+const BUILD='21cb36e1';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;

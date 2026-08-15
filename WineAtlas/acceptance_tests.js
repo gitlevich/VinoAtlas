@@ -1223,6 +1223,9 @@
        own toggle -- the two standing side by side, because they are peers. */
     const ch = document.querySelector('.chat'), sd = document.querySelector('.atlas-side');
     const box = n => n.getBoundingClientRect();
+    /* whatever fails in here, the screen goes back: a test left full-screen
+       strands every test after it in a tab that was never measured */
+    try {
     el('atlasBig').click();
     ok(cvA.parentElement.contains(ch), 'the sommelier came with it');
     ok(getComputedStyle(ch).display !== 'none', 'and is showing');
@@ -1238,11 +1241,24 @@
     /* the ball is a reference and must not be sat on */
     const g = box(el('atlasGlobe'));
     ok(g.right <= c.left, 'the globe stands aside for it');
-    el('atlasSomm').click();
-    eq(getComputedStyle(ch).display, 'none', 'folded away');
+    /* THE ONE GESTURE HE KNOWS. On the page a panel is closed by the chevron in
+       its own head; hidden here, the question became how to fold anything at
+       all. It closes the same way in both places, and the bar button says which
+       state it is in rather than only its own name. */
+    ['atlasWordsShut', 'atlasChatShut'].forEach(id =>
+      ok(getComputedStyle(el(id)).display !== 'none', id + ' is here too'));
+    ['atlasList', 'atlasSomm'].forEach(id =>
+      ok(el(id).querySelector('.fold'), id + ' says which way its panel will go'));
+    el('atlasChatShut').click();
+    eq(getComputedStyle(ch).display, 'none', 'its own chevron folds it away');
+    eq(el('atlasSomm').getAttribute('aria-pressed'), 'false', 'and the bar says so');
     ok(box(el('atlasGlobe')).right > c.left, 'and the globe takes the corner back');
     el('atlasSomm').click();
-    ok(getComputedStyle(ch).display !== 'none', 'and back');
+    ok(getComputedStyle(ch).display !== 'none', 'the bar brings it back');
+    eq(el('atlasSomm').getAttribute('aria-pressed'), 'true', 'and says that too');
+    el('atlasSomm').click();
+    eq(getComputedStyle(ch).display, 'none', 'the bar folds it too');
+    el('atlasSomm').click();
     /* the two fold independently */
     el('atlasList').click();
     eq(getComputedStyle(sd).display, 'none', 'the words alone');
@@ -1251,6 +1267,11 @@
     el('atlasBig').click();
     ok(!cvA.parentElement.contains(ch), 'and back to its own column on the way out');
     ok(getComputedStyle(ch).display !== 'none', 'still there');
+    } finally {
+      if (cvA.parentElement.classList.contains('big')) el('atlasBig').click();
+      if (getComputedStyle(ch).display === 'none') el('atlasChatTab').click();
+      if (getComputedStyle(sd).display === 'none') el('atlasWordsTab').click();
+    }
   });
 
   await T('leaving the tab puts the screen back', () => {
