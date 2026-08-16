@@ -148,13 +148,14 @@ def favicon(box=32, pad=0.5):
     return 'data:image/svg+xml,' + urllib.parse.quote(svg)
 
 
-def favicon_png(box=32, pad=0.5):
-    """The same glass in pixels, for Safari, which does not take an SVG icon."""
+def favicon_bytes(box=32, pad=0.5):
+    """The same glass in pixels, for Safari, which takes neither an SVG icon nor
+    a declared one that a host favicon.ico can outrank."""
     import raster
 
     canvas = raster.Canvas(box)
     glass_raster(canvas, (box - 2 * pad) / max(GLASS_W, GLASS_H), box / 2, box / 2)
-    return canvas.uri()
+    return canvas.png()
 
 # words that must never reach the reader. The first group is banned anywhere in
 # the copy; the second are our research words, banned in what the page renders
@@ -199,13 +200,20 @@ def build(src=pathlib.Path(__file__).parent, out=None):
     standalone = ('<!doctype html><html><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<meta name="robots" content="noindex,nofollow,noarchive">'
-        '<link rel="icon" href="' + favicon_png() + '" sizes="32x32">'
+        '<link rel="icon" href="icon.png" sizes="32x32">'
         '<link rel="icon" type="image/svg+xml" href="' + favicon() + '">'
         '<title>Cellar Compass</title></head><body>' + page + '</body></html>')
     (out / 'cellar_compass_standalone.html').write_text(standalone)
     published = out / 'docs' / 'wine' / 'index.html'   # what agent.farm/VinoAtlas/wine serves
     published.parent.mkdir(parents=True, exist_ok=True)
     published.write_text(standalone)
+    # THE ONE THING THAT CANNOT TRAVEL INSIDE THE PAGE. Safari will not use an
+    # icon a page declares while the HOST has a favicon.ico of its own, and
+    # agent.farm serves an orange star for everything under it. A declared icon
+    # has to be a real file at a real address to outrank that. The SVG still
+    # travels inline for every browser that takes one; this is the sibling
+    # Safari needs, and it stands beside the page it belongs to.
+    (published.parent / 'icon.png').write_bytes(favicon_bytes())
     return len(page)
 
 if __name__ == '__main__':

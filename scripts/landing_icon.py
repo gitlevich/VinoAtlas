@@ -62,7 +62,7 @@ def icon(box=BOX, pad=PAD):
     return 'data:image/svg+xml,' + urllib.parse.quote(svg)
 
 
-def icon_png(box=BOX, pad=PAD):
+def icon_bytes(box=BOX, pad=PAD):
     """The same picture in pixels, for Safari. Same placement, same two marks,
     the other renderer."""
     import raster
@@ -71,21 +71,24 @@ def icon_png(box=BOX, pad=PAD):
     canvas = raster.Canvas(box)
     wine.glass_raster(canvas, *glass)
     weed.leaf_raster(canvas, *leaf)
-    return canvas.uri()
+    return canvas.png()
 
 
 LINK = re.compile(r'<link rel="icon"[^>]*>\n?')
-# The PNG stands first and the SVG second, which is the order that gets both:
-# Safari takes the PNG because it does not know what to do with an SVG icon,
-# and every other browser prefers the SVG and stays sharp at any size.
+# The PNG stands first and the SVG second, which is the order that gets both.
+# The PNG is a FILE and not a data URI, because Safari will not use an icon a
+# page declares while the host has a favicon.ico of its own -- agent.farm serves
+# an orange star for everything under it, and that star is what the tab showed.
+# The SVG still travels inside the page for every browser that takes one.
 AFTER = '<meta name="robots" content="noindex,nofollow,noarchive">\n'
 
 
 def write(page=None):
     page = page or ROOT / 'docs' / 'index.html'
     html = LINK.sub('', page.read_text())
-    tag = (f'<link rel="icon" href="{icon_png()}" sizes="32x32">\n'
+    tag = ('<link rel="icon" href="icon.png" sizes="32x32">\n'
            f'<link rel="icon" type="image/svg+xml" href="{icon()}">\n')
+    (page.parent / 'icon.png').write_bytes(icon_bytes())
     assert AFTER in html, 'the landing page has changed shape; nothing to hang it on'
     page.write_text(html.replace(AFTER, AFTER + tag, 1))
     return page, len(tag)

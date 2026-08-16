@@ -134,9 +134,10 @@ wine's own colour and the ground under it — an icon for the whole shop cannot
 have, so it wears a red from the middle of the range `pour()` spans and a
 neutral for the vessel.
 
-It is drawn twice, because **Safari does not take an SVG icon**. The page offers
-a PNG first and the SVG second: Safari takes the PNG, everything else prefers the
-SVG. Nothing is drawn twice by hand — `glass_parts()` hands over the bowl's two
+It is drawn twice, because **Safari does not take an SVG icon** — and will not
+take a declared one at all while the *host* has a `favicon.ico` of its own, which
+`agent.farm` does. So the page offers `icon.png` first, written beside it by the
+build, and the SVG second, inline. Nothing is drawn twice by hand — `glass_parts()` hands over the bowl's two
 cubics, the line the wine stands at, the streak of light, the stem and the foot,
 and `glass_svg()` and `glass_raster()` are two readings of the same numbers.
 

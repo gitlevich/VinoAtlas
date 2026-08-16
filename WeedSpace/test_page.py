@@ -481,13 +481,27 @@ def test_the_tab_icon_is_the_leaf_the_field_is_drawn_with(page):
 
 
 def test_the_page_carries_a_leaf_safari_can_also_read(page):
-    """Safari does not take an SVG icon. The PNG stands first for it; every
-    other browser prefers the SVG and stays sharp at any size."""
-    from build_horizon import _favicon_png
-
-    assert f'<link rel=icon href="{_favicon_png()}" sizes="32x32">' in page
-    assert page.index('image/png;base64') < page.index('image/svg+xml'), \
+    """Safari takes neither an SVG icon nor a declared one that the HOST's own
+    favicon.ico can outrank -- agent.farm serves an orange star for everything
+    under it, and that star is what the tab showed. So the PNG is a real file
+    standing beside the page, declared first. The SVG still travels inside the
+    page, which is where the other browsers read it from."""
+    assert '<link rel=icon href="icon.png" sizes="32x32">' in page
+    assert page.index('icon.png') < page.index('image/svg+xml'), \
         'the SVG is offered first, which is the order Safari loses on'
+
+
+def test_the_leaf_beside_the_page_is_the_leaf_the_page_was_built_with():
+    """A sibling file can go stale in a way an inline one cannot, so it is
+    checked against the builder rather than trusted -- in both places the page
+    is published from."""
+    from build_horizon import HERE, _favicon_bytes
+
+    want = _favicon_bytes()
+    assert want[:8] == b'\x89PNG\r\n\x1a\n'
+    for beside in (HERE / 'icon.png', HERE.parent / 'docs' / 'weed' / 'icon.png'):
+        assert beside.exists(), f'{beside} is missing, so Safari has no icon'
+        assert beside.read_bytes() == want, f'{beside} is not the leaf this build draws'
 
 
 def test_the_leaf_in_pixels_is_the_leaf_the_vectors_draw():

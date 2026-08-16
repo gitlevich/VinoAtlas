@@ -465,8 +465,10 @@ def test_the_tab_icon_pours_a_red_from_the_range_the_shop_pours():
 
 
 def test_the_tab_icon_is_one_self_contained_picture():
-    """It travels in the page itself, so it cannot go missing and cannot be
-    fetched from anywhere: no request, no second file, nothing to lose."""
+    """The SVG travels in the page itself: no request, nothing to lose. What is
+    checked is what a BUILD emits, not the file in docs/ -- that file is written
+    by whoever last ran the build, and a test that reads it is testing when
+    someone else ran a command rather than what this code does."""
     import build
 
     icon = build.favicon()
@@ -474,21 +476,30 @@ def test_the_tab_icon_is_one_self_contained_picture():
     svg = urllib.parse.unquote(icon.split(',', 1)[1])
     assert 'http' not in svg.replace('http://www.w3.org/2000/svg', ''), 'it reaches out'
     assert svg.count('<svg') == 1 and svg.endswith('</svg>')
-    published = (HERE.parent / 'docs' / 'wine' / 'index.html').read_text()
-    assert f'<link rel="icon" type="image/svg+xml" href="{icon}">' in published
 
 
-def test_the_page_carries_a_glass_safari_can_also_read():
-    """Safari does not take an SVG icon. The PNG stands first for it; every
-    other browser prefers the SVG and stays sharp at any size."""
+def test_the_page_carries_a_glass_safari_can_also_read(tmp_path):
+    """Safari takes neither an SVG icon nor a declared one that the HOST's own
+    favicon.ico can outrank -- agent.farm serves an orange star for everything
+    under it, and that star is what the tab showed. So the PNG is a real file
+    standing beside the page and declared first, and the SVG stays inline for
+    everyone else. Built into a fresh directory, so what is held is the build.
+    """
     import build
 
-    published = (HERE.parent / 'docs' / 'wine' / 'index.html').read_text()
-    png = build.favicon_png()
-    assert png.startswith('data:image/png;base64,')
-    assert f'<link rel="icon" href="{png}" sizes="32x32">' in published
-    assert published.index('image/png;base64') < published.index('image/svg+xml'), \
+    build.build(out=tmp_path)
+    published = tmp_path / 'docs' / 'wine' / 'index.html'
+    html = published.read_text()
+    assert '<link rel="icon" href="icon.png" sizes="32x32">' in html
+    assert f'<link rel="icon" type="image/svg+xml" href="{build.favicon()}">' in html
+    assert html.index('icon.png') < html.index('image/svg+xml'), \
         'the SVG is offered first, which is the order Safari loses on'
+
+    beside = published.parent / 'icon.png'
+    assert beside.exists(), 'the page declares an icon the build does not write'
+    assert beside.read_bytes() == build.favicon_bytes(), \
+        'the glass beside the page is not the glass this build draws'
+    assert beside.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n'
 
 
 def test_the_glass_in_pixels_is_the_glass_the_vectors_draw():

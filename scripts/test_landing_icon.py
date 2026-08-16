@@ -97,17 +97,30 @@ def test_the_page_carries_exactly_the_icon_this_writes():
     html = PAGE.read_text()
     links = re.findall(r'<link rel="icon"[^>]*>', html)
     assert len(links) == 2, f'{len(links)} icon links on the landing page'
-    assert links[0] == f'<link rel="icon" href="{landing_icon.icon_png()}" sizes="32x32">'
+    assert links[0] == '<link rel="icon" href="icon.png" sizes="32x32">'
     assert links[1] == f'<link rel="icon" type="image/svg+xml" href="{landing_icon.icon()}">'
-    assert html.index('image/png;base64') < html.index('image/svg+xml'), \
+    assert html.index('icon.png') < html.index('image/svg+xml'), \
         'the SVG is offered first, which is the order Safari loses on'
     landing_icon.write()
     assert PAGE.read_text() == html, 'writing it again changed the page'
 
 
-def test_it_travels_in_the_page_and_fetches_nothing():
+def test_the_mark_beside_the_page_is_the_mark_the_page_declares():
+    """Safari takes neither an SVG icon nor a declared one that the host's own
+    favicon.ico can outrank, so this one has to be a real file -- and a file can
+    go stale in a way an inline picture cannot, so it is checked rather than
+    trusted."""
+    beside = PAGE.parent / 'icon.png'
+    assert beside.exists(), 'the page declares an icon that is not there'
+    assert beside.read_bytes() == landing_icon.icon_bytes(), \
+        'the mark beside the page is not the one this writes'
+    assert beside.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n'
+
+
+def test_the_svg_still_travels_in_the_page_and_fetches_nothing():
+    """Only the PNG is a file. Every browser that takes an SVG icon reads it out
+    of the page itself, which is what keeps the page one thing."""
     got = svg()
     assert landing_icon.icon().startswith('data:image/svg+xml,')
-    assert landing_icon.icon_png().startswith('data:image/png;base64,')
     assert 'http' not in got.replace('http://www.w3.org/2000/svg', ''), 'it reaches out'
     assert got.count('<svg') == 1 and got.endswith('</svg>')

@@ -257,17 +257,18 @@ def _favicon(box=32, pad=0.5):
     return 'data:image/svg+xml,' + urllib.parse.quote(svg)
 
 
-def _favicon_png(box=32, pad=0.5):
-    """The same leaf in pixels, for Safari, which does not take an SVG icon."""
+def _favicon_bytes(box=32, pad=0.5):
+    """The same leaf in pixels, for Safari, which takes neither an SVG icon nor
+    a declared one that a host favicon.ico can outrank."""
     import raster
 
     canvas = raster.Canvas(box)
     leaf_raster(canvas, (box - 2 * pad) / max(LEAF_W, LEAF_H), box / 2, box / 2)
-    return canvas.uri()
+    return canvas.png()
 
 
 PAGE = """<title>From Where You Stand</title>
-<link rel=icon href="__ICONPNG__" sizes="32x32">
+<link rel=icon href="icon.png" sizes="32x32">
 <link rel=icon type="image/svg+xml" href="__ICON__">
 <style>
 :root{
@@ -1636,8 +1637,14 @@ def build():
     out.write_text(PAGE.replace('__DATA__', json.dumps(DATA))
                        .replace('__ANG__', json.dumps(ANG))
                        .replace('__LEN__', json.dumps(LEN))
-                       .replace('__ICON__', _favicon())
-                       .replace('__ICONPNG__', _favicon_png()))
+                       .replace('__ICON__', _favicon()))
+    # THE ONE THING THAT CANNOT TRAVEL INSIDE THE PAGE.
+    # Safari will not use an icon this page declares while the HOST has a
+    # favicon.ico of its own -- agent.farm serves an orange star for every page
+    # under it, and that star is what the tab showed. A declared icon has to be
+    # a real file at a real address to outrank it. The SVG still travels inline
+    # for every browser that takes one; this is the sibling Safari needs.
+    (HERE / 'icon.png').write_bytes(_favicon_bytes())
     print('wrote', out, out.stat().st_size, 'bytes')
     print('sky: magnitudes run', min(i['str'] for i in DATA['items']),
           'to', max(i['str'] for i in DATA['items']))

@@ -92,28 +92,40 @@ moved. Every handler paints directly now, and `acceptance_tests.js` has a
 
 The field is built from a crowd, and a crowd reports **outcomes** — happy,
 hungry, sleepy, things that happened to it. Thirteen words, all of them passive.
-What this record holds is **how attention is allocated**: short horizon and high
-resolution against long horizon and coarse, time-like against space-like. That
-is not a fourteenth outcome. It is the frame the outcomes occur inside, reported
-from a level of control the crowd does not operate at — which is why it is
-recorded as the report's content and not as a residue left over after the
-thirteen have taken what they can use.
+What this record holds is **how much temporal coherence survives**: whether
+there is enough narrative left standing to hold a thread. That is not a
+fourteenth outcome. It is the frame the outcomes occur inside, reported from a
+level of control the crowd does not operate at — which is why it is recorded as
+the report's content and not as a residue left over after the thirteen have
+taken what they can use.
+
+**It is not an axis, because there is no other end.** All weed contracts the
+horizon; there is no time-like weed. What varies is how much survives the
+contraction, so this is a magnitude with a low ceiling:
+
+| band | what it is |
+|---|---|
+| `no narrative` | cannot attend to a narrative. The sentence is lost mid-way, and the tiniest distraction ends it. |
+| `one specific` | enough to hold a single small thread. Where exploring and building happen — **and the top of the range.** |
+
+A test holds that ceiling shut, because a band above `one specific` would be a
+claim the data cannot support and he has never made.
 
 Each report keeps four things, and they are not equal. `said` is verbatim and is
-never normalised away. `attention` is the allocation. `own` is his terms the
-thirteen have no place for. `crowd` is a *reading* of `said` into the thirteen —
-mine, revisable, and there only to find neighbours in the field.
+never normalised away. `coherence` is the band. `own` is his terms the thirteen
+have no place for. `crowd` is a *reading* of `said` into the thirteen — mine,
+revisable, and there only to find neighbours in the field.
 
 ```bash
 .venv/bin/python WeedSpace/reports.py
 ```
 
-The claim being accumulated toward is precise: **allocation earns its place only
+The claim being accumulated toward is precise: **coherence earns its place only
 if it separates weeds the field puts together.** If every pair that differs in
-allocation is also far apart in the thirteen, it is a relabelling of what the
-crowd already measures. `separates()` decides that, and until there are reports
-at both poles it returns nothing and says why — an empty list would read as a
-finding of no difference, which is not the same as having no evidence.
+coherence is also far apart in the thirteen, it is a relabelling of what the
+crowd already measures. `separates()` decides that, and until there are readings
+at two different bands it returns nothing and says why — an empty list would
+read as a finding of no difference, which is not the same as having no evidence.
 
 ## The tab icon
 
@@ -130,13 +142,18 @@ whole space can wear. And round joins, because at sixteen pixels a mitred
 sawtooth is aliasing rather than teeth. The green is the field's own, at the
 middle of the range a weed's commitment moves it through.
 
-It is drawn twice, because **Safari does not take an SVG icon**. So the page
-offers a PNG first and the SVG second: Safari takes the PNG, everything else
-prefers the SVG and stays sharp at any size. Drawing a mark twice is the thing
-all of this was arranged to avoid, so nothing is redrawn — `leaf_parts()` hands
-over the points and the colours, and `leaf_svg()` and `leaf_raster()` are two
-readings of them. Move a leaflet and both move. The rasteriser is
-`scripts/raster.py`, shared with the shop and the landing page.
+It is drawn twice, because **Safari does not take an SVG icon** — and it will
+not take a declared one at all while the *host* has a `favicon.ico` of its own.
+`agent.farm` serves an orange star for everything under it, and that star is
+what the tab showed. So the page offers `icon.png` first, as a real file
+standing beside it, and the SVG second, inline, for every browser that reads
+one. Only the PNG leaves the page; the SVG still travels inside it.
+
+Drawing a mark twice is the thing all of this was arranged to avoid, so nothing
+is redrawn — `leaf_parts()` hands over the points and the colours, and
+`leaf_svg()` and `leaf_raster()` are two readings of them. Move a leaflet and
+both move. The rasteriser is `scripts/raster.py`, shared with the shop and the
+landing page.
 
 `leaf_parts()` places the crown at any size anywhere, which is also how the
 landing page sets one beside the shop's glass — `scripts/landing_icon.py`.
@@ -148,6 +165,7 @@ Importing this module no longer writes the page; running it does.
 .venv/bin/python WeedSpace/navdata.py        # corpus  -> navdata.json
 .venv/bin/python WeedSpace/build_horizon.py  # navdata -> horizon.html
 cp WeedSpace/horizon.html docs/weed/index.html
+cp WeedSpace/icon.png docs/weed/icon.png     # the tab icon travels beside it
 ```
 
 `navdata.py` reads `data/lexicon/cannabis_strain_{flavor,effect}.parquet`, which
