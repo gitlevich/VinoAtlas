@@ -76,8 +76,10 @@
 
   // -- the frame you look through --------------------------------------------
 
-  await T('the field of view is a human one and leaning in narrows it', async () => {
-    ok(Math.abs(WIDE - 120 * Math.PI / 180) < 1e-9, 'not 120 degrees');
+  await T('the field opens narrower than a head, and leaning in narrows it', async () => {
+    ok(Math.abs(WIDE - 120 * Math.PI / 180) < 1e-9, 'the head is not 120 degrees');
+    ok(Math.abs(OPEN - 74 * Math.PI / 180) < 1e-9, 'the opening is not 74 degrees');
+    ok(OPEN < WIDE * 0.65, 'the opening no longer tames the rim');
     const wide = fovWant;
     lean(0.6); await paint();
     ok(fovWant < wide, 'leaning in did not narrow the view');
@@ -123,7 +125,7 @@
     /* fovWant must be reset, not inherited. Pinching out widens a narrowed view
        BEFORE it walks you back, so a test that starts with the view already
        narrowed measures the wrong half of the gesture. */
-    STAND = [0, 0, 0]; yaw = 1.2; FOV = fovWant = WIDE; await paint();
+    STAND = [0, 0, 0]; yaw = 1.2; FOV = fovWant = OPEN; await paint();
 
     wheel({ deltaX: 40, deltaY: 40 }); await settle();
     ok(len(STAND) < 1e-9, 'two fingers moved you as well as turning you');
@@ -145,23 +147,23 @@
     /* The bug: pinch only ever walked, so a view narrowed by a double-click
        could not be widened by the gesture that ought to widen it. In and out
        are now last-in-first-out, so out always has something to undo. */
-    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
+    STAND = [0, 0, 0]; FOV = fovWant = OPEN; await paint();
     lean(0.62); FOV = fovWant; await paint();
-    ok(fovWant < WIDE * 0.7, 'the double-click did not narrow the view');
+    ok(fovWant < OPEN * 0.7, 'the double-click did not narrow the view');
     for (let i = 0; i < 4; i++) { wheel({ deltaY: 120, ctrlKey: true }); FOV = fovWant; }
     await paint();
-    ok(fovWant > WIDE * 0.7, 'pinching out did not widen a narrowed view');
+    ok(fovWant > OPEN * 0.7, 'pinching out did not widen a narrowed view');
 
-    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
+    STAND = [0, 0, 0]; FOV = fovWant = OPEN; await paint();
     for (let i = 0; i < 24; i++) { wheel({ deltaY: -120, ctrlKey: true }); FOV = fovWant; }
     const inTo = [len(STAND), fovWant];
-    ok(inTo[0] > 0.5 && inTo[1] < WIDE * 0.8, 'pinching in neither walked nor narrowed');
+    ok(inTo[0] > 0.5 && inTo[1] < OPEN * 0.8, 'pinching in neither walked nor narrowed');
     for (let i = 0; i < 24; i++) { wheel({ deltaY: 120, ctrlKey: true }); FOV = fovWant; }
     await paint();
-    ok(fovWant > WIDE * 0.99 && len(STAND) < 0.3,
+    ok(fovWant > OPEN * 0.99 && len(STAND) < 0.3,
        'in and out do not retrace: ended at ' + len(STAND).toFixed(2)
-       + ' / ' + (fovWant / WIDE).toFixed(2));
-    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
+       + ' / ' + (fovWant / OPEN).toFixed(2));
+    STAND = [0, 0, 0]; FOV = fovWant = OPEN; await paint();
   });
 
   await T("two fingers are the pinch, and a tap is the finger's hover", async () => {
@@ -170,7 +172,7 @@
        they opened retraces the same ground; a tap raises the same card the
        pointer gets by hovering -- name and bars -- which stands until a tap
        lands on nothing. A tap while fingers were paired is no tap. */
-    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
+    STAND = [0, 0, 0]; FOV = fovWant = OPEN; await paint();
     const r = c.getBoundingClientRect();
     const pe = (type, id, x, y) => view.dispatchEvent(new PointerEvent(type,
       { pointerId: 60 + id, pointerType: 'touch', clientX: r.left + x, clientY: r.top + y, bubbles: true }));
@@ -180,7 +182,7 @@
     for (let d = 240; d >= 60; d -= 20) { pe('pointermove', 2, 200 + d, 300); await settle(); }
     pe('pointerup', 2, 260, 300); pe('pointerup', 1, 200, 300);
     await settle();
-    ok(len(STAND) < 0.15 && fovWant > WIDE * 0.99,
+    ok(len(STAND) < 0.15 && fovWant > OPEN * 0.99,
        'and together retraces the path back: ' + len(STAND).toFixed(2));
     const onLabel = (x, y) => ITEMS.some(it => it.hit
       && Math.abs(x - it.hit[0]) < it.hit[2] / 2 + 12 && Math.abs(y - it.hit[1]) < it.hit[3] + 4);
@@ -202,7 +204,7 @@
     ok(far, 'somewhere empty exists');
     pe('pointerdown', 4, far[0], far[1]); pe('pointerup', 4, far[0], far[1]);
     ok(box.style.display === 'none', 'and a tap on nothing puts the card away');
-    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
+    STAND = [0, 0, 0]; FOV = fovWant = OPEN; await paint();
   });
 
   await T('walking redraws, and the middle button is gone', async () => {

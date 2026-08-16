@@ -507,6 +507,7 @@ def test_the_page_states_the_walls_it_places_between(baked):
 
 def test_the_field_of_view_is_a_human_one(page):
     assert "const WIDE = 120 * Math.PI / 180" in page
+    assert "const OPEN = 74 * Math.PI / 180" in page, "the field no longer opens at 74"
 
 
 def test_a_feelings_base_rate_is_carried_so_a_claim_can_be_measured(baked):

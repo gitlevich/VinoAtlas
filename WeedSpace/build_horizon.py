@@ -509,7 +509,15 @@ let yaw = 0, pitch = 0, W = 0, H = 0;
 let vYaw = 0, vPitch = 0, target = null, showNames = false;
 
 const WIDE = 120 * Math.PI / 180; // binocular human field, near enough
-let FOV = WIDE, fovWant = WIDE;   // narrows as you lean in, eased not snapped
+/* THE FIELD OPENS AT 74 DEGREES, NOT THE 120 A HEAD TAKES IN -- the wine
+   atlas's opening, taken for the same reasons. A 120-degree rectilinear
+   projection stretches its rim to four times the centre, so a far mark at the
+   edge outran a near mark in the middle and depth read as a lie; at 74 the
+   stretch is half, fewer marks stand in view, and each is a quarter larger.
+   Everything the zoom economy promises is measured from the opening: names
+   arrive at 0.80 of it, the floor stands at 0.55 of it. */
+const OPEN = 74 * Math.PI / 180;
+let FOV = OPEN, fovWant = OPEN;   // narrows as you lean in, eased not snapped
 const ATTEND = 0.84;              // what counts as looked-at rather than merely seen
 const c = document.getElementById('c'), g = c.getContext('2d');
 const size = () => {
@@ -1048,7 +1056,7 @@ function draw() {
   /* Strain names, once the words have taken what they need. Leaning in spreads
      the nodes apart, so more names fit -- the labels arrive by themselves. */
   for (const t of ST) t.nameHit = null;         // a name that was not drawn is not a target
-  if (FOV < WIDE * 0.80) {
+  if (FOV < OPEN * 0.80) {
     const lit = ST.filter(t => t.node).sort((a, b) => b.node[2] - a.node[2]);
     const fs = Math.max(9, Math.min(13, 10 * (WIDE / FOV) ** 0.45));
     g.font = `${fs.toFixed(1)}px ui-sans-serif,sans-serif`;
@@ -1347,7 +1355,7 @@ function pinch(r) {
      each pinch goes to the view and less to the feet. The share is read off
      the view alone, so pinching back retraces the exact path in -- the view
      unwinds, and with it every step the feet took. */
-  const k = 0.2 + 0.8 * Math.min(1, Math.max(0, (WIDE - fovWant) / (WIDE * 0.45)));
+  const k = 0.2 + 0.8 * Math.min(1, Math.max(0, (OPEN - fovWant) / (OPEN * 0.45)));
   lean(Math.pow(1 / r, k));
   /* the walk home ends at home: once the view is fully wide, spending the rest
      of the gesture walking backward carried you out the far side of the middle */
@@ -1438,7 +1446,7 @@ function lean(factor, towardX, towardY) {
   const before = fovWant;
   /* the zoom stops a little past where the strain names arrive (names at
      0.80 of the field): deeper was minutes of travel that said nothing new */
-  fovWant = Math.max(WIDE * 0.55, Math.min(WIDE, fovWant * factor));
+  fovWant = Math.max(OPEN * 0.55, Math.min(OPEN, fovWant * factor));
   if (towardX !== undefined && fovWant < before) {
     /* turn toward what was clicked, so leaning in also steps toward it */
     const ppr = W / before;
@@ -1450,7 +1458,7 @@ function lean(factor, towardX, towardY) {
       F.f[2] * Math.cos(th) * Math.cos(ph) + F.r[2] * Math.sin(th) + F.u[2] * Math.sin(ph)];
     faceTo(d);
   }
-  document.getElementById('bWide').style.display = fovWant < WIDE * 0.99 ? '' : 'none';
+  document.getElementById('bWide').style.display = fovWant < OPEN * 0.99 ? '' : 'none';
 }
 view.addEventListener('dblclick', e => {
   const r = c.getBoundingClientRect();
@@ -1487,7 +1495,7 @@ view.addEventListener('wheel', e => {
   }
   nudge();
 }, { passive: false });
-document.getElementById('bWide').onclick = () => lean(WIDE / fovWant);
+document.getElementById('bWide').onclick = () => lean(OPEN / fovWant);
 document.getElementById('under').onclick = () => {
   /* scrollIntoView goes quiet when the body is its own scroller; name the
      place instead */
