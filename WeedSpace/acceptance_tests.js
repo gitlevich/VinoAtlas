@@ -150,12 +150,12 @@
     ok(fovWant < WIDE * 0.7, 'the double-click did not narrow the view');
     for (let i = 0; i < 4; i++) { wheel({ deltaY: 120, ctrlKey: true }); FOV = fovWant; }
     await paint();
-    ok(fovWant > WIDE * 0.8, 'pinching out did not widen a narrowed view');
+    ok(fovWant > WIDE * 0.7, 'pinching out did not widen a narrowed view');
 
     STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
     for (let i = 0; i < 24; i++) { wheel({ deltaY: -120, ctrlKey: true }); FOV = fovWant; }
     const inTo = [len(STAND), fovWant];
-    ok(inTo[0] > 2.5 && inTo[1] < WIDE * 0.8, 'pinching in neither walked nor narrowed');
+    ok(inTo[0] > 0.5 && inTo[1] < WIDE * 0.8, 'pinching in neither walked nor narrowed');
     for (let i = 0; i < 24; i++) { wheel({ deltaY: 120, ctrlKey: true }); FOV = fovWant; }
     await paint();
     ok(fovWant > WIDE * 0.99 && len(STAND) < 0.3,
@@ -427,8 +427,8 @@
     beginApproach();
     let guard = 60;
     while (approaching > 0 && guard-- > 0) { stepApproach(); draw(); }
-    ok(len(STAND) > 2.5, 'the walk stopped at ' + len(STAND).toFixed(2) + ' -- too short to test anything');
-    ok(len(STAND) <= 5.0 - 2.2 + 1e-6, 'the approach walked past the rim');
+    ok(len(STAND) > 1.1, 'the walk stopped at ' + len(STAND).toFixed(2) + ' -- too short to test anything');
+    ok(len(STAND) <= 3.6 - 2.2 + 1e-6, 'the approach walked past the rim');
     STAND = [0, 0, 0]; held = null; await paint();
   });
 
@@ -622,9 +622,11 @@
     ok(Math.max(...led) > 6, 'the leading groups have collapsed to single winners');
   });
 
-  await T('what follows the leading group is drawn quieter', () => {
+  await T('what follows the leading group is thinner, behind a rule, never fainter', () => {
     /* the group is level; what comes after it genuinely is not, and must not
-       read as though it were */
+       read as though it were. Lesser is a SIZE here, not a fading: grey read
+       as disabled, so the tail keeps its colour and its light -- a thin rule
+       stands between the group and the rest, and the rest are thinner strips. */
     const shownOf = t => {
       const e = EFFECT_ORDER.map((w, i) => [w, t.r[i]]).sort((a, b) => b[1] - a[1]);
       return e.filter(x => x[1] >= e[2][1]);
@@ -636,10 +638,16 @@
     ok(withTail.length > 150, 'only ' + withTail.length + ' weeds have a tail at all');
     const many = withTail[0];
     const html = does(many);
-    ok(html.includes('trk less'), 'the tail is not drawn quieter');
-    ok(html.includes('nm less'), 'the tail is not labelled quieter');
+    ok(html.includes('class=rule') || html.includes('class="rule"'), 'no rule stands before the tail');
+    ok(html.indexOf('rule') < html.indexOf('trk less'), 'the rule does not precede the tail');
+    ok(html.includes('trk less'), 'the tail is not thinner');
+    ok(!html.includes('nm less'), 'the tail is faded by its name, which reads as disabled');
+    ok(!/opacity/.test(html), 'the tail is faded, which reads as disabled');
     const first = html.indexOf('less');
-    ok(html.slice(0, first).includes('class="trk"'), 'the leading group is being dimmed too');
+    ok(html.slice(0, first).includes('class="trk"'), 'the leading group is being thinned too');
+    /* and one without a tail carries no rule */
+    const flat = ST.find(t => { const s = shownOf(t); return s.every(x => x[1] >= s[0][1] - 1); });
+    if (flat) ok(!does(flat).includes('rule'), 'a rule with nothing under it');
   });
 
   await T('the hover never settles a tie by list order', () => {

@@ -377,9 +377,10 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
 #names .trk{height:9px;background:#1d1d1d;border-radius:2px;overflow:hidden}
 #names .trk i{display:block;height:100%;border-radius:2px}
 #names .nm{font-size:11px;color:var(--ink);white-space:nowrap;letter-spacing:.02em}
-/* Below the leading group: present, but genuinely lesser. */
-#names .nm.less{color:var(--ink-3)}
-#names .trk.less{height:6px;opacity:.5}
+/* Below the leading group: a thin rule, then thinner strips -- same colour,
+   same light. Grey read as disabled; lesser here is a size, not a fading. */
+#names .trk.less{height:4px}
+#names .rule{grid-column:1/-1;height:1px;background:var(--line);margin:1px 0}
 /* UPRIGHT, THE FIELD IS THE WHOLE SCREEN. The smells are not beside it and
    not under half of it: they are below the page, out of sight, and the slim
    edge at the bottom of the field -- carrying their name -- is the way down.
@@ -493,15 +494,15 @@ function does(t) {
   const d = unit(t.pos);
   level.sort((a, b) => dot(d, unit(EFFECT_COLOUR[b[0]].pos))
                      - dot(d, unit(EFFECT_COLOUR[a[0]].pos)));
-  const led = level.length;
-  const ordered = level.concat(rest);
-  return '<div class=bars>' + ordered.map(([w, v], i) => {
+  const bar = ([w, v], on) => {
     const f = EFFECT_COLOUR[w];
-    const on = i < led;
     return `<div class="trk${on ? '' : ' less'}"><i style="width:${Math.max(4, 100 * v / 9)}%;`
       + `background:hsl(${f.hue},${f.sat}%,${f.lit}%)"></i></div>`
-      + `<span class="nm${on ? '' : ' less'}">${w}</span>`;
-  }).join('') + '</div>';
+      + `<span class="nm">${w}</span>`;
+  };
+  return '<div class=bars>' + level.map(x => bar(x, true)).join('')
+    + (rest.length ? '<div class=rule></div>' + rest.map(x => bar(x, false)).join('') : '')
+    + '</div>';
 }
 const state = new Set();
 let yaw = 0, pitch = 0, W = 0, H = 0;
@@ -598,7 +599,10 @@ const here = P => [P[0] - EYE[0], P[1] - EYE[1], P[2] - EYE[2]];
    the field thins, and at the far end the sparsest direction holds two or three
    weeds instead of twenty. You can get somewhere sparse now. You still cannot
    get outside. */
-const REACH = 5.0;
+/* Was 5.0 -- the eye (a NECK ahead) ended 5.0 deep in a crowd that starts at
+   2.74, and most of the field stood behind the reader. The rim now holds the
+   eye at the crowd's edge: everything is still ahead when you arrive. */
+const REACH = 3.6;
 const ROAM = REACH - NECK;
 
 /* THE APPROACH, and what it is for.
@@ -1043,6 +1047,7 @@ function draw() {
 
   /* Strain names, once the words have taken what they need. Leaning in spreads
      the nodes apart, so more names fit -- the labels arrive by themselves. */
+  for (const t of ST) t.nameHit = null;         // a name that was not drawn is not a target
   if (FOV < WIDE * 0.80) {
     const lit = ST.filter(t => t.node).sort((a, b) => b.node[2] - a.node[2]);
     const fs = Math.max(9, Math.min(13, 10 * (WIDE / FOV) ** 0.45));
@@ -1056,6 +1061,7 @@ function draw() {
       if (drawn.some(b => bx < b[0] + b[2] / 2 + 4 && bx + tw > b[0] - b[2] / 2 - 4
                        && by < b[1] + b[3] / 2 + 3 && by + fs > b[1] - b[3] / 2 - 3)) continue;
       drawn.push([bx + tw / 2, y, tw, fs]);
+      t.nameHit = [bx, by, tw, fs];               // the name is the leaf's own door
       /* The colour of the ground it stands on. This read `t.h` and `t.l`, which
          no strain has ever carried -- an invalid colour string, which canvas
          silently declines, so every strain name was painted in whatever colour
@@ -1335,8 +1341,15 @@ const touches = new Map();
 let pinchD = 0, wasPinch = false;
 function pinch(r) {
   if (!(r > 0) || Math.abs(r - 1) < 0.002) return;
-  if (r > 1) { if (len(STAND) >= ROAM - 1e-6) lean(1 / r); else walk(Math.log(r) * 2); }
-  else { if (fovWant < WIDE * 0.995) lean(1 / r); else walk(Math.log(r) * 2); }
+  /* The walk-then-lean handoff read as a jump on a phone: the sky stood nailed
+     while the walk lasted, then swelled all at once at the rim. The two blend
+     now: wide open, a pinch is walk above all; as the view narrows, more of
+     each pinch goes to the view and less to the feet. The share is read off
+     the view alone, so pinching back retraces the exact path in -- the view
+     unwinds, and with it every step the feet took. */
+  const k = 0.2 + 0.8 * Math.min(1, Math.max(0, (WIDE - fovWant) / (WIDE * 0.45)));
+  lean(Math.pow(1 / r, k));
+  walk(Math.log(r) * 2 * (1 - k));
 }
 view.addEventListener('pointerdown', e => {
   if (e.pointerType === 'touch') {
@@ -1393,6 +1406,16 @@ view.addEventListener('pointerup', e => {
     const [x, y, w, s] = it.hit;
     if (Math.abs(mx - x) < w/2 + 8 && Math.abs(my - y) < s) { faceTo(it.pos); beginApproach(); return; }
   }
+  /* THE NAME IS THE LEAF'S OWN DOOR: clicking or tapping a strain's name opens
+     the same card as the leaf, through the same renderer -- he always clicks
+     the text. */
+  for (const t of ST) {
+    const nh = t.nameHit;
+    if (nh && mx >= nh[0] - 3 && mx <= nh[0] + nh[2] + 3
+           && my >= nh[1] - 3 && my <= nh[1] + nh[3] + 3) {
+      hoverAt(t.node[0], t.node[1] - t.node[2] * 0.45); nudge(); return;
+    }
+  }
   /* A TAP IS THE FINGER'S HOVER: tap a weed and its card stands, bars and
      all, until a tap lands on nothing. */
   if (e.pointerType === 'touch') { hoverAt(mx, my); nudge(); }
@@ -1400,7 +1423,9 @@ view.addEventListener('pointerup', e => {
 
 function lean(factor, towardX, towardY) {
   const before = fovWant;
-  fovWant = Math.max(WIDE * 0.14, Math.min(WIDE, fovWant * factor));
+  /* the zoom stops a little past where the strain names arrive (names at
+     0.80 of the field): deeper was minutes of travel that said nothing new */
+  fovWant = Math.max(WIDE * 0.55, Math.min(WIDE, fovWant * factor));
   if (towardX !== undefined && fovWant < before) {
     /* turn toward what was clicked, so leaning in also steps toward it */
     const ppr = W / before;
@@ -1434,12 +1459,7 @@ view.addEventListener('wheel', e => {
        out always does SOMETHING. When pinch only ever walked, a view narrowed
        by a double-click could not be widened by the gesture that ought to widen
        it, and the zoom appeared to be broken. */
-    const out = e.deltaY > 0;
-    if (out) {
-      if (fovWant < WIDE * 0.995) lean(1.09); else walk(-0.16);
-    } else {
-      if (len(STAND) >= ROAM - 1e-6) lean(0.92); else walk(0.16);
-    }
+    pinch(e.deltaY > 0 ? 1 / 1.055 : 1.055);
   }
   else if (e.shiftKey) { lean(e.deltaY > 0 ? 1.07 : 0.935); }
   else {
