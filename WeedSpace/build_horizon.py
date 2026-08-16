@@ -296,6 +296,11 @@ h1{margin:0;padding:14px 14px 3px;font-size:13.5px;font-weight:600}
 .lede{margin:0;padding:0 14px 11px;color:var(--ink-3);font-size:11.5px;line-height:1.5}
 .grp{color:var(--ink-3);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
   padding:10px 14px 5px;border-top:1px solid var(--line)}
+#under{display:none;position:absolute;left:0;right:0;bottom:0;height:40px;z-index:5;
+  align-items:center;justify-content:center;gap:7px;
+  font:inherit;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  background:var(--panel);color:var(--ink-2);border:0;border-top:1px solid var(--line);cursor:pointer}
+#under svg{width:13px;height:13px}
 .scroll{flex:1;overflow-y:auto;padding-bottom:10px}
 .s{display:flex;align-items:center;gap:8px;padding:3px 14px;cursor:pointer;
   color:var(--ink-2);font-size:12.5px}
@@ -371,18 +376,24 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
 /* Below the leading group: present, but genuinely lesser. */
 #names .nm.less{color:var(--ink-3)}
 #names .trk.less{height:6px;opacity:.5}
-/* A PHONE IS TALLER THAN IT IS WIDE, and a 206px rail beside the field left
-   neither half worth using. Upright, the field takes the top of the screen
-   whole and the panel stands under it, its list scrolling inside itself as it
-   always did; the globe shrinks to a corner a thumb can still take. Sized in
-   percentages of the fixed frame, not vh, so Safari's collapsing toolbar
-   cannot clip the bottom. */
+/* UPRIGHT, THE FIELD IS THE WHOLE SCREEN. The smells are not beside it and
+   not under half of it: they are below the page, out of sight, and the slim
+   edge at the bottom of the field -- carrying their name -- is the way down.
+   Scrolling back up from the panel is the way home; a finger on the field
+   itself always turns the view, never the page. The page scrolls only here:
+   everywhere wider it is the fixed two-column frame it always was. dvh, so
+   Safari's collapsing toolbar changes what the field fills, not what it cuts. */
 @media (max-width:700px){
-  #wrap{grid-template-columns:1fr;grid-template-rows:minmax(0,56%) minmax(0,1fr)}
+  body{overflow-y:auto;overflow-x:hidden}
+  #wrap{position:static;grid-template-columns:1fr}
+  /* the view is a .col itself, so the panel is named by its place */
   #wrap>.col:first-child{grid-row:2}
-  #wrap>.col:last-child{grid-row:1}
-  #globe{right:10px;bottom:10px;width:150px}
+  #view{grid-row:1;height:100vh;height:100dvh}
+  .scroll{flex:none;overflow:visible}
+  #under{display:flex}
+  #globe{right:10px;bottom:56px;width:150px}
   #mini{width:148px;height:148px}
+  #facing{bottom:52px}
 }
 </style>
 
@@ -418,6 +429,11 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
       <canvas id=mini width=248 height=248></canvas>
     </div>
     <div id=names></div>
+    <button id=under aria-label="Down to the smells">
+      <b>smells</b>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
   </div>
 </div>
 
@@ -1428,6 +1444,16 @@ view.addEventListener('wheel', e => {
   nudge();
 }, { passive: false });
 document.getElementById('bWide').onclick = () => lean(WIDE / fovWant);
+document.getElementById('under').onclick = () => {
+  /* scrollIntoView goes quiet when the body is its own scroller; name the
+     place instead */
+  const panel = document.querySelector('#wrap>.col:first-child');
+  const still = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  scrollTo({ top: panel.getBoundingClientRect().top + scrollY, behavior: still ? 'auto' : 'smooth' });
+};
+addEventListener('load', () => scrollTo(0, 0));
+/* a touch on the way down is not a drag of the field behind it */
+document.getElementById('under').addEventListener('pointerdown', e => e.stopPropagation());
 addEventListener('keydown', e => {
   /* Typing a name is typing, not walking. Without this, spelling "wedding
      cake" walked you two thirds of a metre across the field. */
