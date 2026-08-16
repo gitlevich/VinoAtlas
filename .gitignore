@@ -9,3 +9,6 @@ WeedSpace/horizon.html
 
 # built beside the page it belongs to, like horizon.html itself
 WeedSpace/icon.png
+
+# the harness mirrors .claude/skills here; the mirror is not the repo's
+.agents/
