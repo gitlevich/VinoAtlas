@@ -1259,6 +1259,51 @@
     ok(Math.abs(AT.FOV - AT.OPEN) < 0.02, 'back at the field it opened at');
   });
 
+  await T("two fingers are the pinch, and a tap is the finger's hover", () => {
+    /* On a phone there is no wheel and no hover. Two fingers go through the
+       same door as the trackpad's pinch -- in walks then narrows, out widens
+       then walks back, so spreading and closing retrace one path -- and a tap
+       raises the same card the pointer gets by hovering, which then stands
+       until a tap lands on nothing. A tap while fingers were paired is no tap. */
+    AT.STAND = [0, 0, 0]; AT.FOV = AT.OPEN;
+    const r = cvA.getBoundingClientRect();
+    const pe = (type, id, x, y) => cvA.dispatchEvent(new PointerEvent(type,
+      { pointerId: 40 + id, pointerType: 'touch', clientX: r.left + x, clientY: r.top + y, bubbles: true }));
+    const standOf = () => +(AT.seen().match(/stands ([\d.]+) of/) || [0, 0])[1];
+    const before = standOf();
+    pe('pointerdown', 1, 200, 300); pe('pointerdown', 2, 260, 300);
+    for (let d = 60; d <= 240; d += 20) pe('pointermove', 2, 200 + d, 300);
+    const carried = standOf();
+    ok(carried > before + 0.2, `fingers apart carry him in: ${before} -> ${carried}`);
+    for (let d = 240; d >= 60; d -= 20) pe('pointermove', 2, 200 + d, 300);
+    pe('pointerup', 2, 260, 300); pe('pointerup', 1, 200, 300);
+    ok(Math.abs(standOf() - before) < 0.15, 'and together retraces the path back: ' + standOf());
+    frames(80);
+    /* a label is a door of its own: a tap on one is carried toward it, so both
+       the glass and the empty spot must stand clear of every label's box */
+    const labels = AT.POLES.concat(AT.TERMS);
+    const onLabel = (x, y) => labels.some(it => it.hit
+      && Math.abs(x - it.hit[0]) < it.hit[2] / 2 + 12 && Math.abs(y - it.hit[1]) < it.hit[3] + 4);
+    const m = AT.WMARK.find(m => m.node && m.node[0] > 30 && m.node[0] < r.width - 30
+                              && m.node[1] > 30 && m.node[1] < r.height - 30
+                              && !onLabel(m.node[0], m.node[1]));
+    ok(m, 'a glass stands on screen, clear of the labels');
+    pe('pointerdown', 3, m.node[0], m.node[1]); pe('pointerup', 3, m.node[0], m.node[1]);
+    eq(el('atlasName').style.display, 'block', 'a tap raises the card');
+    ok(el('atlasName').textContent.includes(S.wines[m.i].name.slice(0, 12)), 'for the wine tapped');
+    cvA.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+    eq(el('atlasName').style.display, 'block', 'a finger lifting is not a mouse leaving');
+    let far = null;
+    for (let y = 12; y < r.height && !far; y += 17)
+      for (let x = 12; x < r.width && !far; x += 17)
+        if (!onLabel(x, y) && AT.WMARK.every(m => !m.node
+            || (m.node[0] - x) ** 2 + (m.node[1] - y) ** 2 > Math.pow(Math.max(9, m.node[2] * 1.15) + 6, 2)))
+          far = [x, y];
+    ok(far, 'somewhere empty exists');
+    pe('pointerdown', 4, far[0], far[1]); pe('pointerup', 4, far[0], far[1]);
+    eq(el('atlasName').style.display, 'none', 'and a tap on nothing puts the card away');
+  });
+
   await T('turning is measured in fields, so leaning in does not fling you round', () => {
     /* A fixed radians-per-pixel meant the same drag swept the scene eight times
        further at nine degrees than at seventy-four: the closer you looked, the

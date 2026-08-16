@@ -896,12 +896,47 @@ countRows();
 
 /* ---- pointing ------------------------------------------------------------ */
 let down = false, lx = 0, ly = 0, moved = 0;
+/* TWO FINGERS ON THE GLASS are the trackpad's pinch, through the same door:
+   in walks you forward until the rim and only then narrows the view; out
+   widens first and only then walks back -- so the gesture undoes itself. One
+   finger stays a turn. The moment a second lands, the turn ends and the
+   pinch begins; a tap while fingers were paired is no tap at all. */
+const touches = new Map();
+let pinchD = 0, wasPinch = false, stickyCard = false;
+function pinch(r) {
+  if (!(r > 0) || Math.abs(r - 1) < 0.002) return;
+  /* the walk is logarithmic in the spread, so closing the fingers by the same
+     proportion they opened retraces the same ground exactly -- linear did not,
+     and left the reader half a step from where he began */
+  const at = standWant || STAND;
+  if (r > 1) { if (len(at) >= ROAM - 1e-6) lean(1 / r); else glide(Math.log(r) * 2); }
+  else { if (fovWant < OPEN * 0.995) lean(1 / r); else glide(Math.log(r) * 2); }
+  step();
+}
 cv.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'touch') {
+    touches.set(e.pointerId, [e.clientX, e.clientY]);
+    if (touches.size === 2) {
+      down = false; wasPinch = true; cv.classList.remove('drag');
+      const [a, b] = [...touches.values()];
+      pinchD = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      target = null; vYaw = vPitch = 0;
+      return;
+    }
+  }
   down = true; moved = 0; lx = e.clientX; ly = e.clientY;
-  cv.classList.add('drag'); cv.setPointerCapture(e.pointerId);
+  cv.classList.add('drag');
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {}
   target = null; vYaw = vPitch = 0;
 });
 cv.addEventListener('pointermove', e => {
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, [e.clientX, e.clientY]);
+  if (touches.size === 2) {
+    const [a, b] = [...touches.values()];
+    const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (pinchD > 0) pinch(d / pinchD);
+    pinchD = d; nudge(); return;
+  }
   if (!down) return;
   const dx = e.clientX - lx, dy = e.clientY - ly;
   moved += Math.abs(dx) + Math.abs(dy);
@@ -911,11 +946,18 @@ cv.addEventListener('pointermove', e => {
   nudge();
 });
 cv.addEventListener('pointermove', e => {
-  if (down) return;
+  if (down || touches.size) return;
+  if (e.pointerType === 'touch') return;   // a finger cannot hover
   const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
   hoverAt(mx, my);
 });
-cv.addEventListener('pointerleave', () => { el('atlasName').style.display = 'none'; });
+cv.addEventListener('pointerleave', () => { if (!stickyCard) el('atlasName').style.display = 'none'; });
+const dropTouch = e => {
+  if (e.pointerType !== 'touch') return;
+  touches.delete(e.pointerId);
+  if (!touches.size) wasPinch = false; else pinchD = 0;
+};
+cv.addEventListener('pointercancel', dropTouch);
 
 /* A glass is hoverable over the whole glass. Its node is its own centre and its
    reach is the size it was actually drawn at, so the bowl, the stem and the foot
@@ -956,8 +998,10 @@ function hoverAt(mx, my) {
 }
 
 cv.addEventListener('pointerup', e => {
+  const paired = wasPinch;
+  dropTouch(e);
   down = false; cv.classList.remove('drag');
-  if (moved > 5) return;
+  if (paired || moved > 5) return;
   vYaw = vPitch = 0;
   const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
   for (const it of POLES.concat(TERMS)) {
@@ -966,6 +1010,13 @@ cv.addEventListener('pointerup', e => {
     if (Math.abs(mx - x) < w/2 + 8 && Math.abs(my - y) < s) {
       faceTo(it.dir || it.pos); beginApproach(); return;
     }
+  }
+  /* A TAP IS THE FINGER'S HOVER. Tap a glass and its card stands -- the same
+     card the pointer gets by hovering, through the same renderer -- and stays
+     standing until a tap lands on nothing. */
+  if (e.pointerType === 'touch') {
+    stickyCard = !!hoverAt(mx, my);
+    nudge();
   }
 });
 
