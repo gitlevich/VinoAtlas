@@ -80,6 +80,23 @@
     el('t-find').click();
   });
 
+  await T('a heading names what stands under it', () => {
+    /* It asked "which of your wines are we looking at?", which is the reader
+       being told how to operate a control rather than what the thing is. What
+       stands under it is the four kinds his own bottles fall into. */
+    const pick = document.querySelector('.pick');
+    ok(!/\?\s*$/.test(pick.textContent), 'not a question: ' + pick.textContent);
+    ok(/four kinds/i.test(pick.textContent), 'it names them: ' + pick.textContent);
+    /* and the claim it makes is true of the data: every bottle is in one */
+    eq(KINDS.reduce((s, k) => s + k.wines.length, 0), OWNED.size,
+       'the four hold every bottle on the account');
+    eq(KINDS.length, 4, 'and there are four of them');
+    /* the head beside it already says what it is, and says it of the open kind */
+    ok(/^Your taste in .+· the span of your \d+ bottles/.test(
+         el('tasteHead').parentElement.textContent.replace(/\s+/g, ' ').trim()),
+       'the taste head names its kind and its count');
+  });
+
   await T('what you do in the shop is drawn, not spelled out', () => {
     /* An affordance you look at rather than read. The words survive as the
        tooltip and as the label a screen reader is given -- what goes is the

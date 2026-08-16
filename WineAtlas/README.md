@@ -240,7 +240,7 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **123 of 123 pass.**
+Every test name states an acceptance criterion. **124 of 124 pass.**
 
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from
 the catalogue by a second route and checks every claim the page makes about it:
