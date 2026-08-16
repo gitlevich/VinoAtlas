@@ -289,12 +289,24 @@ input[type=search]{width:100%;font:inherit;font-size:14.5px;padding:8px 10px;bor
   border:1px solid var(--rule);background:var(--raise);color:var(--ink)}
 .spellbox{position:relative;background:var(--raise);border:1px solid var(--rule);border-radius:8px;padding:4px}
 .spellbox:focus-within{border-color:var(--mark)}
-/* the cost reads immediately left of the send it belongs to, both in the box's
-   bottom-right corner -- laid over it, never taking width from the writing */
+/* THE COST STANDS UNDER THE BOX, one quiet line: who answers, which model,
+   what this message cost, what the whole chat has. Inside the box it read as
+   part of the writing. And while the sommelier works, the send arrow becomes
+   a slow-breathing dot -- the live light; the arrow comes back when it is
+   done. */
 .askrow{position:relative}
 .askfield{position:relative}
-.askactions{position:absolute;right:4px;bottom:2px;display:inline-flex;align-items:center;gap:8px}
-#spend{font-variant-numeric:tabular-nums;white-space:nowrap}
+.askactions{position:absolute;right:4px;bottom:2px;display:inline-flex;align-items:center}
+#spend{display:block;text-align:right;margin-top:4px;font-size:11.5px;
+  font-variant-numeric:tabular-nums;line-height:1.45}
+#spend:empty{display:none}
+#askGo .dot{display:none;width:10px;height:10px;border-radius:50%;
+  background:var(--me);box-shadow:0 0 7px var(--me)}
+#askGo.live .go{display:none}
+#askGo.live{pointer-events:none}
+#askGo.live .dot{display:block;animation:cc-breathe 1.3s ease-in-out infinite}
+@keyframes cc-breathe{0%,100%{opacity:.4;box-shadow:0 0 3px var(--me)}50%{opacity:1;box-shadow:0 0 10px var(--me)}}
+@media(prefers-reduced-motion:reduce){#askGo.live .dot{animation:none;opacity:.85}}
 #hl,#ask{font-family:inherit;font-size:15px;line-height:1.5;padding:9px 11px 34px;
   white-space:pre-wrap;word-wrap:break-word;box-sizing:border-box}
 #hl{position:absolute;inset:0;color:var(--ink);pointer-events:none;overflow:hidden}

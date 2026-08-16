@@ -1060,6 +1060,9 @@ async function callAgent(sys,msgs){
       cw:d.usage?.cache_creation_input_tokens||0,cr:d.usage?.cache_read_input_tokens||0}};
 }
 async function send(){
+  /* one turn at a time: while the dot breathes, Enter does nothing and the
+     words stay in the box */
+  if(el('askGo').classList.contains('live')) return;
   const text=askEl.value.trim(); if(!text) return;
   const sp=parseSpell(text);
   if(sp.hasPlain&&!KEY()){ // do not consume the message: it stays in the box
@@ -1079,7 +1082,9 @@ async function send(){
     addMsg('assistant',sigilSay(sp)||'nothing to change');
     return;
   }
-  el('askNote').textContent='…';
+  /* the send arrow becomes a slow-breathing dot while it works: the live light */
+  el('askGo').classList.add('live');
+  const s0={usd:spend.usd,tin:spend.tin,tout:spend.tout};
   /* IT MOVES, THEN SEES, THEN SPEAKS. The turn is a loop, not a single answer:
      it calls a control, the page answers with what it now shows, and only when
      it stops calling does it have the last word. So what it says is written
@@ -1123,8 +1128,12 @@ async function send(){
       :'The sommelier sent no words and made no move. Nothing changed. Ask again, differently.');
   }catch(err){
     addMsg('notice','That did not go through. '+err.message+'\nThe key and the model are behind the gear; Anthropic and OpenAI each keep their own key.');
+  }finally{
+    el('askGo').classList.remove('live');
+    spend.last={usd:spend.usd-s0.usd,tin:spend.tin-s0.tin,tout:spend.tout-s0.tout};
+    spend.last.unpriced=!(spend.last.usd>0);
+    localStorage.setItem('cc_spend',JSON.stringify(spend)); drawSpend();
   }
-  el('askNote').textContent='';
 }
 el('askGo').onclick=send;
 el('mySigil').onclick=()=>{
@@ -1146,11 +1155,17 @@ function price(id){let best=null;
   for(const k in PRICE) if(id.startsWith(k)&&(!best||k.length>best.length)) best=k;
   return best?PRICE[best]:null;}
 let spend=JSON.parse(localStorage.getItem('cc_spend')||'{"usd":0,"tin":0,"tout":0,"unpriced":false}');
+/* one quiet line under the box: who answers, which model, what this message
+   cost, what the whole chat has. A model with no known price counts tokens. */
 function drawSpend(){
   const t=x=>x>=1000?(x/1000).toFixed(1)+'k':String(x);
-  el('spend').textContent=(spend.tin||spend.tout)
-    ?(spend.unpriced?'':'$'+spend.usd.toFixed(spend.usd<0.1?4:2)+' · ')+t(spend.tin)+' in / '+t(spend.tout)+' out'
-    :'';
+  const money=u=>'$'+u.toFixed(u<0.1?4:2);
+  if(!(spend.tin||spend.tout)){el('spend').textContent='';return;}
+  const oa=agent.vendor==='openai';
+  const part=s=>(s.unpriced||!(s.usd>0))?`${t(s.tin)} in / ${t(s.tout)} out`:money(s.usd);
+  el('spend').textContent=(oa?'OpenAI':'Anthropic')+' API · '+(MODEL()||DEFAULT_MODEL[oa?'openai':'anthropic'])
+    +(spend.last&&(spend.last.tin||spend.last.tout)?' · this '+part(spend.last):'')
+    +' · total '+part(spend);
 }
 function addSpend(u){
   spend.tin+=u.tin+(u.cw||0)+(u.cr||0); spend.tout+=u.tout;

@@ -135,18 +135,19 @@
 placeholder="like @ but younger, no oak — @ picks a wine from the list, ! holds a range, # names a quality"></textarea>
             </div>
             <div class="askactions">
-              <span class="note" id="spend"
-                title="What this chat has cost with your key, at public model prices. A model with no known price counts tokens only."></span>
               <button id="askGo" title="Send (or press Enter)" aria-label="Send">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                <svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M10 8 6 12l4 4"/><path d="M6 12h10a4 4 0 0 0 4-4V5"/></svg>
+                <span class="dot" aria-hidden="true"></span>
               </button>
             </div>
           </div>
           <div id="mention" class="mention" hidden></div>
           <span class="grip" aria-hidden="true"><svg viewBox="0 0 12 12" fill="currentColor"><path d="M11 7 7 11h4zM11 2 2 11h2.5L11 4.5z"/></svg></span>
         </div>
+        <div class="note" id="spend"
+          title="What this chat has cost with your key, at public model prices. A model with no known price counts tokens instead."></div>
         <div id="diag" class="note" style="margin-top:5px;color:var(--bad)"></div>
         <div id="gloss" class="note" style="margin-top:4px"></div>
         <div class="note" id="askNote" style="margin-top:6px"></div>

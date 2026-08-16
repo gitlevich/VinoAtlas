@@ -492,7 +492,8 @@
     Object.assign(spend, { usd: 0, tin: 0, tout: 0, unpriced: false });
     addSpend({ model: 'claude-sonnet-5', tin: 1000, tout: 100 });
     near(spend.usd, (1000 * 3 + 100 * 15) / 1e6);
-    ok(el('spend').textContent.includes('in') && el('spend').textContent.includes('$'), 'meter shown');
+    ok(/API · /.test(el('spend').textContent) && el('spend').textContent.includes('total $'),
+       'the line says who, which model, and the total: ' + el('spend').textContent);
     Object.assign(spend, keep); localStorage.setItem('cc_spend', JSON.stringify(spend)); drawSpend();
   });
   await T('every message offers copy', () => {
@@ -614,15 +615,46 @@
       'the coloured overlay keeps pace');
     ask.style.height = '';
   });
-  await T('the cost never steals width from the writing', () => {
+  await T('the cost stands under the box, saying this and the total', () => {
+    /* inside the box it read as part of the writing; it is a caption now,
+       right under the box: who answers, which model, this message, the whole
+       chat. The send arrow keeps the box's corner to itself. */
     const keep = { ...spend };
-    Object.assign(spend, { usd: 0.42, tin: 112800, tout: 19, unpriced: false }); drawSpend();
+    Object.assign(spend, { usd: 0.42, tin: 112800, tout: 19, unpriced: false,
+                           last: { usd: 0.012, tin: 91000, tout: 12, unpriced: false } });
+    drawSpend();
+    const line = el('spend').textContent;
+    ok(/API · .+ · this \$0\.0120 · total \$0\.42$/.test(line), 'the caption: ' + line);
+    const box = document.querySelector('.spellbox').getBoundingClientRect();
+    ok(el('spend').getBoundingClientRect().top >= box.bottom - 1, 'under the box, not in it');
     const field = ask.getBoundingClientRect().width;
-    const box = document.querySelector('.spellbox').getBoundingClientRect().width;
-    ok(field > box * 0.9, 'the field keeps the box: ' + Math.round(field) + ' of ' + Math.round(box));
+    ok(field > box.width * 0.9, 'the field keeps the box: ' + Math.round(field) + ' of ' + Math.round(box.width));
     const acts = document.querySelector('.askactions').getBoundingClientRect();
-    ok(acts.bottom <= document.querySelector('.spellbox').getBoundingClientRect().bottom + 1, 'actions sit inside');
-    Object.assign(spend, keep); drawSpend();
+    ok(acts.bottom <= box.bottom + 1, 'the arrow sits inside');
+    delete spend.last; Object.assign(spend, keep); drawSpend();
+  });
+
+  await T('while it works, the arrow is a breathing dot, and a turn cannot be sent over a turn', async () => {
+    const realFetch = window.fetch, wasAgent = { ...agent };
+    agent.vendor = 'anthropic'; agent.keys = { anthropic: 'x' };
+    let release; const gate = new Promise(r => { release = r; });
+    window.fetch = async () => { await gate;
+      return { ok: true, json: async () => ({ content: [{ type: 'text', text: 'Here.' }], usage: { input_tokens: 5, output_tokens: 5 } }) }; };
+    const before = chat.length;
+    try {
+      type('say something'); const turn = send();
+      ok(el('askGo').classList.contains('live'), 'the button is live');
+      eq(getComputedStyle(el('askGo').querySelector('.go')).display, 'none', 'the arrow is gone');
+      eq(getComputedStyle(el('askGo').querySelector('.dot')).display, 'block', 'the dot breathes in its place');
+      type('again'); await send();
+      eq(chat.length, before + 1, 'the second send waited: only the first message stands');
+      release(); await turn;
+      ok(!el('askGo').classList.contains('live'), 'and the arrow comes back');
+      ok(/this /.test(el('spend').textContent), 'the caption now carries this message');
+    } finally {
+      release(); window.fetch = realFetch; Object.assign(agent, wasAgent);
+      el('askGo').classList.remove('live');
+    }
   });
   await T('send is an icon, not a word', () => {
     const b = el('askGo');
