@@ -37,6 +37,7 @@ h1{margin:0;padding:14px 14px 3px;font-size:13.5px;font-weight:600}
   background:var(--panel);color:var(--ink-2);border:0;border-top:1px solid var(--line);cursor:pointer}
 #under svg{width:13px;height:13px}
 .scroll{flex:1;overflow-y:auto;padding-bottom:10px}
+.s em{margin-left:auto;font-style:normal;color:var(--ink-3);font-size:10.5px}
 .s{display:flex;align-items:center;gap:8px;padding:3px 14px;cursor:pointer;
   color:var(--ink-2);font-size:12.5px}
 .s:hover{background:#171717;color:var(--ink)}
@@ -135,8 +136,8 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
 
 <div id=wrap>
   <div class=col>
-    <h1>What do you smell?</h1>
-    <p class=lede>Tick what is in the jar and you will be turned to face it.
+    <h1>What do you want?</h1>
+    <p class=lede>Tick a smell or a feeling and you are turned toward it.
       Or drag the view and look around.</p>
     <div class=grp>By name</div>
     <div id=find>
@@ -144,8 +145,12 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
              spellcheck=false aria-label="find a strain by name">
       <div id=hits></div>
     </div>
-    <div class=grp>Smells</div>
-    <div class=scroll id=list></div>
+    <div class=scroll>
+      <div class=grp>Smells</div>
+      <div id=list></div>
+      <div class=grp>Feelings</div>
+      <div id=feelList></div>
+    </div>
     <div id=foot>
       <button id=bClear>clear</button>
       <button id=bWide style="display:none">step back</button>
@@ -172,8 +177,8 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
         <ellipse cx="12" cy="12" rx="4" ry="9"/>
         <path d="M3.6 9h16.8M3.6 15h16.8"/></svg>
     </button>
-    <button id=under aria-label="Down to the smells">
-      <b>smells</b>
+    <button id=under aria-label="Down to the smells and feelings">
+      <b>smells &middot; feelings</b>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
     </button>
@@ -820,6 +825,14 @@ function bundle(F) {
     .sort((a, b) => b.c - a.c);
   let near = all.filter(o => o.c > ATTEND), wide = false;
   if (near.length < 2) { near = all.slice(0, 7); wide = true; }
+  /* you are always somewhere: the cone can fill with one kind alone, and the
+     strip then said what it smells here and nothing of how it feels. The
+     nearest of a missing kind stands in, however far round it is. */
+  for (const kind of ['feel', 'smell'])
+    if (!near.some(o => o.i.kind === kind)) {
+      const b = all.find(o => o.i.kind === kind);
+      if (b) near = near.concat(b);
+    }
   const off = wide && near.length
     ? Math.round(Math.acos(Math.max(-1, Math.min(1, near[0].c))) * 57.3) : 0;
   return { smells: near.filter(o => o.i.kind === 'smell').map(o => o.i).slice(0, 5),
@@ -887,24 +900,33 @@ function readout() {
   if (state.size) {
     let keep = new Set(ST.keys()), scored = new Set(ST.keys());
     for (const w of state) {
-      const it = SMELLS.find(i => i.w === w);
-      const s = new Set(it.in), o = new Set(it.on);
+      const it = ITEMS.find(i => i.w === w);
+      const s = new Set(it.in);
       keep = new Set([...keep].filter(i => s.has(i)));
-      scored = new Set([...scored].filter(i => o.has(i)));   // judged on these only
+      if (it.on) { const o = new Set(it.on);
+        scored = new Set([...scored].filter(i => o.has(i))); }  // judged on these only
     }
     const idx = [...keep], base = [...scored];
+    /* asked by smell, the line says what the weeds will DO; asked by feeling,
+       it turns around and says what they SMELL of -- which is how you go and
+       find them. Either way the asked-for words themselves are left out: a
+       creative-ticked set being creative is not a finding. */
+    const anyFeel = [...state].some(w => FEELS.some(f => f.w === w));
     if (idx.length >= 8) {
-      const rows = FEELS.map(f => {
+      const pool = (anyFeel ? SMELLS : FEELS).filter(i => !state.has(i.w));
+      const rows = pool.map(f => {
         const s = new Set(f.in);
         const got = Math.round(100 * idx.filter(i => s.has(i)).length / idx.length);
         const ch = Math.round(100 * base.filter(i => s.has(i)).length / base.length);
         return { w: f.w, got, ch, lift: got - ch };
       }).filter(r => r.lift > 8).sort((a, b) => b.lift - a.lift).slice(0, 3);
+      const tint = anyFeel ? 'var(--smell)' : 'var(--feel)';
+      const lead = anyFeel ? 'feel' : 'smell';
       odds = rows.length
-        ? `<div class=odds>of the ${idx.length} that smell this way: `
-          + rows.map(r => `<b style="color:var(--feel)">${r.w}</b> ${r.got}%`
+        ? `<div class=odds>of the ${idx.length} that ${lead} this way: `
+          + rows.map(r => `<b style="color:${tint}">${r.w}</b> ${r.got}%`
               + ` <span style="opacity:.7">(${r.ch}% among the same strains)</span>`).join(' &middot; ') + `</div>`
-        : `<div class=odds>${idx.length} strains smell this way, and no effect is`
+        : `<div class=odds>${idx.length} strains ${lead} this way, and nothing else is`
           + ` more than 8 points above chance &mdash; which is where chance itself lands</div>`;
     } else if (idx.length) {
       odds = `<div class=odds>only ${idx.length} strains smell exactly this way &mdash; too few to say</div>`;
@@ -929,16 +951,19 @@ function faceTo(d) {
 }
 
 const list = document.getElementById('list');
-for (const s of SMELLS) {
+const feelList = document.getElementById('feelList');
+/* The lists wear the sky's colours. A word here and the same word out there
+   are one thing, so it is recognised rather than read -- and because colour
+   means direction, a list also shows at a glance which words lie together and
+   which lie apart. A FEELING IS A THING YOU CAN ASK FOR, the same way: the
+   states are what the space is for, and until they stood here nothing said
+   they could be asked for at all. Each row counts the strains that answer. */
+function tickRow(s, into) {
   const row = document.createElement('div');
   row.className = 's'; row.setAttribute('aria-checked', 'off');
-  /* The list wears the sky's colours. A smell here and the same smell out there
-     are one thing, so it is recognised rather than read -- and because colour
-     means direction, the list also shows at a glance which smells lie together
-     and which lie apart. */
   const col = `hsl(${s.hue},${s.sat}%,${s.lit}%)`;
   row.innerHTML = `<i style="border-color:${col}"></i>`
-    + `<span style="color:${col}">${s.w}</span>`;
+    + `<span style="color:${col}">${s.w}</span><em>${s.in.length}</em>`;
   const chip = row.querySelector('i');
   row.onclick = () => {
     if (state.has(s.w)) { state.delete(s.w); row.setAttribute('aria-checked', 'off'); }
@@ -947,15 +972,17 @@ for (const s of SMELLS) {
     if (state.size) {
       const v = [0, 0, 0];
       for (const w of state) {
-        const p = SMELLS.find(i => i.w === w).pos, n = len(p);
+        const p = ITEMS.find(i => i.w === w).pos, n = len(p);
         v[0] += p[0]/n; v[1] += p[1]/n; v[2] += p[2]/n;
       }
       faceTo(v);
     }
     draw(); readout();
   };
-  list.append(row);
+  into.append(row);
 }
+for (const s of SMELLS) tickRow(s, list);
+for (const f of FEELS) tickRow(f, feelList);
 
 /* ---- A WEED YOU ALREADY KNOW ---------------------------------------------
 
@@ -1077,7 +1104,20 @@ function hoverAt(mx, my) {
    second lands, the turn ends and the pinch begins, and a tap while fingers
    were paired is no tap at all. */
 const touches = new Map();
-let pinchD = 0, pinchAt = 0, wasPinch = false;
+let pinchD = 0, pinchAt = 0, pinchLog = 0, wasPinch = false;
+/* THE GESTURE BREATHES THROUGH A RESERVOIR. The walk half of a pinch lands
+   instantly and the lean half is eased, so the walk-heavy start of a pinch
+   was raw steps and the lean-heavy end was smooth. The fingers' ratio goes
+   into a log-space pool; a third of the pool is applied per frame, and the
+   rest drains over the frames that follow -- one gentle curve from the first
+   moment. Lifting the fingers flushes what remains, so a closed pinch still
+   retraces an opened one exactly. */
+function applyPinch(final) {
+  const take = final ? pinchLog : pinchLog * 0.35;
+  if (Math.abs(take) < 1e-4) { if (final) pinchLog = 0; return; }
+  pinchLog -= take;
+  pinch(Math.exp(take));
+}
 function pinch(r) {
   if (!(r > 0) || Math.abs(r - 1) < 0.002) return;
   /* The walk-then-lean handoff read as a jump on a phone: the sky stood nailed
@@ -1122,8 +1162,9 @@ view.addEventListener('pointermove', e => {
     if (nowT - pinchAt >= 16) {
       const [a, b] = [...touches.values()];
       const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-      if (pinchD > 0 && d > 0) pinch(d / pinchD);
-      pinchD = d; pinchAt = nowT; nudge();
+      if (pinchD > 0 && d > 0) pinchLog += Math.log(d / pinchD);
+      pinchD = d; pinchAt = nowT;
+      applyPinch(); nudge();
     }
     return;
   }
@@ -1142,7 +1183,9 @@ view.addEventListener('pointermove', e => {
 });
 const dropTouch = e => {
   if (e.pointerType !== 'touch') return;
+  const had = touches.size;
   touches.delete(e.pointerId);
+  if (had === 2 && touches.size < 2) applyPinch(true);   // the pool empties with the pinch
   if (!touches.size) wasPinch = false; else pinchD = 0;
 };
 view.addEventListener('pointercancel', dropTouch);
@@ -1249,7 +1292,7 @@ addEventListener('keydown', e => {
 /* One panel, one clear: the ticks, the name you typed, and the mark it left. */
 document.getElementById('bClear').onclick = () => {
   state.clear();
-  [...list.children].forEach(r => {
+  [...list.children, ...feelList.children].forEach(r => {
     r.setAttribute('aria-checked', 'off');
     r.querySelector('i').style.background = '';
   });
@@ -1552,6 +1595,7 @@ new ResizeObserver(refit).observe(view);
 /* one loop: glide toward a target, or coast to a stop after a drag */
 (function loop() {
   let moving = false;
+  if (Math.abs(pinchLog) > 1e-4 && touches.size === 2) { applyPinch(); moving = true; }
   if (Math.abs(fovWant - FOV) > 0.0004) {
     FOV += (fovWant - FOV) * 0.16;
     moving = true;

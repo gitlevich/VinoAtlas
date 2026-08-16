@@ -767,6 +767,48 @@
     ok(!probe(0, -R * 3), 'the hotspot reaches far past the leaf');
   });
 
+  await T('a feeling is a thing you can ask for', async () => {
+    /* the states are what the space is for, and nothing said they could be
+       asked for: the panel navigated by smell alone. A feeling row ticks like
+       a smell row, turns you toward its star, mixes with smells -- and the
+       line at the foot turns around: asked by feeling, it says what those
+       weeds SMELL of, which is how you go and find them. */
+    document.getElementById('bClear').click();
+    const frow = [...document.querySelectorAll('#feelList .s')]
+      .find(r => r.textContent.includes('creative'));
+    ok(frow, 'no creative row to tick');
+    ok(/\d/.test(frow.querySelector('em').textContent), 'the row counts its strains');
+    frow.click();
+    ok(state.has('creative'), 'ticking a feeling did not take');
+    aimsAt(target, FEELS.find(f => f.w === 'creative').pos, 'creative');
+    await paint();
+    const o = document.querySelector('#facing .odds');
+    ok(o && /feel this way/.test(o.textContent), 'the line does not turn around: ' + (o ? o.textContent.slice(0, 70) : 'no line'));
+    ok(SMELLS.some(s => o.textContent.includes(s.w)), 'and it names no smell to look for');
+    const srow = [...document.querySelectorAll('#list .s')].find(r => r.textContent.includes('mango'));
+    srow.click();
+    ok(state.has('mango') && state.has('creative'), 'a smell and a feeling do not mix');
+    document.getElementById('bClear').click();
+    ok(!state.size, 'clear left ticks standing');
+    ok([...document.querySelectorAll('#feelList .s i')].every(i => !i.style.background),
+       'clear left a feeling chip filled');
+    await paint();
+  });
+
+  await T('how it feels is never blank, because you are always somewhere', async () => {
+    /* the cone can fill with smells alone; the strip then named the jar and
+       said nothing of the state -- but a place in this space always has a
+       nearest feeling, and the strip owes it */
+    for (let y = 0; y < 6.2; y += Math.PI / 6)
+      for (const pch of [-0.9, -0.45, 0, 0.45, 0.9]) {
+        yaw = y; pitch = pch; vYaw = vPitch = 0;
+        const { smells, feels } = bundle(frame());
+        ok(feels.length >= 1, 'no feeling at yaw ' + y.toFixed(2) + ' pitch ' + pch);
+        ok(smells.length >= 1, 'no smell at yaw ' + y.toFixed(2) + ' pitch ' + pch);
+      }
+    yaw = home.yaw; pitch = home.pitch; await paint();
+  });
+
   await T('double-clicking the globe takes you there', async () => {
     /* The globe paints each pixel by turning disc coordinates into a direction;
        the same arithmetic backwards turns a click into the direction it was
@@ -1010,7 +1052,7 @@
     const asRGB = css => { probe.style.color = css; return getComputedStyle(probe).color; };
     let dimmest = 1;
     for (const r of rows) {
-      const w = r.textContent.trim();
+      const w = r.querySelector('span').textContent.trim();
       const it = SMELLS.find(s => s.w === w);
       ok(it, w + ' is in the list but not in the sky');
       const got = getComputedStyle(r.querySelector('span')).color;
@@ -1027,7 +1069,7 @@
   await T('picking a smell fills its chip and clearing empties it', async () => {
     document.getElementById('bClear').click(); await paint();
     const row = [...document.querySelectorAll('#list .s')]
-      .find(r => r.textContent.trim() === 'citrus');
+      .find(r => r.querySelector('span').textContent.trim() === 'citrus');
     const chip = row.querySelector('i');
     ok(!chip.style.background, 'the chip started filled');
     row.click(); await paint();
@@ -1041,7 +1083,7 @@
   await T('picking a smell turns you to face it', async () => {
     document.getElementById('bClear').click();
     const row = [...document.querySelectorAll('#list .s')]
-      .find(r => r.textContent.trim() === 'citrus');
+      .find(r => r.querySelector('span').textContent.trim() === 'citrus');
     ok(row, 'citrus is not in the list');
     row.click(); await paint();
     ok(state.has('citrus'), 'the pick was not recorded');
@@ -1055,8 +1097,8 @@
   await T('two smells turn you to the middle of both', async () => {
     document.getElementById('bClear').click();
     const rows = [...document.querySelectorAll('#list .s')];
-    const a = rows.find(r => r.textContent.trim() === 'citrus');
-    const b = rows.find(r => r.textContent.trim() === 'earthy');
+    const a = rows.find(r => r.querySelector('span').textContent.trim() === 'citrus');
+    const b = rows.find(r => r.querySelector('span').textContent.trim() === 'earthy');
     a.click(); b.click(); await paint();
     ok(state.size === 2, 'both picks did not stick');
     const dir = ['citrus', 'earthy'].map(w => SMELLS.find(s => s.w === w).pos);
