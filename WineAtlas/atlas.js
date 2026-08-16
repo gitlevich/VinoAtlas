@@ -1415,11 +1415,30 @@ function theme() {
   RISERGB = (cs.getPropertyValue('--rise-rgb') || '226,163,90').trim();
   repaintRows();
 }
+/* THE SHOP TAKES THE REST OF THE WINDOW. Its height was a clamp, so on a tall
+   screen the card stopped short and the glass below it was spent on nothing.
+   What is above the shop -- the title, the lede, the tabs -- is measured rather
+   than guessed at, because the lede rewraps with the width and no constant
+   survives that. Measured in document space, so the answer is the same whether
+   or not the reader has scrolled. */
+const FLOOR = 430;
+function fillTall() {
+  if (!live || view.classList.contains('big')) return;
+  const card = atlasGrid.closest('.card');
+  if (!card) return;
+  const box = atlasGrid.getBoundingClientRect();
+  const below = card.getBoundingClientRect().bottom - box.bottom + 30;   // card's own edge, then the page's
+  const want = Math.round(Math.max(FLOOR, innerHeight - (box.top + scrollY) - below));
+  const now = parseInt(atlasGrid.style.minHeight, 10) || 0;
+  if (Math.abs(want - now) > 1) atlasGrid.style.minHeight = want + 'px';  // else the observer loops
+}
 function refit() {
+  fillTall();
   if (!size()) return;
   theme(); draw(); readout(); drawMini();
 }
 new ResizeObserver(() => { if (live) refit(); }).observe(cv);
+addEventListener('resize', () => { if (live) refit(); });
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change', () => { if (live) refit(); });
 
 /* One step of the glide, kept apart from what schedules it. A browser stops

@@ -37,7 +37,7 @@ body{margin:0;background:var(--ground);color:var(--ink);
    screen spent a quarter of the glass on margin either side while the shop
    inside it was cramped. Reading measure is held where reading happens -- the
    lede, the prose columns -- not by starving everything else of width. */
-.wrap{max-width:none;margin:0;padding:26px 24px 30px;display:flex;flex-direction:column;gap:20px}
+.wrap{max-width:none;margin:0;padding:16px 24px 26px;display:flex;flex-direction:column;gap:14px}
 /* Reading measure is held where reading happens, and only there: a line of body
    text eighteen hundred pixels wide is not filled space, it is space you cannot
    read across. The charts, the lists and the shop take the whole window; the one
@@ -48,7 +48,7 @@ body{margin:0;background:var(--ground);color:var(--ink);
 /* an id beats section[hidden], so the closed tab has to say so itself */
 #s-how[hidden]{display:none}
 h1{margin:0;font-size:clamp(23px,3vw,31px);font-weight:600;letter-spacing:-.024em;line-height:1.15}
-.lede{margin:0;font-size:15.5px;line-height:1.6;color:var(--ink-2);max-width:66ch}
+.lede{margin:0;font-size:15.5px;line-height:1.6;color:var(--ink-2);max-width:150ch}
 .head{display:flex;align-items:baseline;gap:12px 40px}
 .head h1{flex:none}
 .head .lede{flex:1;min-width:0}
@@ -1225,7 +1225,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='b5b34b01';
+const BUILD='69418c61';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
