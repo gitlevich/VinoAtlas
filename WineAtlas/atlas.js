@@ -782,6 +782,9 @@ function refilter() {
    A word that would leave none is greyed. Otherwise the only way to find out is
    to tick it and watch the shop go dark. */
 function countRows() {
+  /* the untick hand shows itself only while a word is ticked: appearing
+     exactly when its situation exists is what lets it go unread */
+  el('atlasClear').style.display = state.size ? '' : 'none';
   for (const row of wordList.children) {
     const t = TERMS.find(x => x.w === row.dataset.w);
     const on = state.has(t.w);

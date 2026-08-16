@@ -263,9 +263,13 @@ card's hover names the bottle and gives the tally.
 **The top folds away.** A title and an opening paragraph, neither of which is
 the useful part of the page; folded, the title shrinks to a name beside the tabs
 and the page starts 84 pixels higher than it did. What you do inside the shop is
-drawn rather than spelled out — a funnel struck through puts every word out, a
-glass with a minus widens the view back to where it opened — and the words
-survive as the tooltip and as the label a screen reader is given.
+drawn rather than spelled out — a ticked box struck through unticks every word,
+a magnifier with a minus steps back out to the view you started with — and the
+words survive as the tooltip and as the label a screen reader is given. The two
+stand beside the panel's own instruction, not at its foot, and each shows
+itself only while its situation exists: the untick once a word is ticked, the
+step-back once the reader has leaned in. A control that appears exactly when
+it has work to do explains itself.
 
 **The panels are equal, and the reader sets them.** They opened at 280 and 330,
 which were not chosen so much as written down in that order. Both grids that

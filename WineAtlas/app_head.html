@@ -421,17 +421,23 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 /* a word that would leave nothing: still tickable, plainly pointless */
 .aw.none{opacity:.38}
 .aw.none em{text-decoration:line-through}
-.awfoot{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--rule)}
+/* THE TWO HANDS SIT BESIDE THE INSTRUCTION, and each shows itself only when
+   its situation exists: the untick button once a word is ticked, the step-back
+   once the reader has leaned in. A control that appears exactly when it has
+   work to do explains itself; at the foot of the panel they were below where
+   anyone was looking. */
+.awtools{display:flex;gap:6px;align-items:flex-start}
+.awtools .note{flex:1;min-width:0;margin:0}
 /* AN AFFORDANCE YOU LOOK AT RATHER THAN READ. A funnel struck through puts every
    word out; a glass with a minus widens the view back to where it opened. The
    words survive as the tooltip and as the label a screen reader is given. */
-.awfoot button{display:flex;align-items:center;justify-content:center;
+.awtools button{flex:none;display:flex;align-items:center;justify-content:center;
   width:28px;height:28px;padding:0;border-radius:7px;
-  border:1px solid var(--rule);background:var(--raise);color:var(--ink-3);cursor:pointer;
+  border:1px solid var(--rule);background:var(--raise);color:var(--ink-2);cursor:pointer;
   transition:color .12s,border-color .12s}
-.awfoot button svg{width:15px;height:15px;display:block}
-.awfoot button:hover{color:var(--ink);border-color:var(--ink-3)}
-.awfoot button:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.awtools button svg{width:17px;height:17px;display:block}
+.awtools button:hover{color:var(--ink);border-color:var(--ink-3)}
+.awtools button:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 
 /* THE SHOP TAKES THE WHOLE ROW. Its height was clamped while the grid stretched,
    so the two panels beside it ran on past the bottom of the shop and the middle

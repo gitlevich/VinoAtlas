@@ -97,21 +97,37 @@
        'the taste head names its kind and its count');
   });
 
-  await T('what you do in the shop is drawn, not spelled out', () => {
+  await T('what you do in the shop is drawn, and appears when it has work', () => {
     /* An affordance you look at rather than read. The words survive as the
        tooltip and as the label a screen reader is given -- what goes is the
-       reading, not the naming. */
+       reading, not the naming. And each hand sits beside the instruction and
+       shows itself only while its situation exists: the untick button once a
+       word is ticked, the step-back once the reader has leaned in. At the foot
+       of the panel, always on, they were below where anyone was looking. */
+    el('t-atlas').click();
+    eq(el('atlasClear').style.display, 'none', 'the untick hand waits for a tick');
+    const row0 = el('atlasWords').children[0];
+    row0.click();
+    eq(el('atlasClear').style.display, '', 'and appears the moment there is one');
+    ATLAS.act({ zoom: 0.5 });
+    eq(el('atlasWide').style.display, '', 'the step-back appears once he leans in');
+    const noteBox = document.querySelector('.awtools .note').getBoundingClientRect();
     for (const id of ['atlasClear', 'atlasWide']) {
       const b = el(id);
       eq(b.textContent.trim(), '', id + ' says it in a picture');
       ok(b.querySelector('svg'), id + ' has one');
-      ok(b.querySelector('svg').querySelectorAll('path,circle').length >= 2,
+      ok(b.querySelector('svg').querySelectorAll('path,circle,rect').length >= 2,
          id + ' is drawn, not a blank box');
       ok((b.title || '').length > 8, id + ' still names itself on hover: ' + b.title);
       eq(b.getAttribute('aria-label'), b.title, id + ' says the same to a reader that cannot see it');
       const r = b.getBoundingClientRect();
       ok(Math.abs(r.width - r.height) < 2, id + ' is a square target, not a word');
+      ok(r.top < noteBox.bottom + 4, id + ' stands beside the instruction, not at the foot');
     }
+    el('atlasWide').click();
+    el('atlasClear').click();
+    eq(el('atlasClear').style.display, 'none', 'and it goes when the ticks go');
+    el('t-find').click();
   });
 
   await T('a proposal is faint; typed words are not', () => {

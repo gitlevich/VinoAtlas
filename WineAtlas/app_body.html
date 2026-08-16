@@ -260,22 +260,25 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
               <path d="M15 6l-6 6 6 6"/></svg>
           </button>
         </div>
-        <p class="note">Tick one and you turn toward the wines it describes — only they stay lit.</p>
-        <div class="awhead"><span>word</span><span>wines</span></div>
-        <div class="awlist" id="atlasWords"></div>
-        <div class="awfoot">
-          <button id="atlasClear" title="Untick every word — the whole shop is lit again" aria-label="Untick every word — the whole shop is lit again">
+        <div class="awtools">
+          <p class="note">Tick a word to see the wines it describes; the rest dim.</p>
+          <button id="atlasClear" style="display:none" title="Untick every word — the whole shop is lit again"
+                  aria-label="Untick every word — the whole shop is lit again">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20.5 4.5h-17l6.8 8v6.2l3.4 1.8v-8z"/><path d="M4.2 20.4 19.8 4.2"/></svg>
+              <rect x="5" y="5" width="14" height="14" rx="2.5"/>
+              <path d="M8.4 12.6l2.6 2.6 4.8-5.6" stroke-width="2.6"/>
+              <path d="M2 22 22 2"/></svg>
           </button>
           <button id="atlasWide" style="display:none" title="Step back out to the view you started with"
                   aria-label="Step back out to the view you started with">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8M7.5 10.5h6"/></svg>
+              <circle cx="10.6" cy="10.6" r="6.9"/><path d="M20.8 20.8l-5.2-5.2"/><path d="M7.4 10.6h6.4"/></svg>
           </button>
         </div>
+        <div class="awhead"><span>word</span><span>wines</span></div>
+        <div class="awlist" id="atlasWords"></div>
       </div>
       <button class="atlas-rail" id="atlasChatTab" aria-label="Open the sommelier">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"

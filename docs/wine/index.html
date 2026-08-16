@@ -421,17 +421,23 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 /* a word that would leave nothing: still tickable, plainly pointless */
 .aw.none{opacity:.38}
 .aw.none em{text-decoration:line-through}
-.awfoot{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--rule)}
+/* THE TWO HANDS SIT BESIDE THE INSTRUCTION, and each shows itself only when
+   its situation exists: the untick button once a word is ticked, the step-back
+   once the reader has leaned in. A control that appears exactly when it has
+   work to do explains itself; at the foot of the panel they were below where
+   anyone was looking. */
+.awtools{display:flex;gap:6px;align-items:flex-start}
+.awtools .note{flex:1;min-width:0;margin:0}
 /* AN AFFORDANCE YOU LOOK AT RATHER THAN READ. A funnel struck through puts every
    word out; a glass with a minus widens the view back to where it opened. The
    words survive as the tooltip and as the label a screen reader is given. */
-.awfoot button{display:flex;align-items:center;justify-content:center;
+.awtools button{flex:none;display:flex;align-items:center;justify-content:center;
   width:28px;height:28px;padding:0;border-radius:7px;
-  border:1px solid var(--rule);background:var(--raise);color:var(--ink-3);cursor:pointer;
+  border:1px solid var(--rule);background:var(--raise);color:var(--ink-2);cursor:pointer;
   transition:color .12s,border-color .12s}
-.awfoot button svg{width:15px;height:15px;display:block}
-.awfoot button:hover{color:var(--ink);border-color:var(--ink-3)}
-.awfoot button:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.awtools button svg{width:17px;height:17px;display:block}
+.awtools button:hover{color:var(--ink);border-color:var(--ink-3)}
+.awtools button:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 
 /* THE SHOP TAKES THE WHOLE ROW. Its height was clamped while the grid stretched,
    so the two panels beside it ran on past the bottom of the shop and the middle
@@ -899,22 +905,25 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
               <path d="M15 6l-6 6 6 6"/></svg>
           </button>
         </div>
-        <p class="note">Tick one and you turn toward the wines it describes — only they stay lit.</p>
-        <div class="awhead"><span>word</span><span>wines</span></div>
-        <div class="awlist" id="atlasWords"></div>
-        <div class="awfoot">
-          <button id="atlasClear" title="Untick every word — the whole shop is lit again" aria-label="Untick every word — the whole shop is lit again">
+        <div class="awtools">
+          <p class="note">Tick a word to see the wines it describes; the rest dim.</p>
+          <button id="atlasClear" style="display:none" title="Untick every word — the whole shop is lit again"
+                  aria-label="Untick every word — the whole shop is lit again">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20.5 4.5h-17l6.8 8v6.2l3.4 1.8v-8z"/><path d="M4.2 20.4 19.8 4.2"/></svg>
+              <rect x="5" y="5" width="14" height="14" rx="2.5"/>
+              <path d="M8.4 12.6l2.6 2.6 4.8-5.6" stroke-width="2.6"/>
+              <path d="M2 22 22 2"/></svg>
           </button>
           <button id="atlasWide" style="display:none" title="Step back out to the view you started with"
                   aria-label="Step back out to the view you started with">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8M7.5 10.5h6"/></svg>
+              <circle cx="10.6" cy="10.6" r="6.9"/><path d="M20.8 20.8l-5.2-5.2"/><path d="M7.4 10.6h6.4"/></svg>
           </button>
         </div>
+        <div class="awhead"><span>word</span><span>wines</span></div>
+        <div class="awlist" id="atlasWords"></div>
       </div>
       <button class="atlas-rail" id="atlasChatTab" aria-label="Open the sommelier">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -1332,7 +1341,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='a0208375';
+const BUILD='98266623';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -3507,6 +3516,9 @@ function refilter() {
    A word that would leave none is greyed. Otherwise the only way to find out is
    to tick it and watch the shop go dark. */
 function countRows() {
+  /* the untick hand shows itself only while a word is ticked: appearing
+     exactly when its situation exists is what lets it go unread */
+  el('atlasClear').style.display = state.size ? '' : 'none';
   for (const row of wordList.children) {
     const t = TERMS.find(x => x.w === row.dataset.w);
     const on = state.has(t.w);
