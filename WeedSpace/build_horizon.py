@@ -296,6 +296,10 @@ h1{margin:0;padding:14px 14px 3px;font-size:13.5px;font-weight:600}
 .lede{margin:0;padding:0 14px 11px;color:var(--ink-3);font-size:11.5px;line-height:1.5}
 .grp{color:var(--ink-3);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
   padding:10px 14px 5px;border-top:1px solid var(--line)}
+#gshow{display:none;position:absolute;right:10px;bottom:56px;z-index:3;width:38px;height:38px;
+  align-items:center;justify-content:center;border-radius:50%;
+  background:var(--panel);color:var(--ink-2);border:1px solid var(--line);cursor:pointer}
+#gshow svg{width:20px;height:20px}
 #under{display:none;position:absolute;left:0;right:0;bottom:0;height:40px;z-index:5;
   align-items:center;justify-content:center;gap:7px;
   font:inherit;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
@@ -429,6 +433,13 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
       <canvas id=mini width=248 height=248></canvas>
     </div>
     <div id=names></div>
+    <button id=gshow aria-label="Show which way you are looking">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/>
+        <ellipse cx="12" cy="12" rx="4" ry="9"/>
+        <path d="M3.6 9h16.8M3.6 15h16.8"/></svg>
+    </button>
     <button id=under aria-label="Down to the smells">
       <b>smells</b>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
@@ -1742,9 +1753,19 @@ function toggleGlobe(on) {
   showMini = on === undefined ? !showMini : on;
   globe.style.display = showMini ? '' : 'none';
   document.getElementById('facing').classList.toggle('wide', !showMini);
+  /* on a phone the summon stands in for the globe while it is away -- the
+     globe's own drawing, so it is recognised rather than read */
+  document.getElementById('gshow').style.display =
+    (!showMini && matchMedia('(max-width:700px)').matches) ? 'flex' : 'none';
   if (showMini) drawMini();
 }
 document.getElementById('gx').onclick = e => { e.stopPropagation(); toggleGlobe(false); };
+document.getElementById('gshow').onclick = () => toggleGlobe(true);
+/* A PHONE OPENS WITHOUT THE GLOBE. At 150px it covered a fifth of a field that
+   already turns under a finger; what it answers -- what is behind you -- a
+   drag answers directly. The summon brings it back, its own close puts it
+   away. Everywhere wider, it opens as it always did. */
+if (matchMedia('(max-width:700px)').matches) toggleGlobe(false);
 addEventListener('keydown', e => {
   if (e.key === 'g' || e.key === 'G') {
     if (/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
