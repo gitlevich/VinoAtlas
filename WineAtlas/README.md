@@ -62,6 +62,35 @@ it calls a control, the page answers with what it then shows, and only when it
 stops calling does it have the last word. A move it merely described is not
 possible, because there is nothing to describe until the call has been made.
 
+**And then the page grew past it.** Parity is a claim about a page, and the page
+kept changing: an evening's work gave the reader an opening that folds and two
+panels he can widen, and neither had a hand. The name box under "Or a wine you
+like" never had one, and neither did pinning an order in the chart. Nothing
+noticed, because the test that guarded parity held the tools against *a list of
+verbs written out in the test* — frozen in the shape the page had the day it was
+written, and green ever after. Meanwhile the sommelier was still being told
+"everything he can do you can do". Not an error. Silence, again, and the same
+silence as a key read one level down.
+
+So the page now carries a **ledger** of its own controls: every button, box and
+slider on it, against either the hand that reaches it or the reason it is his.
+Two tests hold it. One sweeps the live page for a control — a native one, or
+anything with a handler hung on it — that matches no entry, so a new button
+fails the tests until somebody has decided which it is. The other derives the
+agent's verbs *from the ledger* instead of from a literal, which is the frozen
+list's replacement. `inhabit.guide().reach` hands the same account to a driver
+outside the page.
+
+What was missing is a hand now: `find` types in the name box and says what it
+matched, `opening` folds the top, `order` pins one of his ten orders in How your
+buying changed, `width` sets a panel where the grip would, `download` gives him
+his marks. Bringing a part into view opens it if it is folded. And the
+observation carries the rest of the furniture — what is typed, which wines he
+chose by name, what is pinned, what is folded, what has been widened — because a
+control the sommelier can move and cannot read back is half a hand. His alone
+are four: his marks, Reset, the words in his own box, and who answers and with
+what key.
+
 **Both panels come with it.** The words are what the view is written in and the
 sommelier can drive every control in it, so neither is left behind on the full
 screen: each becomes a drawer on the side it holds on the page, and both stand
@@ -242,9 +271,18 @@ so the transport is the page itself. Evaluate against the global:
     inhabit.ask(text)            // put words to the sommelier and let it drive
 
 `guide()` is the front door: it names the tools and their schemas out of the
-live catalogue, so it cannot drift from what the model is actually offered.
-Marking a wine right or wrong, and Reset, have no tool. His marks are the
-measurement.
+live catalogue, so it cannot drift from what the model is actually offered, and
+it hands over the ledger — `reach` — so a driver reads the whole account of the
+page's controls rather than trying doors. Marking a wine right or wrong, and
+Reset, have no tool. His marks are the measurement.
+
+This is the shape SigilAtlas's Inhabitance Protocol has, minus the sidecar it
+needs and this does not: a running thing that teaches its own protocol and its
+live catalogue in one call, so a cold agent needs one round trip and no document
+to be kept up to date. `.claude/skills/inhabit-wine/SKILL.md` is the way in, and
+like its counterpart there it deliberately lists **no tools** — the page is the
+single source of truth, and a catalogue copied into a document is a catalogue
+that will be wrong later.
 
 Every call answers with the page's own observation, so the result and the new
 state are one thing. The reading of the Atlas is of where he is *being taken* —
@@ -259,7 +297,10 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **124 of 124 pass.**
+Every test name states an acceptance criterion. **126 of 126 pass.** Run them in
+a **visible** tab: a hidden one never recalculates style and never fires a
+frame, so the tests that measure the page report zeroes and the ones that wait
+on the frame clock hang rather than fail.
 
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from
 the catalogue by a second route and checks every claim the page makes about it:

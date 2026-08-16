@@ -606,6 +606,17 @@ function observeApp(){
     .map(r=>{const w=S.wines.find(x=>x.id===r.dataset.w); return w?w.name:'';}).filter(Boolean);
   const pin=pinned?(S.wines.find(x=>x.id===pinned)||{}).name:null;
   const marks=Object.keys(votes).length;
+  /* the rest of the furniture: what is typed in the name box, which wines he
+     chose by name, and the three things about the page itself that hold a
+     state -- the opening, the pinned order, a panel he has widened. Without
+     these the sommelier could move them and not read them back. */
+  const typed=el('q').value.trim();
+  const matches=[...el('matches').children].map(c=>c.textContent.trim());
+  const chosen=picked.map(id=>(S.wines.find(x=>x.id===id)||{}).name).filter(Boolean);
+  const ord=orderPinned();
+  const furniture=[el('head').classList.contains('folded')?'the opening at the top is folded away':'',
+    ord?`order ${ord} is pinned in How your buying changed`:'',
+    ...COLNAMES.map(k=>{const w=colWidth(k); return w?`the ${k} panel is ${w} wide`:'';})].filter(Boolean);
   /* his marks are the measurement: the sommelier may read every one of them by
      name -- it just may never cast one */
   const named=d=>Object.keys(votes).filter(id=>votes[id]===d)
@@ -618,6 +629,8 @@ Bands held (a wine outside any band is never shown): ${hs||'none'}.
 Wines considered after the bands and filters: ${el('count').textContent.split('·')[0].replace(/\s*wines considered\s*/,'').trim()}.
 Closest wines on his screen, nearest first: ${shown.join('; ')||'none'}.
 Held on his radar: ${pin||'nothing'}.
+The name box: ${typed?`"${typed}", matching ${matches.join('; ')||'nothing'}`:'empty'}. Wines he chose by name: ${chosen.join('; ')||'none'}.
+The page itself: ${furniture.join('; ')||'the opening open, no order pinned, no panel moved'}.
 Wines he has marked so far: ${marks}.${right?`\nHe marked right: ${right}.`:''}${wrong?`\nHe marked wrong: ${wrong}.`:''}
 Hiding wines he already bought: ${hideOwned?'yes':'no'}. Hiding ones he already marked: ${hideVoted?'yes':'no'}.
 ${ATLAS.seen()}`;
@@ -666,7 +679,7 @@ ${(()=>{const o=S.orders.filter(x=>x.weight!==undefined);if(o.length<4)return ''
   return 'His buying has moved, earliest orders to latest: '+A.map((a,i)=>`${a} ${f[i].toFixed(2)} -> ${l[i].toFixed(2)}`).join(', ')+'.';})()}
 The user may name a measure with #weight #grip #oak #fruit #age; "more #oak" means raise oak.
 
-YOUR HANDS. The tools sent with this message are the page's own controls, and calling one is his hand on it: it happens at once, on his screen, and whatever you move wears a fading ring where it sits. Everything he can do you can do, except marking a wine right or wrong and Reset -- those are his, his marks are the measurement, and you must never cast one.
+YOUR HANDS. The tools sent with this message are the page's own controls, and calling one is his hand on it: it happens at once, on his screen, and whatever you move wears a fading ring where it sits. Everything he can do you can do, but for four things that are his: marking a wine right or wrong -- his marks are the measurement, and you must never cast one; Reset; the words in his own box; and who answers and with what key.
 Never say a move instead of making it. If you are about to write that you are turning the Atlas, or setting a measure, or opening a section, call the tool in that same turn; a sentence about a move that was not called is a lie to him. Every call answers with what the page shows afterwards. Read that answer before you speak, and name the wines that actually came up rather than the ones you expected. When you are asked something you can only settle by looking, call "look" first and answer from what it says.
 Then reply in plain sentences -- short, to an expert, never JSON. The only measure names allowed in speech are: body, tannin grip, oak, fruit character, age. The tools call age "maturity"; in speech it is always age. The interface calls the point "the wine your taste indicates" -- use that phrase when you refer to it, never "the point". It is called that because it starts as the span of his own bottles and only moves when he or you move it; it is never a guess at what he is after.
 
@@ -706,6 +719,10 @@ const PART=()=>({sigil:el('axes').closest('.card'), measures:el('axes'), shape:e
 function showPart(name){
   const node=PART()[name]; if(!node) return;
   const still=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  /* a part brought into view is opened if it is folded: the two "how this
+     works" disclosures are the reader's, and bringing him to one closed shows
+     him a summary line where he was promised the thing itself */
+  node.querySelectorAll('details:not([open])').forEach(d=>{d.open=true;});
   node.scrollIntoView({behavior:still?'auto':'smooth',block:'center'});
   flash(node);
 }
@@ -727,6 +744,20 @@ function applyAct(act){
   }
   if(act.writeTaste){el('mySigil').click(); flash(el('mySigil'));}
   if(act.show) showPart(act.show);
+  /* THE PAGE'S OWN FURNITURE. The reader can type a name into the shop's box,
+     fold the opening away, pin an order in the chart and set how wide a panel
+     stands. Each of those is a hand here, because a control he has and the
+     sommelier has not is a parity claim that is quietly false. */
+  if(typeof act.find==='string'){
+    el('q').value=act.find; el('q').dispatchEvent(new Event('input')); flash(el('q'));}
+  if(typeof act.opening==='boolean'){foldHead(!act.opening); flash(el('headFold'));}
+  if(act.order!==undefined&&Number.isFinite(Number(act.order))){
+    if(el('s-move').hidden) el('t-move').click();
+    if(pinOrder(Math.round(Number(act.order)))) flash(el('moveChart'));}
+  if(act.width&&typeof act.width==='object')
+    for(const k of COLNAMES){const w=Number(act.width[k]);
+      if(Number.isFinite(w)) setCol(k,w);}
+  if(act.download){el('export').click(); flash(el('export'));}
   /* the Atlas is a place, and everything the reader can do in it the sommelier
      can do too -- turn, walk, change the field, tick a word, point at a bottle,
      fold a panel, fill the screen. Marking a wine right or wrong stays his. */
@@ -776,8 +807,14 @@ const TOOLBOX=[
    hideVoted:{type:'boolean',description:'Hide wines he has already marked.'},
    pin:{type:'string',description:"Hold a named wine's shape on his radar, against his own. An empty string releases it."},
    show:{type:'string',enum:SHOWPARTS,description:'Bring one part of the page into view and ring it. sigil = the whole taste card; measures = the five band sliders; shape = the five-cornered drawing of his taste; list = the wines found; ask = this sommelier panel; kinds = his four buying kinds; filters = the two hiding switches; marks = the button that downloads his marks.'},
-   like:{type:'array',items:{type:'string'},description:'Exact wine names. Sets the wine his taste indicates to the middle of them, exactly as if he had named them himself.'},
-   writeTaste:{type:'boolean',description:'Measure the bands his own buying stays inside and write them into his box, for him to correct and send.'}}}},
+   like:{type:'array',items:{type:'string'},description:'Exact wine names. Replaces the wines chosen by name and sets the wine his taste indicates to the middle of them, exactly as if he had named them himself.'},
+   writeTaste:{type:'boolean',description:'Measure the bands his own buying stays inside and write them into his box, for him to correct and send.'},
+   find:{type:'string',description:'Type into the shop\'s name box, under "Or a wine you like". Two letters or more and the wines whose names carry them are offered; the answer names what it matched. An empty string clears it.'},
+   opening:{type:'boolean',description:'Unfold the title and opening paragraph at the top, or fold them away. Folded, the page starts higher and the title stands as a name beside the tabs.'},
+   order:{type:'integer',minimum:0,maximum:12,description:'Pin one of his orders in How your buying changed, 1 the oldest, so its wines and its measures stay on the screen. 0 unpins. Opens that section first if it is closed.'},
+   width:{type:'object',description:'How wide a panel stands, in pixels, 180 to 640 -- the same widths the grip in the gap sets.',
+     properties:{taste:{type:'number'},words:{type:'number'},sommelier:{type:'number'}}},
+   download:{type:'boolean',description:'Give him his marks as a file, the same one the button under the wine list gives him. Reading a mark is not casting one.'}}}},
 {name:'atlas',
  description:'Move him through the Atlas: the shop as a place he stands inside, where every wine is a glass at a bearing and his own are bottles. Opens that section first if it is closed. Every field is optional.',
  schema:{type:'object',properties:{
@@ -819,7 +856,8 @@ function runTool(name,input){
     }
   }else if(name==='page'){
     const act={};
-    for(const k of ['tab','kind','heading','hideOwned','hideVoted','show','like','writeTaste'])
+    for(const k of ['tab','kind','heading','hideOwned','hideVoted','show','like','writeTaste',
+                    'find','opening','order','width','download'])
       if(a[k]!==undefined) act[k]=a[k];
     if(a.pin!==undefined) act.pin=a.pin||null;
     applyAct(act);
@@ -1203,6 +1241,10 @@ function chart(series,labels,W=620,H=240,pad=34){
 }
 
 /* ---------- how you moved ---------- */
+/* the pinned order is a state of the page, so it is readable and it is
+   pressable from outside the chart's own closure -- his click and the tool
+   land on the same function */
+let pinOrder=()=>false, orderPinned=()=>null;
 const O=S.orders.filter(o=>o.weight!==undefined);
 (function(){
   let run=0; const yr=O.map(o=>{run=Math.max(run,o.not_before||0);return run;});
@@ -1280,14 +1322,21 @@ const O=S.orders.filter(o=>o.weight!==undefined);
   mv.style.cursor='pointer';
   mv.addEventListener('mousemove',e=>{ if(locked===null) showOrder(nearest(e)); });
   mv.addEventListener('mouseleave',()=>{ if(locked!==null) showOrder(locked); });
-  mv.addEventListener('click',e=>{
-    const i=nearest(e);
-    locked = (locked===i) ? null : i;
+  function pinTo(i,want){
+    locked = (want===undefined ? locked!==i : !!want) ? i : null;
     showOrder(i);
     el('pinHint').textContent = locked===null
       ? 'Point at an order to preview it · click to pin it'
       : `Order ${locked+1} pinned · click it again to unpin, or click another order`;
-  });
+  }
+  mv.addEventListener('click',e=>pinTo(nearest(e)));
+  /* one order counted from one, as the page names it; nought unpins */
+  pinOrder=k=>{
+    if(!k){ if(locked!==null) pinTo(locked,false); return true; }
+    if(k<1||k>n) return false;
+    pinTo(k-1,true); return true;
+  };
+  orderPinned=()=>locked===null?null:locked+1;
   showOrder(n-1);
 
   const SHORT=['whites','big reds','lighter reds','featherweights'];
@@ -1400,7 +1449,20 @@ function applyCols(){
     }
   });
 }
-function colgrip(panel,edge){                    // edge: 'right' on a left-hand panel
+/* each grip is a named width, so the sommelier sets the panel the reader drags
+   -- one setter, whichever hand is on it */
+const COLNAMES=['taste','words','sommelier'], COLGRIP={};
+const colWidth=name=>{
+  const g=COLGRIP[name]; if(!g) return null;
+  const grid=gridOf(g.panel); if(!grid) return null;
+  const w=COLS[colKey(grid,g.edge==='right'?'L':'R')];
+  return w||null;                                 // null while it stands where it opened
+};
+function setCol(name,px){
+  const g=COLGRIP[name]; if(!g||!Number.isFinite(px)) return false;
+  g.set(px); flash(g.panel); return true;
+}
+function colgrip(panel,edge,name){               // edge: 'right' on a left-hand panel
   const h=document.createElement('button');
   h.type='button'; h.className='colgrip '+edge; h.tabIndex=0;
   h.setAttribute('aria-label','Drag to set how wide this panel is');
@@ -1412,6 +1474,7 @@ function colgrip(panel,edge){                    // edge: 'right' on a left-hand
     COLS[colKey(g,edge==='right'?'L':'R')]=v;
     localStorage.setItem('cc_cols',JSON.stringify(COLS));
   };
+  COLGRIP[name]={panel,edge,set};
   let x0=0,w0=0;
   h.addEventListener('pointerdown',e=>{
     x0=e.clientX; w0=panel.getBoundingClientRect().width;
@@ -1447,9 +1510,72 @@ el('headFold').onclick=()=>foldHead(!el('head').classList.contains('folded'));
 if(localStorage.getItem('cc_head')==='folded') foldHead(true);
 
 applyCols();
-colgrip(el('axes').closest('.card'),'right');           // the taste card, on the Find tab
-colgrip(document.querySelector('.atlas-side'),'right'); // the words, in the Atlas
-colgrip(document.querySelector('.chat'),'left');        // the sommelier, in whichever it stands
+colgrip(el('axes').closest('.card'),'right','taste');           // the taste card, on the Find tab
+colgrip(document.querySelector('.atlas-side'),'right','words'); // the words, in the Atlas
+colgrip(document.querySelector('.chat'),'left','sommelier');    // the sommelier, wherever it stands
+
+/* ---- the ledger: every control, and the hand that reaches it ---------------
+   The toolbox is written by hand and the controls are wired by hand, so
+   nothing held the two together and they drifted apart: an evening's work on
+   the page gave the reader an opening that folds and panels he can widen, and
+   the sommelier was still being told "everything he can do you can do". Not an
+   error -- silence, the same silence as a key read one level down.
+
+   So every control on the page is entered here against the hand that reaches
+   it, or against the reason it is his alone, and a test sweeps the page for a
+   control that is in neither. A new button now fails the tests until somebody
+   has decided which it is. */
+const PARITY=[
+  {sel:'#headFold', by:'page.opening'},
+  {sel:'nav button', by:'page.tab'},
+  {sel:'#modeBtns .btn', by:'page.kind'},
+  {sel:'#toNext', by:'page.heading'},
+  {sel:'#mySigil', by:'page.writeTaste'},
+  {sel:'#q', by:'page.find'},
+  {sel:'#matches .chip', by:'page.like'},
+  {sel:'#picked .chip', by:'page.like'},
+  {sel:'#ho', by:'page.hideOwned'},
+  {sel:'#hv', by:'page.hideVoted'},
+  {sel:'#out .row', by:'page.pin'},
+  {sel:'#export', by:'page.download'},
+  {sel:'.colgrip', by:'page.width'},
+  {sel:'details>summary', by:'page.show'},   // a part brought into view is opened
+  {sel:'#mv', by:'page.order'},
+  {sel:'.band-track', by:'move'},            // the point and the bands are one thing seen twice
+  {sel:'#atlasCanvas', by:'atlas.face'},     // dragging the shop is turning the head
+  {sel:'#atlasFov', by:'atlas.zoom'},
+  {sel:'#atlasWide', by:'atlas.zoom'},
+  {sel:'#atlasClear', by:'atlas.clear'},
+  {sel:'.aw', by:'atlas.tick'},
+  {sel:'#atlasWordsTab', by:'atlas.words'},
+  {sel:'#atlasWordsShut', by:'atlas.words'},
+  {sel:'#atlasList', by:'atlas.words'},
+  {sel:'#atlasChatTab', by:'atlas.sommelier'},
+  {sel:'#atlasChatShut', by:'atlas.sommelier'},
+  {sel:'#atlasSomm', by:'atlas.sommelier'},
+  {sel:'#atlasBig', by:'atlas.screen'},
+  {sel:'#atlasAsk', by:'atlas.help'},
+  {sel:'#atlasGx', by:'atlas.globe'},
+  {sel:'#atlasMini', by:'atlas.globe'},
+  {sel:'#atlasGbar', by:'atlas.globe'},
+  {sel:'#atlasTour', by:'tour'},
+  /* his alone, and why */
+  {sel:'.vote button', his:'his marks are the measurement'},
+  {sel:'#resetMarks', his:'a reset is his'},
+  {sel:'#resetTaste', his:'a reset is his'},
+  {sel:'#resetChat', his:'a reset is his'},
+  {sel:'#ask', his:'his words; a driver outside the page speaks as him through inhabit.ask'},
+  {sel:'#askGo', his:'his words'},
+  {sel:'#mention .m', his:'writing his own message'},
+  {sel:'.mcopy', his:'the record of the conversation'},
+  {sel:'.mx', his:'the record of the conversation'},
+  {sel:'#setupBtn', his:'who answers, and with what key'},
+  {sel:'#vendor', his:'who answers, and with what key'},
+  {sel:'#key', his:'a key is never moved by a model'},
+  {sel:'#keyClear', his:'a key is never moved by a model'},
+  {sel:'#model', his:'who answers, and with what key'},
+  {sel:'#prompt', his:'what the sommelier is told it is'},
+  {sel:'.wrap a', his:'a way out of the page, not a control of it'}];
 
 /* ---- inhabiting this page from outside ------------------------------------
    The sommelier that lives in the panel and a driver standing outside the page
@@ -1475,7 +1601,10 @@ window.inhabit={
       +' wines, placed on five measures. Six sections; the last, Atlas, is that shop as a place you stand inside.',
     how:'Call a tool by name with its input. Every call answers with the page\'s own observation, so the result and the new state are one thing. observe() is the same text without moving anything.',
     his:'Marking a wine right or wrong, and Reset, are the reader\'s alone and have no tool. His marks are the measurement.',
-    tools:TOOLBOX.map(t=>({name:t.name,description:t.description,inputSchema:t.schema}))};},
+    tools:TOOLBOX.map(t=>({name:t.name,description:t.description,inputSchema:t.schema})),
+    /* the whole account of the page's controls: what reaches each one, and for
+       the ones nothing reaches, why. A test holds it against the live page. */
+    reach:PARITY};},
   tools(){return TOOLBOX.map(t=>t.name);},
   observe(){return observeApp();},
   call(name,input){

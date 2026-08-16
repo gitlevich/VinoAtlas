@@ -530,10 +530,17 @@
     applyAct({ writeTaste: true });
     ok(/^!/.test(ask.value), 'writeTaste fills the composer');
     ask.value = ''; ask.dispatchEvent(new Event('input'));
-    // every verb the agent has, and the two exclusions that must not appear
+    /* every verb the agent has, and the two exclusions that must not appear.
+       THE LIST USED TO BE WRITTEN OUT HERE, and that is how parity rotted: a
+       frozen list of verbs stays green while the page grows controls nobody
+       gave a hand to. What it is held against now is the ledger of the page's
+       own controls, and the sweep below holds the ledger against the page. */
     const verbs = [...new Set(applyAct.toString().match(/act\.(\w+)/g).map(v => v.slice(4)))].sort();
-    eq(verbs, ['atlas','heading','hideOwned','hideVoted','kind','like','pin','show','tab','tour','writeTaste'],
-      'the agent has exactly the user-facing verbs');
+    const want = [...new Set(PARITY.filter(p => p.by).map(p => {
+      const [tool, field] = p.by.split('.');
+      return tool === 'page' ? field : tool;          // the space and the tour arrive whole
+    }).filter(v => v !== 'move'))].sort();             // the measures are runTool's own branch
+    eq(verbs, want, 'the agent has exactly the controls the ledger says it reaches');
     ok(!verbs.includes('mark') && !verbs.includes('vote'), 'marks stay his');
     ['resetMarks','resetChat','resetTaste'].forEach(id =>
       ok(!applyAct.toString().includes(id), id + ' stays his'));
@@ -1649,6 +1656,84 @@
       a + ' is offered with its own far end named'));
   });
 
+  /* THE SWEEP. What broke parity was not a bug in a tool: it was an evening's
+     work on the page. The reader was given an opening that folds and panels he
+     can widen, nothing held the toolbox to the page, and the sommelier went on
+     being told "everything he can do you can do". The ledger is now the whole
+     account of the page's controls, and this walks the live page against it. */
+  await T('no control stands on the page that no hand reaches and nobody has claimed', () => {
+    const PROP = ['onclick', 'onpointerdown', 'onmousedown', 'oninput', 'onchange'];
+    /* a native control, or a node someone hung a handler on. Handlers added
+       with addEventListener cannot be read back, so those controls are entered
+       in the ledger by hand -- and the staleness check below is what keeps
+       those entries honest. */
+    const control = n => !(n instanceof SVGElement)
+      && (/^(button|input|select|textarea|a|summary)$/i.test(n.tagName)
+          || PROP.some(p => n[p]) || n.getAttribute('role') === 'button');
+    const name = n => n.tagName.toLowerCase() + (n.id ? '#' + n.id : '')
+      + (typeof n.className === 'string' && n.className ? '.' + n.className.trim().split(/\s+/).join('.') : '')
+      + ' — ' + (n.textContent || '').trim().slice(0, 24);
+    const claimed = n => PARITY.some(p => n.matches(p.sel) || n.closest(p.sel));
+    /* every tab open in turn: a control in a closed section is still a control,
+       but the Atlas builds its words when it is first shown */
+    TABS.forEach(t => el('t-' + t).click());
+    const loose = [...document.querySelectorAll('*')].filter(control).filter(n => !claimed(n));
+    eq(loose.map(name), [], 'controls nobody was told about');
+    /* and the other way: an entry naming a control that has gone is a claim
+       about a page that no longer exists */
+    PARITY.filter(p => /^#[\w-]+$/.test(p.sel)).forEach(p =>
+      ok(document.querySelector(p.sel), p.sel + ' still stands on the page'));
+    /* every entry either names a tool that exists and offers that field, or
+       says whose it is and why */
+    PARITY.forEach(p => {
+      if (p.his) return ok(p.his.length > 8, p.sel + ' says why it is his');
+      const [tool, field] = p.by.split('.');
+      const t = TOOLBOX.find(x => x.name === tool);
+      ok(t, p.sel + ' is reached by ' + tool);
+      if (!field) return;
+      ok(tool === 'atlas' ? new RegExp('\\b' + field + '\\b').test(AT.act.toString())
+                          : field in (t.schema.properties || {}),
+         p.sel + ' is reached by ' + p.by);
+    });
+    el('t-find').click();
+  });
+
+  await T('the hands the page grew last reach what the reader grew them for', () => {
+    /* the four that had drifted: the name box, the opening, the pinned order,
+       the width of a panel. Each is pressed here through the same runner the
+       sommelier's calls go through, and read back out of the page's own words. */
+    const said = s => inhabit.call('page', s);
+    const q = said({ find: 'lynch bages' });
+    ok(el('q').value === 'lynch bages', 'the name box carries what was typed');
+    ok(el('matches').children.length > 0, 'and it offered what it matched');
+    ok(/The name box: "lynch bages", matching .*Lynch Bages/i.test(q), 'and says so: ' + q.split('\n').find(l => l.startsWith('The name box')));
+    said({ find: '' });
+    ok(!el('matches').children.length, 'and an empty string clears it');
+
+    said({ opening: false });
+    ok(el('head').classList.contains('folded'), 'the opening folds');
+    ok(inhabit.observe().includes('the opening at the top is folded away'), 'and it is read back');
+    said({ opening: true });
+    ok(!el('head').classList.contains('folded'), 'and unfolds');
+
+    said({ order: 3 });
+    ok(!el('s-move').hidden, 'pinning an order opens the section it is in');
+    ok(el('pinHint').textContent.includes('Order 3 pinned'), 'the chart says which is pinned');
+    ok(inhabit.observe().includes('order 3 is pinned'), 'and so does the page');
+    said({ order: 0 });
+    ok(!el('pinHint').textContent.includes('pinned ·'), 'and nought unpins');
+
+    said({ tab: 'find' });                    // the taste card is measured where it stands
+    const w = said({ width: { taste: 420 } });
+    const card = el('axes').closest('.card');
+    ok(Math.abs(card.getBoundingClientRect().width - 420) < 2 || innerWidth < 1251,
+       'the panel stands where it was set');
+    ok(w.includes('the taste panel is 420 wide'), 'and the page says how wide');
+    said({ width: { taste: 5000 } });
+    ok(inhabit.observe().includes('the taste panel is 640 wide'), 'and it cannot be dragged off the screen');
+    el('t-find').click();
+  });
+
   await T('every property the sommelier is offered reaches a hand', () => {
     const keys = n => Object.keys(TOOLBOX.find(t => t.name === n).schema.properties || {});
     const has = (src, k) => new RegExp('\\b' + k + '\\b').test(src);
@@ -1889,6 +1974,16 @@
   el('atlasWide').style.display = 'none';
   AT.fill(false); AT.draw();
   el('t-' + wasTab).click();
+
+  /* the widths and the fold the parity sweep set are put back where they stood,
+     in the live page and not only in the store they are remembered in */
+  document.querySelectorAll('.three,.atlas').forEach(g => {
+    g.style.removeProperty('--colL'); g.style.removeProperty('--colR');
+  });
+  for (const k of Object.keys(COLS)) delete COLS[k];
+  Object.assign(COLS, JSON.parse(snap.w || '{}'));
+  applyCols();
+  foldHead(snap.h === 'folded');
 
   // restore
   window.confirm = realConfirm;
