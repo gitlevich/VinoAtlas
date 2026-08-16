@@ -154,6 +154,23 @@ The page carries a build stamp: `const BUILD=` is a hash of its own bytes, so a
 served page can be asked which build it is holding — in the console,
 `document.documentElement.dataset.build`.
 
+## The sommelier's setup
+
+Two houses, Anthropic and OpenAI, chosen from a dropdown that says which of them
+already holds a key. **Each keeps its own key and its own model**; switching
+between them switches between two saved settings and touches neither. There was
+one slot for both, and pasting an OpenAI key to try ChatGPT wrote over the
+Anthropic one — which reads as neither of them working.
+
+Forgetting a key takes two clicks. The × sits dimmed; the first click arms it
+red — red means armed and nothing else — and the second, while it is red,
+forgets it. Moving off the row forgives it, and so does Escape. Nothing
+destructive here acts on one click.
+
+A refusal carries what the other end said. `HTTP 400` alone made a model that
+cannot take tools, a context overrun and a wrong key read alike, and none could
+be acted on.
+
 ## Inhabiting it
 
 The sommelier in the panel and a driver standing outside the page are the same
@@ -189,7 +206,7 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **112 of 112 pass.**
+Every test name states an acceptance criterion. **117 of 117 pass.**
 
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from
 the catalogue by a second route and checks every claim the page makes about it:

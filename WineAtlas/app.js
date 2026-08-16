@@ -315,9 +315,14 @@ const HOUSE=()=>agent.vendor==='openai'?'openai':'anthropic';
 const KEY=()=>(agent.keys||{})[HOUSE()]||'';
 const setKey=v=>{(agent.keys=agent.keys||{})[HOUSE()]=v;};
 const dropKey=()=>{if(agent.keys) delete agent.keys[HOUSE()];};
-if(agent.key){                                  // what was saved before there were two
-  (agent.keys=agent.keys||{})[HOUSE()]=agent.key;
-  delete agent.key; localStorage.setItem('cc_agent',JSON.stringify(agent));
+const MODEL=()=>(agent.models||{})[HOUSE()]||'';
+const setModel=v=>{(agent.models=agent.models||{})[HOUSE()]=v;};
+const dropModel=()=>{if(agent.models) delete agent.models[HOUSE()];};
+if(agent.key||agent.model){                     // what was saved before there were two
+  if(agent.key) (agent.keys=agent.keys||{})[HOUSE()]=agent.key;
+  if(agent.model) (agent.models=agent.models||{})[HOUSE()]=agent.model;
+  delete agent.key; delete agent.model;
+  localStorage.setItem('cc_agent',JSON.stringify(agent));
 }
 let refs={}, msel=0, mlist=[];
 const askEl=el('ask'), menEl=el('mention'), hlEl=el('hl');
@@ -833,7 +838,7 @@ async function callAgent(sys,msgs){
   if(agent.vendor==='openai'){
     const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+KEY()},
-      body:JSON.stringify({model:agent.model||DEFAULT_MODEL.openai,
+      body:JSON.stringify({model:MODEL()||DEFAULT_MODEL.openai,
         tools:TOOLBOX.map(t=>({type:'function',function:{name:t.name,description:t.description,parameters:t.schema}})),
         messages:[{role:'system',content:sys.stat+'\n\n'+sys.dyn},...msgs]})});
     if(!r.ok) throw await refusal(r);
@@ -844,13 +849,13 @@ async function callAgent(sys,msgs){
       return {id:c.id,name:c.function.name,input};});
     return {say:typeof m.content==='string'&&m.content?[m.content]:[],calls,turn:m,
       follow:rs=>rs.map(x=>({role:'tool',tool_call_id:x.id,content:x.out})),
-      usage:{model:agent.model||DEFAULT_MODEL.openai,
+      usage:{model:MODEL()||DEFAULT_MODEL.openai,
         tin:d.usage?.prompt_tokens||0,tout:d.usage?.completion_tokens||0}};
   }
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':KEY(),
       'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:agent.model||DEFAULT_MODEL.anthropic,max_tokens:1200,
+    body:JSON.stringify({model:MODEL()||DEFAULT_MODEL.anthropic,max_tokens:1200,
       system:[{type:'text',text:sys.stat,cache_control:{type:'ephemeral'}},{type:'text',text:sys.dyn}],
       tools:TOOLBOX.map(t=>({name:t.name,description:t.description,input_schema:t.schema})),
       messages:msgs})});
@@ -863,7 +868,7 @@ async function callAgent(sys,msgs){
     calls:blocks.filter(b=>b.type==='tool_use').map(b=>({id:b.id,name:b.name,input:b.input})),
     turn:{role:'assistant',content:blocks},
     follow:rs=>[{role:'user',content:rs.map(x=>({type:'tool_result',tool_use_id:x.id,content:x.out}))}],
-    usage:{model:agent.model||DEFAULT_MODEL.anthropic,
+    usage:{model:MODEL()||DEFAULT_MODEL.anthropic,
       tin:d.usage?.input_tokens||0,tout:d.usage?.output_tokens||0,
       cw:d.usage?.cache_creation_input_tokens||0,cr:d.usage?.cache_read_input_tokens||0}};
 }
@@ -971,18 +976,26 @@ async function fetchModels(){
   if(!r.ok) throw await refusal(r);
   return (await r.json()).data.map(m=>m.id);
 }
+const HOUSES=[['anthropic','Anthropic'],['openai','OpenAI']];
 function reflectSetup(){
-  el('vendor').value=agent.vendor||'anthropic';
+  /* the picker says which houses he has already given a key to, because that is
+     the whole question when there are two of them */
+  el('vendor').innerHTML=HOUSES.map(([v,name])=>
+    `<option value="${v}"${v===HOUSE()?' selected':''}>${name}`
+    +`${(agent.keys||{})[v]?' — key saved':' — no key yet'}</option>`).join('');
   el('key').value='';
   el('key').placeholder=KEY()?'Saved — paste to replace':'Paste your API key';
   el('keyClear').hidden=!KEY();
   el('modelRow').hidden=!KEY();
-  el('setupStatus').textContent=KEY()?'A key is saved for '+(HOUSE()==='openai'?'OpenAI':'Anthropic')+'.':'No key saved for '+(HOUSE()==='openai'?'OpenAI':'Anthropic')+' yet.';
+  const here=HOUSE()==='openai'?'OpenAI':'Anthropic';
+  const other=HOUSES.filter(([v])=>v!==HOUSE()&&(agent.keys||{})[v]).map(([,n])=>n);
+  el('setupStatus').textContent=(KEY()?'A key is saved for '+here+'.':'No key saved for '+here+' yet.')
+    +(other.length?' '+other.join(' and ')+' keeps its own, and switching does not touch it.':'');
   if(document.activeElement!==el('prompt')) el('prompt').value=framing();
   if(KEY()) loadModels();
 }
 async function loadModels(){
-  const sel=el('model'), chosen=agent.model||DEFAULT_MODEL[agent.vendor||'anthropic'];
+  const sel=el('model'), chosen=MODEL()||DEFAULT_MODEL[HOUSE()];
   sel.innerHTML=`<option value="${chosen}">${chosen}</option>`;
   el('setupStatus').textContent='Asking for the list of models…';
   try{
@@ -1001,18 +1014,37 @@ el('setupBtn').onclick=()=>{
   el('setupBtn').setAttribute('aria-expanded',String(open));
 };
 el('vendor').onchange=()=>{
-  agent.vendor=el('vendor').value; delete agent.model; saveAgent(); reflectSetup();};
+  agent.vendor=el('vendor').value; saveAgent(); reflectSetup();};   // each house keeps its own
 let keyDebounce;
 el('key').addEventListener('input',()=>{
   clearTimeout(keyDebounce);
   keyDebounce=setTimeout(()=>{
     const v=el('key').value.trim();
     if(!v) return;
-    agent.vendor=el('vendor').value; setKey(v); delete agent.model;
+    agent.vendor=el('vendor').value; setKey(v); dropModel();
     saveAgent(); reflectSetup();
   },500);
 });
-el('keyClear').onclick=()=>{dropKey(); delete agent.model; saveAgent(); reflectSetup();};
+/* A DESTRUCTIVE X ARMS BEFORE IT ACTS. The first click turns it red and says so;
+   the second, while it is red, drops the key. Moving off the row forgives it, and
+   so does Escape. Red means armed and nothing else -- hovering only undims. */
+function armDelete(btn,row,act,rest,ready){
+  let armed=false;
+  const disarm=()=>{if(!armed) return; armed=false;
+    btn.classList.remove('armed'); btn.title=rest; btn.setAttribute('aria-label',rest);};
+  btn.title=rest; btn.setAttribute('aria-label',rest);
+  btn.onclick=e=>{e.preventDefault(); e.stopPropagation();
+    if(!armed){armed=true; btn.classList.add('armed');
+      btn.title=ready; btn.setAttribute('aria-label',ready); return;}
+    disarm(); act();};
+  btn.onkeydown=e=>{if(e.key==='Escape'&&armed){e.preventDefault(); e.stopPropagation(); disarm();}};
+  row.addEventListener('mouseleave',disarm);
+  return disarm;
+}
+const disarmKey=armDelete(el('keyClear'),el('keyRow'),
+  ()=>{dropKey(); dropModel(); saveAgent(); reflectSetup();},
+  'Forget this key — click to arm, click again to forget',
+  'Click again to forget it — moving away cancels');
 let promptDebounce;
 function commitPrompt(){
   const v=el('prompt').value.trim();
@@ -1021,7 +1053,7 @@ function commitPrompt(){
 }
 el('prompt').addEventListener('input',()=>{clearTimeout(promptDebounce);promptDebounce=setTimeout(commitPrompt,400);});
 el('prompt').addEventListener('blur',()=>{commitPrompt(); if(!agent.prompt) el('prompt').value=BUILT_FRAMING;});
-el('model').onchange=()=>{agent.model=el('model').value; saveAgent();};
+el('model').onchange=()=>{setModel(el('model').value); saveAgent();};
 if(VIEWER) el('setupBtn').hidden=true; // a preview cannot reach them, so no key can be used
 reflectSetup();
 drawChat();

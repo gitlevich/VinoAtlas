@@ -5,7 +5,7 @@
   --ground:#f6f6f7; --panel:#fff; --raise:#fafafb;
   --ink:#151517; --ink-rgb:21,21,23; --ink-2:#4a4a50; --ink-3:#82828a;
   --rule:#e3e3e5; --track:#e8e8ea; --grid:#dcdcdf;
-  --mark:#6b4bc0; --mark-rgb:107,75,192; --me:#0a7d8f; --me-rgb:10,125,143; --mark-2:#8c6fe0; --rise:#a8641f; --rise-rgb:168,100,31; --good:#1d7a52; --bad:#a33b3b;
+  --mark:#6b4bc0; --mark-rgb:107,75,192; --me:#0a7d8f; --me-rgb:10,125,143; --mark-2:#8c6fe0; --rise:#a8641f; --rise-rgb:168,100,31; --good:#1d7a52; --bad:#a33b3b; --bad-rgb:163,59,59;
  
   --sky:#e9e9ee;
   --shadow:0 1px 2px rgba(0,0,0,.06);
@@ -15,7 +15,7 @@
   --ground:#000; --panel:#0d0d0d; --raise:#161616;
   --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#808080;
   --rule:#242424; --track:#282828; --grid:#2e2e2e;
-  --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a;
+  --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a; --bad-rgb:224,122,122;
  
   --sky:#000;
   --shadow:none;
@@ -25,7 +25,7 @@
   --ground:#000; --panel:#0d0d0d; --raise:#161616;
   --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#808080;
   --rule:#242424; --track:#282828; --grid:#2e2e2e;
-  --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a;
+  --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a; --bad-rgb:224,122,122;
  
   --sky:#000;
   --shadow:none;
@@ -121,9 +121,16 @@ section{display:flex;flex-direction:column;gap:16px}
   border-radius:7px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);resize:vertical}
 .keywrap{position:relative;display:flex;flex:1;min-width:0}
 .keywrap input{width:100%;padding-right:28px}
+/* THE DESTRUCTIVE ×, AND ITS GRAMMAR. Dimmed at rest; hovering only undims it,
+   neutral, never red. The first click ARMS it -- red means armed and nothing
+   else -- and a second click while armed deletes. Moving away, or Escape,
+   forgives. Nothing here deletes on one click. */
 .keyclear{position:absolute;right:3px;top:50%;transform:translateY(-50%);width:22px;height:22px;
-  border:0;border-radius:6px;background:none;color:var(--ink-3);font-size:15px;line-height:1;cursor:pointer}
-.keyclear:hover{color:var(--bad);background:var(--rule)}
+  border:0;border-radius:6px;background:none;color:var(--ink-3);font-size:15px;line-height:1;
+  cursor:pointer;transition:color .12s,background .12s}
+.keyclear:hover{color:var(--ink);background:var(--rule)}
+.keyclear.armed,.keyclear.armed:hover{color:var(--bad);background:rgba(var(--bad-rgb),.16)}
+.keyclear:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 #msgs{display:flex;flex-direction:column;gap:8px;overflow-y:auto;height:300px;min-height:90px;
   resize:vertical;margin-bottom:10px}
 #msgs:empty{display:none}
@@ -358,8 +365,12 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .awfoot button:hover{color:var(--ink);border-color:var(--ink-3)}
 .awfoot button:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 
+/* THE SHOP TAKES THE WHOLE ROW. Its height was clamped while the grid stretched,
+   so the two panels beside it ran on past the bottom of the shop and the middle
+   column ended in a band of nothing. The clamp is a floor now, not a ceiling:
+   the row is as tall as the tallest panel and the shop fills it. */
 .atlas-view{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--rule);
-  height:clamp(430px,64vh,720px);background:var(--sky)}
+  min-height:clamp(430px,64vh,720px);background:var(--sky)}
 #atlasCanvas{display:block;width:100%;height:100%;background:var(--sky);cursor:grab;touch-action:none}
 #atlasCanvas.drag{cursor:grabbing}
 #atlasFacing{position:absolute;left:0;right:0;bottom:14px;text-align:center;pointer-events:none;

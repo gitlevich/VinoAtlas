@@ -222,11 +222,20 @@
   });
 
   // -- setup --
-  await T('gear shows its open state; changing company forgets the model', () => {
+  await T('gear shows its open state; each house keeps its own model', () => {
     const g = el('setupBtn'); el('setup').hidden = true; g.classList.remove('on');
     g.click(); ok(g.classList.contains('on') && !el('setup').hidden, 'open state');
-    agent.model = 'm'; el('vendor').value = 'openai'; el('vendor').dispatchEvent(new Event('change'));
-    ok(agent.vendor === 'openai' && !agent.model, 'model forgotten');
+    /* switching used to forget it, which is the same clobbering as the key:
+       Anthropic and OpenAI never name the same models, so each keeps its own */
+    const was = { ...agent };
+    agent.vendor = 'anthropic'; agent.models = { anthropic: 'claude-sonnet-5' };
+    el('vendor').value = 'openai'; el('vendor').dispatchEvent(new Event('change'));
+    ok(agent.vendor === 'openai', 'switched');
+    eq(MODEL(), '', 'the other house has none of its own yet');
+    setModel('gpt-4o');
+    el('vendor').value = 'anthropic'; el('vendor').dispatchEvent(new Event('change'));
+    eq(MODEL(), 'claude-sonnet-5', 'and the first is still there');
+    Object.assign(agent, was); saveAgent();
     g.click(); ok(!g.classList.contains('on'), 'closed state');
   });
   await T('hidden rows actually disappear despite flex display', () => {
@@ -1216,6 +1225,22 @@
     ok(getComputedStyle(sd).display !== 'none', 'still there');
   });
 
+  await T('the shop reaches the bottom of the row, whatever stands beside it', () => {
+    /* Its height was clamped while the grid stretched, so the two panels beside
+       it ran on past the bottom of the shop and the middle column ended in a
+       band of nothing. */
+    const bottom = n => Math.round(n.getBoundingClientRect().bottom);
+    const view = cvA.parentElement, sd = document.querySelector('.atlas-side'), ch = document.querySelector('.chat');
+    ok(!view.classList.contains('big'), 'in the page, not on the full screen');
+    eq(bottom(view), bottom(sd), 'the shop ends where the words end');
+    eq(bottom(view), bottom(ch), 'and where the sommelier ends');
+    /* and the canvas took the room it was given */
+    /* the canvas fills the content box; the view's own 1px border is the rest */
+    ok(view.getBoundingClientRect().height - cvA.getBoundingClientRect().height <= 2,
+       'the shop is drawn over the whole of it');
+    eq(AT.H, Math.round(cvA.getBoundingClientRect().height), 'and measured itself at that height');
+  });
+
   await T('the sommelier follows the shop onto the full screen too, and folds away', () => {
     /* Both panels are equally useful in here: the words are what the view is
        written in, and the sommelier can drive every control in it. So both
@@ -1496,6 +1521,49 @@
     ok(AT.dot(AT.unit(AT.frame().f), p.dir) > 0.99, 'and the Atlas actually turned');
   });
 
+  await T('a key is forgotten only on the second click, and only that one', () => {
+    /* Nothing destructive here goes on one click. The x sits dimmed; the first
+       click arms it RED -- red means armed and nothing else -- and the second,
+       while it is red, forgets the key. Moving off the row forgives it. */
+    const was = { ...agent }, x = el('keyClear'), row = el('keyRow');
+    agent.vendor = 'anthropic'; agent.keys = { anthropic: 'ant', openai: 'oai' };
+    saveAgent(); reflectSetup();
+    ok(!x.hidden, 'there is an x to click, since a key is saved');
+    ok(!x.classList.contains('armed'), 'at rest it is not armed');
+    x.click();
+    ok(x.classList.contains('armed'), 'the first click arms it');
+    eq(KEY(), 'ant', 'and forgets nothing');
+    ok(/again/i.test(x.title), 'and says what a second click will do: ' + x.title);
+    x.click();
+    eq(KEY(), '', 'the second click forgets it');
+    eq(agent.keys.openai, 'oai', 'and leaves the other house alone');
+    ok(!x.classList.contains('armed'), 'and disarms');
+    /* armed, then away: forgiven */
+    agent.keys = { anthropic: 'ant' }; reflectSetup();
+    x.click();
+    row.dispatchEvent(new MouseEvent('mouseleave'));
+    ok(!x.classList.contains('armed'), 'leaving the row disarms it');
+    eq(KEY(), 'ant', 'and the key is still there');
+    /* and escape, for a hand on the keyboard */
+    x.click();
+    x.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    ok(!x.classList.contains('armed'), 'escape disarms it');
+    eq(KEY(), 'ant', 'and the key is still there');
+    Object.assign(agent, was); saveAgent(); reflectSetup();
+  });
+
+  await T('the picker says which houses already hold a key', () => {
+    const was = { ...agent };
+    agent.vendor = 'anthropic'; agent.keys = { anthropic: 'ant' };
+    saveAgent(); reflectSetup();
+    const read = () => [...el('vendor').options].map(o => o.textContent);
+    ok(read().some(t => /Anthropic.*key saved/.test(t)), 'the one with a key says so: ' + read());
+    ok(read().some(t => /OpenAI.*no key/.test(t)), 'and the one without says that');
+    eq([...el('vendor').options].map(o => o.value), ['anthropic', 'openai'], 'both are offered');
+    eq(el('vendor').value, 'anthropic', 'and the one in use is the one shown');
+    Object.assign(agent, was); saveAgent(); reflectSetup();
+  });
+
   await T('each house keeps its own key, so trying the other does not lose it', () => {
     /* There was one slot for both. Pasting an OpenAI key to try ChatGPT wrote
        over the Anthropic one, and switching back sent the wrong key to the
@@ -1509,8 +1577,8 @@
     eq(KEY(), 'ant-key', 'and the first key is still there');
     el('vendor').value = 'openai'; el('vendor').dispatchEvent(new Event('change'));
     eq(KEY(), 'oai-key', 'as is the second');
-    /* clearing one clears only that one */
-    el('keyClear').click();
+    /* clearing one clears only that one -- and takes two clicks, as it must */
+    el('keyClear').click(); el('keyClear').click();
     eq(KEY(), '', 'cleared here');
     el('vendor').value = 'anthropic'; el('vendor').dispatchEvent(new Event('change'));
     eq(KEY(), 'ant-key', 'and not there');
@@ -1534,7 +1602,7 @@
         usage: {} },
       { choices: [{ message: { role: 'assistant', content: 'Oak, straight ahead.' } }], usage: {} }];
     window.fetch = async (u, o) => ({ ok: true, json: async () => (sent.push({ u, b: JSON.parse(o.body) }), reply[sent.length - 1]) });
-    agent.vendor = 'openai'; agent.keys = { openai: 'x' }; agent.model = 'gpt-4o';
+    agent.vendor = 'openai'; agent.keys = { openai: 'x' }; agent.models = { openai: 'gpt-4o' };
     type('turn me to the oaked wines'); await send();
 
     ok(/openai\.com/.test(sent[0].u), 'asked OpenAI');
