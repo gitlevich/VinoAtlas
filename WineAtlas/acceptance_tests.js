@@ -39,6 +39,15 @@
     const box = wrap.getBoundingClientRect();
     ok(innerWidth - box.width < 8, `the page is the window: ${Math.round(box.width)} of ${innerWidth}`);
     eq(getComputedStyle(wrap).maxWidth, 'none', 'no cap on it');
+    /* and the standfirst runs along the title rather than stacking under it in a
+       narrow column: three hundred characters in six hundred pixels was four
+       lines of header before anything on the page had been reached */
+    const lede = document.querySelector('.lede');
+    const lines = Math.round(lede.getBoundingClientRect().height
+      / parseFloat(getComputedStyle(lede).lineHeight));
+    ok(lines <= 2, `the opening is ${lines} lines, not a column`);
+    ok(document.querySelector('.head').getBoundingClientRect().height < 80,
+       'so the head is a band, not a page');
     /* an id selector beats section[hidden], so a tab styled by its id has to
        say it is closed itself -- the words tab stood under every other one */
     TABS.forEach(t => {
@@ -1738,6 +1747,14 @@
   window.confirm = realConfirm;
   for (const [k, v] of [['cc_votes', snap.v], ['cc_agent', snap.a], ['cc_chat', snap.c], ['cc_spend', snap.s]])
     v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v);
+  /* the conversation is restored in the live array too, not only in the store it
+     was saved to. Restoring one and not the other made the suite pass once and
+     fail on a second run in the same page: the notices its own tests had left
+     behind were still standing, so the one that dismisses the last notice found
+     another underneath it. */
+  chat.length = 0;
+  chat.push(...JSON.parse(snap.c || '[]'));
+  drawChat();
   const fails = R.filter(r => r.startsWith('FAIL')).length;
   return R.join('\n') + `\n\n${R.length - fails}/${R.length} passed` + (fails ? ` -- ${fails} FAILED` : '');
 })()
