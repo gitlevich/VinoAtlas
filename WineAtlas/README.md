@@ -173,6 +173,13 @@ it is measured first now, and one unit is one pixel. And an id selector beats
 `section[hidden]`, so the tab styled by its id never closed and stood under every
 other one.
 
+**The top folds away.** A title and an opening paragraph, neither of which is
+the useful part of the page; folded, the title shrinks to a name beside the tabs
+and the page starts 84 pixels higher than it did. What you do inside the shop is
+drawn rather than spelled out — a funnel struck through puts every word out, a
+glass with a minus widens the view back to where it opened — and the words
+survive as the tooltip and as the label a screen reader is given.
+
 **The panels are equal, and the reader sets them.** They opened at 280 and 330,
 which were not chosen so much as written down in that order. Both grids that
 have a shop between two panels now open equal, and a grip stands in the gap
@@ -233,7 +240,7 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **121 of 121 pass.**
+Every test name states an acceptance criterion. **123 of 123 pass.**
 
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from
 the catalogue by a second route and checks every claim the page makes about it:

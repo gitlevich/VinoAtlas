@@ -1393,6 +1393,21 @@ function colgrip(panel,edge){                    // edge: 'right' on a left-hand
   h.addEventListener('click',e=>e.stopPropagation());
   return h;
 }
+/* THE TOP FOLDS AWAY. It is a title and an opening paragraph, and neither is the
+   useful part of the page; folded, the title shrinks to a name beside the tabs.
+   The Atlas measures what stands above it, so it is told to measure again. */
+function foldHead(on){
+  el('head').classList.toggle('folded',on);
+  const b=el('headFold');
+  b.setAttribute('aria-expanded',String(!on));
+  const say=on?'Unfold the opening':'Fold the opening away';
+  b.title=say; b.setAttribute('aria-label',say);
+  localStorage.setItem('cc_head',on?'folded':'open');
+  try{ATLAS.refit();}catch(_){}
+}
+el('headFold').onclick=()=>foldHead(!el('head').classList.contains('folded'));
+if(localStorage.getItem('cc_head')==='folded') foldHead(true);
+
 applyCols();
 colgrip(el('axes').closest('.card'),'right');           // the taste card, on the Find tab
 colgrip(document.querySelector('.atlas-side'),'right'); // the words, in the Atlas

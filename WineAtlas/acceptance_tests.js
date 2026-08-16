@@ -15,7 +15,7 @@
   const near = (a, b, m) => { if (Math.abs(a - b) > 1e-9) throw new Error((m||'') + ' got ' + a + ' want ' + b); };
   const ask = el('ask');
   const type = t => { ask.focus(); ask.value = t; ask.setSelectionRange(t.length, t.length); ask.dispatchEvent(new Event('input')); };
-  const snap = { v: localStorage.getItem('cc_votes'), a: localStorage.getItem('cc_agent'), c: localStorage.getItem('cc_chat'), s: localStorage.getItem('cc_spend'), w: localStorage.getItem('cc_cols') };
+  const snap = { v: localStorage.getItem('cc_votes'), a: localStorage.getItem('cc_agent'), c: localStorage.getItem('cc_chat'), s: localStorage.getItem('cc_spend'), w: localStorage.getItem('cc_cols'), h: localStorage.getItem('cc_head') };
   const realConfirm = window.confirm; window.confirm = () => true;
 
   /* WHAT NAMING A VALUE OWES, now that taste is a range and the middle is only
@@ -78,6 +78,45 @@
     const room = el('popChart').clientWidth;
     ok(box.width > room * 0.6, `it takes the room: ${Math.round(box.width)} of ${room}`);
     el('t-find').click();
+  });
+
+  await T('what you do in the shop is drawn, not spelled out', () => {
+    /* An affordance you look at rather than read. The words survive as the
+       tooltip and as the label a screen reader is given -- what goes is the
+       reading, not the naming. */
+    for (const id of ['atlasClear', 'atlasWide']) {
+      const b = el(id);
+      eq(b.textContent.trim(), '', id + ' says it in a picture');
+      ok(b.querySelector('svg'), id + ' has one');
+      ok(b.querySelector('svg').querySelectorAll('path,circle').length >= 2,
+         id + ' is drawn, not a blank box');
+      ok((b.title || '').length > 8, id + ' still names itself on hover: ' + b.title);
+      eq(b.getAttribute('aria-label'), b.title, id + ' says the same to a reader that cannot see it');
+      const r = b.getBoundingClientRect();
+      ok(Math.abs(r.width - r.height) < 2, id + ' is a square target, not a word');
+    }
+  });
+
+  await T('the top folds away, because it is not the useful part', () => {
+    /* Title and opening paragraph. Folded, the title shrinks to a name beside
+       the tabs and the page starts higher. The Atlas measures what stands above
+       it, so it has to be told to measure again. */
+    const head = el('head'), b = el('headFold');
+    const top = () => Math.round(el('s-find').getBoundingClientRect().top);
+    const h1 = () => parseFloat(getComputedStyle(head.querySelector('h1')).fontSize);
+    if (head.classList.contains('folded')) b.click();
+    const open = top(), bigTitle = h1();
+    ok(getComputedStyle(document.querySelector('.lede')).display !== 'none', 'the opening is there');
+    b.click();
+    ok(head.classList.contains('folded'), 'and folds');
+    eq(getComputedStyle(document.querySelector('.lede')).display, 'none', 'the opening is gone');
+    ok(h1() < bigTitle, `the title shrinks to a name: ${h1()} from ${bigTitle}`);
+    ok(top() < open - 15, `and the page starts higher: ${top()} from ${open}`);
+    eq(localStorage.getItem('cc_head'), 'folded', 'and it is remembered');
+    eq(b.getAttribute('aria-expanded'), 'false', 'and says which way it is');
+    b.click();
+    eq(top(), open, 'and comes back');
+    eq(localStorage.getItem('cc_head'), 'open', 'remembered the other way too');
   });
 
   await T('the panels open equal, either side of the shop', () => {
@@ -1798,7 +1837,7 @@
 
   // restore
   window.confirm = realConfirm;
-  for (const [k, v] of [['cc_votes', snap.v], ['cc_agent', snap.a], ['cc_chat', snap.c], ['cc_spend', snap.s], ['cc_cols', snap.w]])
+  for (const [k, v] of [['cc_votes', snap.v], ['cc_agent', snap.a], ['cc_chat', snap.c], ['cc_spend', snap.s], ['cc_cols', snap.w], ['cc_head', snap.h]])
     v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v);
   /* the conversation is restored in the live array too, not only in the store it
      was saved to. Restoring one and not the other made the suite pass once and

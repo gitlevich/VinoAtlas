@@ -1,9 +1,15 @@
 <div class="wrap">
-<div class="head">
+<div class="head" id="head">
   <h1>Cellar Compass</h1>
   <p class="lede">This looks at the 232 wines on your account, works out what they have in common, and
   finds others in the shop's 1,652-wine list that are like them. It also shows how your buying has changed
   from your first order to your latest. You know wine and it does not — so where it is wrong, mark it wrong.</p>
+  <button id="headFold" class="headfold" aria-expanded="true"
+          title="Fold the opening away" aria-label="Fold the opening away">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M6 15l6-6 6 6"/></svg>
+  </button>
 </div>
 
 <nav role="tablist">
@@ -259,8 +265,17 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
         <div class="awhead"><span>In the shop’s notes</span><span>wines</span></div>
         <div class="awlist" id="atlasWords"></div>
         <div class="awfoot">
-          <button id="atlasClear">clear</button>
-          <button id="atlasWide" style="display:none">step back</button>
+          <button id="atlasClear" title="Put every word out" aria-label="Put every word out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.5 4.5h-17l6.8 8v6.2l3.4 1.8v-8z"/><path d="M4.2 20.4 19.8 4.2"/></svg>
+          </button>
+          <button id="atlasWide" style="display:none" title="Widen the view to where it opened"
+                  aria-label="Widen the view to where it opened">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8M7.5 10.5h6"/></svg>
+          </button>
         </div>
       </div>
       <button class="atlas-rail" id="atlasChatTab" aria-label="Open the sommelier">

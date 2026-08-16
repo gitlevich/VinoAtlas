@@ -47,11 +47,23 @@ body{margin:0;background:var(--ground);color:var(--ink);
   align-items:start;gap:16px}
 /* an id beats section[hidden], so the closed tab has to say so itself */
 #s-how[hidden]{display:none}
-h1{margin:0;font-size:clamp(23px,3vw,31px);font-weight:600;letter-spacing:-.024em;line-height:1.15}
-.lede{margin:0;font-size:15.5px;line-height:1.6;color:var(--ink-2);max-width:150ch}
-.head{display:flex;align-items:baseline;gap:12px 40px}
+/* THE TOP IS NOT THE USEFUL PART OF THE PAGE, so it is small and it folds away.
+   Folded, the title shrinks to a name beside the tabs and the opening is gone;
+   the chevron is the same one every panel here folds by. */
+h1{margin:0;font-size:clamp(19px,2.1vw,25px);font-weight:600;letter-spacing:-.024em;line-height:1.15}
+.lede{margin:0;font-size:13.5px;line-height:1.55;color:var(--ink-2);max-width:150ch}
+.head{display:flex;align-items:baseline;gap:10px 32px}
 .head h1{flex:none}
 .head .lede{flex:1;min-width:0}
+.headfold{flex:none;align-self:center;display:flex;align-items:center;justify-content:center;
+  width:24px;height:24px;padding:0;border:0;border-radius:6px;background:none;
+  color:var(--ink-3);cursor:pointer;transition:color .12s,background .12s}
+.headfold:hover{color:var(--ink);background:var(--raise)}
+.headfold:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.headfold svg{width:15px;height:15px;display:block;transition:transform .12s}
+.head.folded .lede{display:none}
+.head.folded h1{font-size:17px}
+.head.folded .headfold svg{transform:rotate(180deg)}
 @media(max-width:880px){.head{flex-direction:column;align-items:flex-start;gap:10px}}
 nav{display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--rule);padding-bottom:0}
 nav button{font:inherit;font-size:13.5px;font-weight:500;padding:9px 15px;border:0;border-bottom:2px solid transparent;
@@ -399,8 +411,14 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .aw.none{opacity:.38}
 .aw.none em{text-decoration:line-through}
 .awfoot{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--rule)}
-.awfoot button{font:inherit;font-size:11.5px;padding:5px 10px;border-radius:6px;
-  border:1px solid var(--rule);background:var(--raise);color:var(--ink-2);cursor:pointer}
+/* AN AFFORDANCE YOU LOOK AT RATHER THAN READ. A funnel struck through puts every
+   word out; a glass with a minus widens the view back to where it opened. The
+   words survive as the tooltip and as the label a screen reader is given. */
+.awfoot button{display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;padding:0;border-radius:7px;
+  border:1px solid var(--rule);background:var(--raise);color:var(--ink-3);cursor:pointer;
+  transition:color .12s,border-color .12s}
+.awfoot button svg{width:15px;height:15px;display:block}
 .awfoot button:hover{color:var(--ink);border-color:var(--ink-3)}
 .awfoot button:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 
@@ -609,11 +627,17 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 }
 </style>
 <div class="wrap">
-<div class="head">
+<div class="head" id="head">
   <h1>Cellar Compass</h1>
   <p class="lede">This looks at the 232 wines on your account, works out what they have in common, and
   finds others in the shop's 1,652-wine list that are like them. It also shows how your buying has changed
   from your first order to your latest. You know wine and it does not — so where it is wrong, mark it wrong.</p>
+  <button id="headFold" class="headfold" aria-expanded="true"
+          title="Fold the opening away" aria-label="Fold the opening away">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M6 15l6-6 6 6"/></svg>
+  </button>
 </div>
 
 <nav role="tablist">
@@ -869,8 +893,17 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
         <div class="awhead"><span>In the shop’s notes</span><span>wines</span></div>
         <div class="awlist" id="atlasWords"></div>
         <div class="awfoot">
-          <button id="atlasClear">clear</button>
-          <button id="atlasWide" style="display:none">step back</button>
+          <button id="atlasClear" title="Put every word out" aria-label="Put every word out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.5 4.5h-17l6.8 8v6.2l3.4 1.8v-8z"/><path d="M4.2 20.4 19.8 4.2"/></svg>
+          </button>
+          <button id="atlasWide" style="display:none" title="Widen the view to where it opened"
+                  aria-label="Widen the view to where it opened">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8M7.5 10.5h6"/></svg>
+          </button>
         </div>
       </div>
       <button class="atlas-rail" id="atlasChatTab" aria-label="Open the sommelier">
@@ -1251,7 +1284,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='1f841aa1';
+const BUILD='e022fdd3';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -2343,6 +2376,21 @@ function colgrip(panel,edge){                    // edge: 'right' on a left-hand
   h.addEventListener('click',e=>e.stopPropagation());
   return h;
 }
+/* THE TOP FOLDS AWAY. It is a title and an opening paragraph, and neither is the
+   useful part of the page; folded, the title shrinks to a name beside the tabs.
+   The Atlas measures what stands above it, so it is told to measure again. */
+function foldHead(on){
+  el('head').classList.toggle('folded',on);
+  const b=el('headFold');
+  b.setAttribute('aria-expanded',String(!on));
+  const say=on?'Unfold the opening':'Fold the opening away';
+  b.title=say; b.setAttribute('aria-label',say);
+  localStorage.setItem('cc_head',on?'folded':'open');
+  try{ATLAS.refit();}catch(_){}
+}
+el('headFold').onclick=()=>foldHead(!el('head').classList.contains('folded'));
+if(localStorage.getItem('cc_head')==='folded') foldHead(true);
+
 applyCols();
 colgrip(el('axes').closest('.card'),'right');           // the taste card, on the Find tab
 colgrip(document.querySelector('.atlas-side'),'right'); // the words, in the Atlas
