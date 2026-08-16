@@ -317,7 +317,7 @@
     const css = document.getElementById('cc-css').textContent;
     ok(/\.rpt\{fill:var\(--me\)/.test(css), 'your shape is the filled one -- inside it is you');
     ok(!/rsig/.test(svg), 'one shape only: no second region competing for "you"');
-    ok(/the wine you are looking for/.test(document.querySelector('.rleg').textContent), 'the legend says what it is');
+    ok(/your taste/.test(document.querySelector('.rleg').textContent), 'the legend says what it is');
   });
   await T('the caption reports difference, never a verdict the ranking does not use', () => {
     const w = S.wines.find(x => A.some(a => x[a] > point[a] + 0.08));
@@ -549,9 +549,13 @@
     });
     ok(document.querySelector('#out .why span[style*="color"]'), 'the explanation tints its measure');
   });
-  await T('the dashed shape is named for what it is', () => {
+  await T('the dashed shape is named for where it came from, not for what he wants', () => {
+    /* It said "the wine you are looking for", which presumes to know. It is the
+       wine his own taste indicates -- measured from his bottles, or moved by his
+       own hand -- and that is a fact about the shape rather than about him. */
     const leg = document.querySelector('.rleg').textContent;
-    ok(leg.includes('the wine you are looking for'), 'named plainly');
+    ok(/your taste/.test(leg), 'it is named by what it comes from: ' + leg);
+    ok(!/looking for|want|wish|need|should/i.test(leg), 'and does not tell him what he is after');
     ok(!/\bthe point\b/.test(document.body.innerText), 'no bare "the point" left in the interface');
   });
 
