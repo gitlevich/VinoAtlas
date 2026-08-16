@@ -267,7 +267,9 @@ def _favicon_bytes(box=32, pad=0.5):
     return canvas.png()
 
 
-PAGE = """<title>Weed Atlas</title>
+PAGE = """<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Weed Atlas</title>
 <link rel=icon href="icon.png" sizes="32x32">
 <link rel=icon type="image/svg+xml" href="__ICON__">
 <style>
@@ -1259,26 +1261,12 @@ qbox.addEventListener('keydown', e => {
 
 const view = document.getElementById('view');
 let down = false, lx = 0, ly = 0, moved = 0;
-view.addEventListener('pointerdown', e => {
-  down = true; moved = 0; lx = e.clientX; ly = e.clientY;
-  view.classList.add('drag'); view.setPointerCapture(e.pointerId);
-  target = null; vYaw = vPitch = 0;
-});
-view.addEventListener('pointermove', e => {
-  if (!down) return;
-  const dx = e.clientX - lx, dy = e.clientY - ly;
-  moved += Math.abs(dx) + Math.abs(dy);
-  vYaw = -dx * 0.0032; vPitch = dy * 0.0032;      // carried on after release
-  yaw += vYaw; pitch = Math.max(-1.1, Math.min(1.1, pitch + vPitch));
-  lx = e.clientX; ly = e.clientY;
-});
-view.addEventListener('pointermove', e => {
-  if (down) return;
-  const r = c.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-  /* A leaf is hoverable over the whole leaf. The node is where the stem meets
-     the blades -- a point at the bottom of the mark -- so a fixed nine-pixel
-     radius around it caught only the accent and missed everything green above
-     it. The reach is the leaf's own drawn size. */
+/* A leaf is hoverable over the whole leaf. The node is where the stem meets
+   the blades -- a point at the bottom of the mark -- so a fixed nine-pixel
+   radius around it caught only the accent and missed everything green above
+   it. The reach is the leaf's own drawn size. One renderer serves the pointer's
+   hover and the finger's tap, so they cannot drift apart. */
+function hoverAt(mx, my) {
   let best = null, bd = Infinity;
   for (const t of ST) {
     if (!t.node) continue;
@@ -1294,10 +1282,70 @@ view.addEventListener('pointermove', e => {
     box.style.right = 'auto'; box.style.bottom = 'auto';
     box.innerHTML = `<b>${best.n}</b>` + does(best);
   } else if (!showNames) box.style.display = 'none';
+  return best;
+}
+/* TWO FINGERS ON THE GLASS are the trackpad's pinch, through the same door:
+   in walks you forward until the rim and only then narrows the view; out
+   widens first and only then walks back -- the gesture undoes itself. The walk
+   is logarithmic in the spread, so closing the fingers by the proportion they
+   opened retraces the same ground. One finger stays a turn; the moment a
+   second lands, the turn ends and the pinch begins, and a tap while fingers
+   were paired is no tap at all. */
+const touches = new Map();
+let pinchD = 0, wasPinch = false;
+function pinch(r) {
+  if (!(r > 0) || Math.abs(r - 1) < 0.002) return;
+  if (r > 1) { if (len(STAND) >= ROAM - 1e-6) lean(1 / r); else walk(Math.log(r) * 2); }
+  else { if (fovWant < WIDE * 0.995) lean(1 / r); else walk(Math.log(r) * 2); }
+}
+view.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'touch') {
+    touches.set(e.pointerId, [e.clientX, e.clientY]);
+    if (touches.size === 2) {
+      down = false; wasPinch = true; view.classList.remove('drag');
+      const [a, b] = [...touches.values()];
+      pinchD = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      target = null; vYaw = vPitch = 0;
+      return;
+    }
+  }
+  down = true; moved = 0; lx = e.clientX; ly = e.clientY;
+  view.classList.add('drag');
+  try { view.setPointerCapture(e.pointerId); } catch (_) {}
+  target = null; vYaw = vPitch = 0;
 });
+view.addEventListener('pointermove', e => {
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, [e.clientX, e.clientY]);
+  if (touches.size === 2) {
+    const [a, b] = [...touches.values()];
+    const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (pinchD > 0) pinch(d / pinchD);
+    pinchD = d; nudge(); return;
+  }
+  if (!down) return;
+  const dx = e.clientX - lx, dy = e.clientY - ly;
+  moved += Math.abs(dx) + Math.abs(dy);
+  vYaw = -dx * 0.0032; vPitch = dy * 0.0032;      // carried on after release
+  yaw += vYaw; pitch = Math.max(-1.1, Math.min(1.1, pitch + vPitch));
+  lx = e.clientX; ly = e.clientY;
+});
+view.addEventListener('pointermove', e => {
+  if (down || touches.size) return;
+  if (e.pointerType === 'touch') return;   // a finger cannot hover
+  const r = c.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  hoverAt(mx, my);
+});
+const dropTouch = e => {
+  if (e.pointerType !== 'touch') return;
+  touches.delete(e.pointerId);
+  if (!touches.size) wasPinch = false; else pinchD = 0;
+};
+view.addEventListener('pointercancel', dropTouch);
 view.addEventListener('pointerup', e => {
+  const paired = wasPinch;
+  dropTouch(e);
   down = false; view.classList.remove('drag');
-  if (moved > 5) return;
+  if (paired || moved > 5) return;
   vYaw = vPitch = 0;
   const r = c.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
   for (const it of ITEMS) {
@@ -1305,6 +1353,9 @@ view.addEventListener('pointerup', e => {
     const [x, y, w, s] = it.hit;
     if (Math.abs(mx - x) < w/2 + 8 && Math.abs(my - y) < s) { faceTo(it.pos); beginApproach(); return; }
   }
+  /* A TAP IS THE FINGER'S HOVER: tap a weed and its card stands, bars and
+     all, until a tap lands on nothing. */
+  if (e.pointerType === 'touch') { hoverAt(mx, my); nudge(); }
 });
 
 function lean(factor, towardX, towardY) {

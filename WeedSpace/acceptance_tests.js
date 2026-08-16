@@ -164,6 +164,48 @@
     STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
   });
 
+  await T("two fingers are the pinch, and a tap is the finger's hover", async () => {
+    /* On a phone there is no wheel and no hover. Two fingers go through the
+       same door as the trackpad's pinch, and closing them by the proportion
+       they opened retraces the same ground; a tap raises the same card the
+       pointer gets by hovering -- name and bars -- which stands until a tap
+       lands on nothing. A tap while fingers were paired is no tap. */
+    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
+    const r = c.getBoundingClientRect();
+    const pe = (type, id, x, y) => view.dispatchEvent(new PointerEvent(type,
+      { pointerId: 60 + id, pointerType: 'touch', clientX: r.left + x, clientY: r.top + y, bubbles: true }));
+    pe('pointerdown', 1, 200, 300); pe('pointerdown', 2, 260, 300);
+    for (let d = 60; d <= 240; d += 20) pe('pointermove', 2, 200 + d, 300);
+    await settle();
+    ok(len(STAND) > 0.4, 'fingers apart carried you in: ' + len(STAND).toFixed(2));
+    for (let d = 240; d >= 60; d -= 20) pe('pointermove', 2, 200 + d, 300);
+    pe('pointerup', 2, 260, 300); pe('pointerup', 1, 200, 300);
+    await settle();
+    ok(len(STAND) < 0.15 && fovWant > WIDE * 0.99,
+       'and together retraces the path back: ' + len(STAND).toFixed(2));
+    const onLabel = (x, y) => ITEMS.some(it => it.hit
+      && Math.abs(x - it.hit[0]) < it.hit[2] / 2 + 12 && Math.abs(y - it.hit[1]) < it.hit[3] + 4);
+    const t0 = ST.find(t => t.node && t.node[0] > 30 && t.node[0] < r.width - 30
+                         && t.node[1] > 40 && t.node[1] < r.height - 30
+                         && !onLabel(t.node[0], t.node[1] - t.node[2] * 0.45));
+    ok(t0, 'a weed stands on screen, clear of the labels');
+    const tx = t0.node[0], ty = t0.node[1] - t0.node[2] * 0.45;
+    pe('pointerdown', 3, tx, ty); pe('pointerup', 3, tx, ty);
+    const box = document.getElementById('names');
+    ok(box.style.display === 'block' && box.innerHTML.includes(t0.n), 'a tap raises the card for the weed tapped');
+    let far = null;
+    for (let y = 12; y < r.height && !far; y += 17)
+      for (let x = 12; x < r.width && !far; x += 17)
+        if (!onLabel(x, y) && ST.every(t => !t.node
+            || (t.node[0] - x) ** 2 + (t.node[1] - t.node[2] * 0.45 - y) ** 2
+               > Math.pow(Math.max(10, t.node[2] * 1.25) + 6, 2)))
+          far = [x, y];
+    ok(far, 'somewhere empty exists');
+    pe('pointerdown', 4, far[0], far[1]); pe('pointerup', 4, far[0], far[1]);
+    ok(box.style.display === 'none', 'and a tap on nothing puts the card away');
+    STAND = [0, 0, 0]; FOV = fovWant = WIDE; await paint();
+  });
+
   await T('walking redraws, and the middle button is gone', async () => {
     STAND = [0, 0, 0]; await paint();
     let d = DRAWS;                              // count from BEFORE the act
