@@ -557,6 +557,14 @@
     ok(/your taste/.test(leg), 'it is named by what it comes from: ' + leg);
     ok(!/looking for|want|wish|need|should/i.test(leg), 'and does not tell him what he is after');
     ok(!/\bthe point\b/.test(document.body.innerText), 'no bare "the point" left in the interface');
+    /* ONE MARK, ONE NAME. The legend called it one thing and the help copy and
+       every tool the sommelier is given called it another, so the page had two
+       names for one object and the model was taught the one nobody could see. */
+    const said = document.body.innerText + JSON.stringify(TOOLBOX) + lensSystem(parseSpell('')).stat;
+    ok(!/asking for/.test(said), 'the name it used to have is gone from copy, tools and framing');
+    ok(/the wine your taste indicates/.test(document.body.innerText), 'the reader is told this one');
+    ok(/the wine (your|his) taste indicates/.test(JSON.stringify(TOOLBOX)),
+       'and the sommelier is handed the same one');
   });
 
   await T('both chat boxes can be dragged taller, and the size is remembered', () => {

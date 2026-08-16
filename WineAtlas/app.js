@@ -126,7 +126,7 @@ function drawRadar(){
     // the corner states its own number, so the drawing can be checked at a glance
     return `<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="middle" font-size="10.5" font-weight="600" fill="${S.colors[a]}">${S.short[a]} <tspan fill-opacity="0.62" font-weight="500">${point[a].toFixed(2)}</tspan></text>`;}).join('');
   // figure and ground: the world is neutral; YOUR PROFILE -- the dashed shape,
-  // the wine you are asking for -- is filled. Inside it is you.
+  // the wine your taste indicates -- is filled. Inside it is you.
   const outside=`<polygon class="rout" points="${rpts(A.map(()=>1)).join(' ')}"/>`;
   const path=v=>'M'+rpts(v).join(' L')+' Z';
   const pt=`<path class="rpt" d="${path(A.map(a=>band[a][1]))} ${path(A.map(a=>band[a][0]))}"
@@ -630,7 +630,7 @@ The user may name a measure with #weight #grip #oak #fruit #age; "more #oak" mea
 
 YOUR HANDS. The tools sent with this message are the page's own controls, and calling one is his hand on it: it happens at once, on his screen, and whatever you move wears a fading ring where it sits. Everything he can do you can do, except marking a wine right or wrong and Reset -- those are his, his marks are the measurement, and you must never cast one.
 Never say a move instead of making it. If you are about to write that you are turning the Atlas, or setting a measure, or opening a section, call the tool in that same turn; a sentence about a move that was not called is a lie to him. Every call answers with what the page shows afterwards. Read that answer before you speak, and name the wines that actually came up rather than the ones you expected. When you are asked something you can only settle by looking, call "look" first and answer from what it says.
-Then reply in plain sentences -- short, to an expert, never JSON. The only measure names allowed in speech are: body, tannin grip, oak, fruit character, age. The tools call age "maturity"; in speech it is always age. The interface calls the point "the wine you are asking for" -- use that phrase when you refer to it, never "the point".
+Then reply in plain sentences -- short, to an expert, never JSON. The only measure names allowed in speech are: body, tannin grip, oak, fruit character, age. The tools call age "maturity"; in speech it is always age. The interface calls the point "the wine your taste indicates" -- use that phrase when you refer to it, never "the point". It is called that because it starts as the span of his own bottles and only moves when he or you move it; it is never a guess at what he is after.
 
 His ten orders, oldest to newest, with what was actually in each:
 ${ordersText()}
@@ -719,7 +719,7 @@ const SHOWPARTS=['sigil','measures','shape','list','ask','kinds','filters','mark
 const axSchema=(d,lo,hi)=>({type:'number',minimum:lo===undefined?0:lo,maximum:hi===undefined?1:hi,description:d});
 const TOOLBOX=[
 {name:'move',
- description:'Move the wine he is asking for, and the bands that limit the search. The list then shows the shop wines nearest that wine, inside every band. Send only the measures his words move; the ones you leave out stay where they are.',
+ description:'Move the wine his taste indicates, and the bands that limit the search. The list then shows the shop wines nearest that wine, inside every band. Send only the measures his words move; the ones you leave out stay where they are.',
  schema:{type:'object',properties:{
    weight:axSchema(`${S.labels.weight}: 0 = ${S.ends.weight[0]}, 1 = ${S.ends.weight[1]}`),
    grip:axSchema(`${S.labels.grip}: 0 = ${S.ends.grip[0]}, 1 = ${S.ends.grip[1]}`),
@@ -733,12 +733,12 @@ const TOOLBOX=[
  schema:{type:'object',properties:{
    tab:{type:'string',enum:TABS,description:'Open a section. find = the finder; palate = his wines against the shelf; move = how his buying changed; pop = what happens to a drinker\'s first decade; how = what the words mean; atlas = the shop as a place he stands inside.'},
    kind:{type:'integer',minimum:0,maximum:3,description:'Press one of his four buying kinds: '+KINDS.map((k,i)=>`${i} = ${k.name} (${k.wines.length} of his wines)`).join('; ')},
-   heading:{type:'boolean',description:'Set the wine he is asking for to where his buying is heading.'},
+   heading:{type:'boolean',description:'Set the wine his taste indicates to where his buying is heading.'},
    hideOwned:{type:'boolean',description:'Hide wines he has already bought.'},
    hideVoted:{type:'boolean',description:'Hide wines he has already marked.'},
    pin:{type:'string',description:"Hold a named wine's shape on his radar, against his own. An empty string releases it."},
    show:{type:'string',enum:SHOWPARTS,description:'Bring one part of the page into view and ring it. sigil = the whole taste card; measures = the five band sliders; shape = the five-cornered drawing of his taste; list = the wines found; ask = this sommelier panel; kinds = his four buying kinds; filters = the two hiding switches; marks = the button that downloads his marks.'},
-   like:{type:'array',items:{type:'string'},description:'Exact wine names. Sets the wine he is asking for to the middle of them, exactly as if he had named them himself.'},
+   like:{type:'array',items:{type:'string'},description:'Exact wine names. Sets the wine his taste indicates to the middle of them, exactly as if he had named them himself.'},
    writeTaste:{type:'boolean',description:'Measure the bands his own buying stays inside and write them into his box, for him to correct and send.'}}}},
 {name:'atlas',
  description:'Move him through the Atlas: the shop as a place he stands inside, where every wine is a glass at a bearing and his own are bottles. Opens that section first if it is closed. Every field is optional.',
@@ -761,7 +761,7 @@ const TOOLBOX=[
  description:'Walk him through his ten orders inside the Atlas, oldest to newest, standing him at each and saying what moved between it and the last. Offer this when he asks how his buying has changed, or how to read the Atlas.',
  schema:{type:'object',properties:{}}},
 {name:'look',
- description:'Read the page back without touching it: the open section, where the wine he is asking for stands, the bands, the wines on his screen now, what he has marked, and where he stands in the Atlas. Every other tool answers with this too.',
+ description:'Read the page back without touching it: the open section, where the wine his taste indicates stands, the bands, the wines on his screen now, what he has marked, and where he stands in the Atlas. Every other tool answers with this too.',
  schema:{type:'object',properties:{}}}];
 const clamp01=v=>Math.max(0,Math.min(1,v));
 function runTool(name,input){
