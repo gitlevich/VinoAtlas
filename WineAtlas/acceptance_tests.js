@@ -299,7 +299,7 @@
     const row = el('out').querySelector('.row');
     row.dispatchEvent(new MouseEvent('mouseenter'));
     ok(el('radar').querySelectorAll('circle').length === 5, 'five wine dots');
-    ok(/than you asked|just what you asked for/.test(el('radarName').textContent), 'difference in plain words');
+    ok(/than your taste indicates|just what your taste indicates/.test(el('radarName').textContent), 'difference in plain words');
     row.dispatchEvent(new MouseEvent('mouseleave'));
     ok(el('radarName').textContent === '', 'overlay cleared');
   });
@@ -323,7 +323,7 @@
     const w = S.wines.find(x => A.some(a => x[a] > point[a] + 0.08));
     radarWine(w);
     const cap = el('radarName').textContent;
-    ok(/than you asked|just what you asked for/.test(cap), 'stated as difference: ' + cap);
+    ok(/than your taste indicates|just what your taste indicates/.test(cap), 'stated as difference: ' + cap);
     ok(!/fits|outside|inside/.test(cap), 'no pass-or-fail language the list never applies');
     radarWine(null);
   });
@@ -562,6 +562,10 @@
        names for one object and the model was taught the one nobody could see. */
     const said = document.body.innerText + JSON.stringify(TOOLBOX) + lensSystem(parseSpell('')).stat;
     ok(!/asking for/.test(said), 'the name it used to have is gone from copy, tools and framing');
+    /* and so is the same presumption in the comparisons -- every row of the list
+       said a wine was lighter "than you asked", which is the mark's old name in
+       another grammar */
+    ok(!/you asked/.test(said), 'nor is it there as a comparison');
     ok(/the wine your taste indicates/.test(document.body.innerText), 'the reader is told this one');
     ok(/the wine (your|his) taste indicates/.test(JSON.stringify(TOOLBOX)),
        'and the sommelier is handed the same one');

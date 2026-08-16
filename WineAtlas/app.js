@@ -149,7 +149,7 @@ function radarWine(w){
   if(more.length) bits.push('more '+more.join(', '));
   if(less.length) bits.push('less '+less.join(', '));
   el('radarName').textContent=w.name.slice(0,40)+
-    (bits.length?' — '+bits.join('; ')+' than you asked':' — just what you asked for');
+    (bits.length?' — '+bits.join('; ')+' than your taste indicates':' — just what your taste indicates');
 }
 /* the range IS the taste; the centre is its middle, derived, never separate */
 function recentre(a){point[a]=(band[a][0]+band[a][1])/2;}
@@ -242,7 +242,7 @@ function why(w){
   const dir=S.compare[far[0]][w[far[0]]>point[far[0]]?1:0];
   const tint=(a,t)=>`<span style="color:${S.colors[a]}">${t}</span>`;
   const word=dir.replace(/\s+than$/,'');
-  return `same ${tint(near,S.labels[near].toLowerCase())}, slightly ${tint(far[0],word)} than you asked`;
+  return `same ${tint(near,S.labels[near].toLowerCase())}, slightly ${tint(far[0],word)} than your taste indicates`;
 }
 function render(){
   let pool=S.wines;
