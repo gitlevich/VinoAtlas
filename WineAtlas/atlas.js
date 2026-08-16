@@ -1512,18 +1512,27 @@ function named(what) {
 let pointWant = null, pointTries = 0;
 function setWord(w, on) {
   const row = [...wordList.children].find(r => r.dataset.w === String(w).toLowerCase());
-  if (!row) return;
+  if (!row) return false;
   if (state.has(row.dataset.w) !== !!on) row.click();
+  return true;
 }
+/* a name nobody carries speaks: the notes come back through applyAct and stand
+   before the observation, so a miss is never the same answer as a hit */
 function act(a) {
-  if (!a || typeof a !== 'object') return;
+  const notes = [];
+  if (!a || typeof a !== 'object') return notes;
   if (a.words !== undefined) fold('nowords', !a.words);
   if (a.sommelier !== undefined) fold('nochat', !a.sommelier);
   if (a.screen !== undefined) fill(!!a.screen);
   if (a.clear) el('atlasClear').click();
-  if (Array.isArray(a.tick)) a.tick.forEach(w => setWord(w, true));
+  if (Array.isArray(a.tick)) {
+    const missed = a.tick.filter(w => !setWord(w, true));
+    if (missed.length) notes.push(`No word ${missed.map(w => `"${w}"`).join(', ')} in the shop's notes.`);
+  }
   if (Array.isArray(a.untick)) a.untick.forEach(w => setWord(w, false));
-  if (a.face) { const d = named(a.face); if (d) faceTo(d); }
+  if (a.face) { const d = named(a.face);
+    if (d) faceTo(d);
+    else notes.push(`Nothing here is called "${a.face}" -- not a pole, not a word, not a wine.`); }
   if (Array.isArray(a.faceTo) && a.faceTo.length === 3) faceTo(a.faceTo);
   if (typeof a.zoom === 'number') {
     fovWant = FOV = WIDE * Math.exp(-Math.max(0, Math.min(1, a.zoom)) * LSPAN);
@@ -1537,8 +1546,10 @@ function act(a) {
   if (a.point) {
     const i = S.wines.findIndex(w => w.name.toLowerCase() === String(a.point).toLowerCase());
     if (i >= 0) { pointWant = i; pointTries = 0; }
+    else notes.push(`No wine named "${a.point}" in the shop; the name must be exact, look at part of it to find the whole.`);
   }
   nudge();
+  return notes;
 }
 
 /* ---- the tour ------------------------------------------------------------

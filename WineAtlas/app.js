@@ -679,8 +679,8 @@ ${(()=>{const o=S.orders.filter(x=>x.weight!==undefined);if(o.length<4)return ''
   return 'His buying has moved, earliest orders to latest: '+A.map((a,i)=>`${a} ${f[i].toFixed(2)} -> ${l[i].toFixed(2)}`).join(', ')+'.';})()}
 The user may name a measure with #weight #grip #oak #fruit #age; "more #oak" means raise oak.
 
-YOUR HANDS. The tools sent with this message are the page's own controls, and calling one is his hand on it: it happens at once, on his screen, and whatever you move wears a fading ring where it sits. Everything he can do you can do, but for four things that are his: marking a wine right or wrong -- his marks are the measurement, and you must never cast one; Reset; the words in his own box; and who answers and with what key.
-Never say a move instead of making it. If you are about to write that you are turning the Atlas, or setting a measure, or opening a section, call the tool in that same turn; a sentence about a move that was not called is a lie to him. Every call answers with what the page shows afterwards. Read that answer before you speak, and name the wines that actually came up rather than the ones you expected. When you are asked something you can only settle by looking, call "look" first and answer from what it says.
+YOUR HANDS. The tools sent with this message are the page's own controls, and calling one is his hand on it: it happens at once, on his screen, and whatever you move wears a fading ring where it sits. The five: move asks by numbers; page presses the page's own controls by name; atlas moves him inside the shop; tour walks his ten orders; look sees -- the page whole, or with "at" one wine or one word up close. Everything he can do you can do, but for four things that are his: marking a wine right or wrong -- his marks are the measurement, and you must never cast one; Reset; the words in his own box; and who answers and with what key.
+Never say a move instead of making it. If you are about to write that you are turning the Atlas, or setting a measure, or opening a section, call the tool in that same turn; a sentence about a move that was not called is a lie to him. Every call answers with what the page shows afterwards. Read that answer before you speak, and name the wines that actually came up rather than the ones you expected. When you are asked something you can only settle by looking, call "look" first -- with "at" when it is one wine or one word you need -- and answer from what it says. Before you steer toward a named wine, look at it: its measured numbers are what the tool will search by, not your memory of it.
 Then reply in plain sentences -- short, to an expert, never JSON. The only measure names allowed in speech are: body, tannin grip, oak, fruit character, age. The tools call age "maturity"; in speech it is always age. The interface calls the point "the wine your taste indicates" -- use that phrase when you refer to it, never "the point". It is called that because it starts as the span of his own bottles and only moves when he or you move it; it is never a guess at what he is after.
 
 His ten orders, oldest to newest, with what was actually in each:
@@ -726,8 +726,13 @@ function showPart(name){
   node.scrollIntoView({behavior:still?'auto':'smooth',block:'center'});
   flash(node);
 }
+/* A NAME NOBODY CARRIES MUST SPEAK. face, point, tick, pin and like all take
+   names; a miss that does nothing silently is the original disease -- the
+   sommelier says "pinning it" and nothing is pinned. Every miss is returned as
+   a note, and runTool puts the notes before the observation. */
 function applyAct(act){
-  if(!act||typeof act!=='object') return;
+  const notes=[];
+  if(!act||typeof act!=='object') return notes;
   if(act.tab&&el('t-'+act.tab)){el('t-'+act.tab).click();flash(el('t-'+act.tab));}
   if(Number.isInteger(act.kind)&&S.modes[act.kind]){
     const b=document.querySelectorAll('#modeBtns .btn')[act.kind]; b.click(); flash(b);}
@@ -738,9 +743,11 @@ function applyAct(act){
     el('hv').dispatchEvent(new Event('change'));flash(el('hv').closest('label'));}
   if(Array.isArray(act.like)&&act.like.length){          // the same path as his chips
     picked=[];
+    const missed=[];
     act.like.forEach(n=>{const w=S.wines.find(x=>x.name.toLowerCase()===String(n).toLowerCase());
-      if(w&&!picked.includes(w.id)) picked.push(w.id);});
+      if(w&&!picked.includes(w.id)) picked.push(w.id); else if(!w) missed.push(n);});
     drawPicked(); centroid(); flash(el('picked'));
+    if(missed.length) notes.push(`No wine named ${missed.map(n=>`"${n}"`).join(', ')} in the shop -- left out; the name must be exact, look at part of it to find the whole.`);
   }
   if(act.writeTaste){el('mySigil').click(); flash(el('mySigil'));}
   if(act.show) showPart(act.show);
@@ -761,16 +768,19 @@ function applyAct(act){
   /* the Atlas is a place, and everything the reader can do in it the sommelier
      can do too -- turn, walk, change the field, tick a word, point at a bottle,
      fold a panel, fill the screen. Marking a wine right or wrong stays his. */
-  if(act.atlas){ if(el('s-atlas').hidden) el('t-atlas').click(); ATLAS.act(act.atlas); }
+  if(act.atlas){ if(el('s-atlas').hidden) el('t-atlas').click();
+    const an=ATLAS.act(act.atlas); if(Array.isArray(an)) notes.push(...an); }
   if(act.tour){ if(el('s-atlas').hidden) el('t-atlas').click(); ATLAS.tour(); }
   if('pin' in act){
     const w=act.pin?S.wines.find(x=>x.name.toLowerCase()===String(act.pin).toLowerCase()):null;
+    if(act.pin&&!w) notes.push(`No wine named "${act.pin}" in the shop, so nothing is pinned; the name must be exact, look at part of it to find the whole.`);
     pinned=w?w.id:null;
     el('out').querySelectorAll('.row').forEach(x=>x.classList.toggle('sel',x.dataset.w===pinned));
     radarWine(w||null);
     if(w){const r=el('out').querySelector('.row.sel'); if(r){flash(r);
       r.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'nearest'});}}
   }
+  return notes;
 }
 /* ---- the sommelier's hands ------------------------------------------------
    It used to answer with a blob of hand-written JSON that carried both its
@@ -786,22 +796,37 @@ function applyAct(act){
    about the move, from what the page then said. */
 const SHOWPARTS=['sigil','measures','shape','list','ask','kinds','filters','marks'];
 const axSchema=(d,lo,hi)=>({type:'number',minimum:lo===undefined?0:lo,maximum:hi===undefined?1:hi,description:d});
+/* WHERE THE SHOP ACTUALLY STANDS, written into the offer itself. The catalogue
+   is coarse -- body has five values, not a continuum -- and an agent that does
+   not know the rungs asks for wines between them. Computed here, at boot, from
+   the same wines the search runs over, so the offer cannot drift from the shop:
+   a fact typed by hand rots, a fact computed is the data's own. */
+const rungs=a=>{
+  const c=new Map(); S.wines.forEach(w=>{c.set(w[a],(c.get(w[a])||0)+1);});
+  const v=[...c.keys()].sort((x,y)=>x-y);
+  if(v.length<=8) return `The shop's ${S.wines.length} wines stand on ${v.length} rungs: `
+    +v.map(x=>`${x.toFixed(2)} (${c.get(x)})`).join(', ')+'.';
+  const s=S.wines.map(w=>w[a]).sort((x,y)=>x-y), q=p=>s[Math.floor((s.length-1)*p)].toFixed(2);
+  return `Near-continuous (${v.length} distinct values): a quarter of the shop at or below ${q(0.25)}, half by ${q(0.5)}, three quarters by ${q(0.75)}.`;
+};
 const TOOLBOX=[
 {name:'move',
- description:'Move the wine his taste indicates, and the bands that limit the search. The list then shows the shop wines nearest that wine, inside every band. Send only the measures his words move; the ones you leave out stay where they are.',
+ description:'The one tool that takes numbers: it sets where the five measures stand, and the bands that hard-limit the list. Use it when his words name a quality, a direction or a comparison -- "lighter", "more oak", "like that but younger", "nothing past its peak". Send only the measures his words move; the rest stay. The wine his taste indicates orders the list by nearness; a band excludes -- a wine outside any band is never shown, however near. Each measure\'s field says where the shop\'s wines actually stand; read it before choosing a number.',
  schema:{type:'object',properties:{
-   weight:axSchema(`${S.labels.weight}: 0 = ${S.ends.weight[0]}, 1 = ${S.ends.weight[1]}`),
-   grip:axSchema(`${S.labels.grip}: 0 = ${S.ends.grip[0]}, 1 = ${S.ends.grip[1]}`),
-   oak:axSchema(`${S.labels.oak}: 0 = ${S.ends.oak[0]}, 1 = ${S.ends.oak[1]}`),
-   fruit:axSchema(`${S.labels.fruit}: 0 = ${S.ends.fruit[0]}, 1 = ${S.ends.fruit[1]}`),
-   maturity:axSchema(`${S.labels.maturity}: 0 = ${S.ends.maturity[0]}, 1 = ${S.ends.maturity[1]}`),
-   hold:{type:'object',description:'Hard requirements only, one per measure, as [low, high] on 0..1. A wine outside any band is never shown. [0, 1] releases a band.',
+   weight:axSchema(`${S.labels.weight}: 0 = ${S.ends.weight[0]}, 1 = ${S.ends.weight[1]}. ${rungs('weight')}`),
+   grip:axSchema(`${S.labels.grip}: 0 = ${S.ends.grip[0]}, 1 = ${S.ends.grip[1]}. ${rungs('grip')}`),
+   oak:axSchema(`${S.labels.oak}: 0 = ${S.ends.oak[0]}, 1 = ${S.ends.oak[1]}. ${rungs('oak')}`),
+   fruit:axSchema(`${S.labels.fruit}: 0 = ${S.ends.fruit[0]}, 1 = ${S.ends.fruit[1]}. ${rungs('fruit')}`),
+   maturity:axSchema(`${S.labels.maturity}: 0 = ${S.ends.maturity[0]}, 1 = ${S.ends.maturity[1]}. ${rungs('maturity')}`),
+   hold:{type:'object',description:'Hard requirements only, one per measure, as [low, high] on 0..1. A wine outside any band is never shown. [0, 1] releases a band. Set the edges against the rungs in each measure\'s field: a band lying wholly between two rungs holds nothing.',
      properties:Object.fromEntries(A.map(a=>[a,{type:'array',items:{type:'number'},minItems:2,maxItems:2}]))}}}},
 {name:'page',
  description:"Press the page's own controls. Every field is optional; send only what his words ask for.",
  schema:{type:'object',properties:{
    tab:{type:'string',enum:TABS,description:'Open a section. find = the finder; palate = his wines against the shelf; move = how his buying changed; pop = what happens to a drinker\'s first decade; how = what the words mean; atlas = the shop as a place he stands inside.'},
-   kind:{type:'integer',minimum:0,maximum:3,description:'Press one of his four buying kinds: '+KINDS.map((k,i)=>`${i} = ${k.name} (${k.wines.length} of his wines)`).join('; ')},
+   kind:{type:'integer',minimum:0,maximum:3,description:'Press one of his four buying kinds. Pressing one sets the bands to the span of his own bottles in that kind -- his taste in it, nothing averaged: '
+     +KINDS.map((k,i)=>{const sp=kindSpread(k);return `${i} = ${k.name} (${k.wines.length} of his: `
+       +A.map(a=>`${a} ${sp[a][0].toFixed(2)}–${sp[a][1].toFixed(2)}`).join(', ')+')';}).join('; ')},
    heading:{type:'boolean',description:'Set the wine his taste indicates to where his buying is heading.'},
    hideOwned:{type:'boolean',description:'Hide wines he has already bought.'},
    hideVoted:{type:'boolean',description:'Hide wines he has already marked.'},
@@ -836,11 +861,58 @@ const TOOLBOX=[
  description:'Walk him through his ten orders inside the Atlas, oldest to newest, standing him at each and saying what moved between it and the last. Offer this when he asks how his buying has changed, or how to read the Atlas.',
  schema:{type:'object',properties:{}}},
 {name:'look',
- description:'Read the page back without touching it: the open section, where the wine his taste indicates stands, the bands, the wines on his screen now, what he has marked, and where he stands in the Atlas. Every other tool answers with this too.',
- schema:{type:'object',properties:{}}}];
+ description:'See without touching. Alone: the whole page -- the open section, where the wine his taste indicates stands, the bands, the wines on his screen now, what he has marked, where he stands in the Atlas; every other tool answers with this too. With "at": one thing up close, at the resolution his eye gets by hovering it.',
+ schema:{type:'object',properties:{
+   at:{type:'string',description:'A wine\'s name or part of one, or one of the shop\'s aroma words. Every wine carrying the name answers: its five numbers, the shop\'s words for it, whether it is his -- and whether it stands on his screen now, or what keeps it off: the band that shuts it out (named), the already-bought or already-marked switch, or rank past the 14 the list shows. A word answers with how many wines carry it, how many of those are his, and where they stand on the five measures. A name nothing carries says so.'}}}}];
 const clamp01=v=>Math.max(0,Math.min(1,v));
+/* THE EYE UP CLOSE. look({at}) is the agent's hover: the reader holds his
+   pointer over a row and gets the wine's shape and numbers; the agent had to
+   find the same wine in a two-hundred-page list by attention, and could not
+   see at all WHY a wine was missing from the screen -- the bands, the two
+   hide-switches and the fourteen-row cut all read as the same absence. */
+function lookAt(s){
+  const q=String(s).toLowerCase().trim();
+  if(!q) return observeApp();
+  const words=[], kind={};
+  try{for(const t of ATLAS.D.terms) for(const i of t.in)(words[i]=words[i]||[]).push(t.w);}catch(_){}
+  KINDS.forEach(k=>k.wines.forEach(w=>{kind[w.id]=KINDNAME(k);}));
+  const hits=[]; S.wines.forEach((w,i)=>{if(w.name.toLowerCase().includes(q))hits.push({w,i});});
+  if(hits.length){
+    const dEye=w=>{let d=0;for(const a of A){const x=(w[a]-point[a])*C.weights[a]*A.length;d+=x*x;}return Math.sqrt(d);};
+    const shutBy=w=>{for(const a in hold){const[lo,hi]=hold[a];if(w[a]<lo||w[a]>hi)return a;}return null;};
+    const pool=S.wines.filter(w=>!(hideOwned&&OWNED.has(w.id))&&!(hideVoted&&votes[w.id])&&!shutBy(w));
+    const stand=w=>{
+      if(hideOwned&&OWNED.has(w.id)) return 'not on his screen -- the already-bought switch hides it';
+      if(hideVoted&&votes[w.id]) return 'not on his screen -- the already-marked switch hides it';
+      const ax=shutBy(w);
+      if(ax) return `not on his screen -- ${ax} ${w[ax].toFixed(2)} is outside his band [${hold[ax][0].toFixed(2)}, ${hold[ax][1].toFixed(2)}]`;
+      const r=1+pool.reduce((n,o)=>n+(dEye(o)<dEye(w)?1:0),0);
+      return r<=14?`on his screen now, No. ${r} of the 14 shown`
+        :`inside every band, but standing ${r} of ${pool.length} by nearness and the list shows 14`;
+    };
+    const shown=hits.slice(0,8).map(({w,i})=>
+      `${w.name} | ${w.vintage?Math.round(w.vintage):'NV'} | ${[w.variety,w.region].filter(Boolean).join(', ')||'-'} | `
+      +A.map(a=>`${a} ${w[a].toFixed(2)}`).join(', ')
+      +(OWNED.has(w.id)?` | HIS, ${kind[w.id]||'unsorted'}`:'')
+      +(words[i]&&words[i].length?` | the shop's words: ${words[i].join(' ')}`:'')
+      +` | ${stand(w)}`);
+    return (hits.length===1?`One wine carries "${s}":`:`${hits.length} wines carry "${s}"${hits.length>8?', the first 8':''}:`)
+      +'\n'+shown.join('\n');
+  }
+  let t=null; try{t=ATLAS.D.terms.find(x=>x.w.toLowerCase()===q);}catch(_){}
+  if(t){
+    const ws=t.in.map(i=>S.wines[i]);
+    const his=ws.filter(w=>OWNED.has(w.id)).length;
+    const span=A.map(a=>{const v=ws.map(w=>w[a]).sort((x,y)=>x-y);
+      return `${a} ${v[0].toFixed(2)}–${v[v.length-1].toFixed(2)}, middle ${v[Math.floor(v.length/2)].toFixed(2)}`;}).join('; ');
+    return `"${t.w}" -- the shop's notes say it of ${ws.length} wines, ${his} of them his. They stand: ${span}. Among them: ${ws.slice(0,3).map(w=>w.name).join('; ')}.`;
+  }
+  let nterms=0; try{nterms=ATLAS.D.terms.length;}catch(_){}
+  return `Nothing in the shop carries "${s}" -- not as a wine's name, and not among the ${nterms} words the notes use.`;
+}
 function runTool(name,input){
   const a=input&&typeof input==='object'?input:{};
+  let notes=[];
   if(name==='move'){
     if(a.hold&&typeof a.hold==='object'){
       const h={...hold};
@@ -860,11 +932,12 @@ function runTool(name,input){
                     'find','opening','order','width','download'])
       if(a[k]!==undefined) act[k]=a[k];
     if(a.pin!==undefined) act.pin=a.pin||null;
-    applyAct(act);
-  }else if(name==='atlas'){ applyAct({atlas:a}); }
-  else if(name==='tour'){ applyAct({tour:true}); }
-  else if(name!=='look') return 'There is no control by that name.';
-  return observeApp();
+    notes=applyAct(act);
+  }else if(name==='atlas'){ notes=applyAct({atlas:a}); }
+  else if(name==='tour'){ notes=applyAct({tour:true}); }
+  else if(name==='look'){ if(a.at) return lookAt(a.at); }
+  else return 'There is no control by that name.';
+  return (notes&&notes.length?notes.join(' ')+'\n':'')+observeApp();
 }
 /* the rings: whatever moved says so where it sits, whoever moved it */
 function ringMoved(was){

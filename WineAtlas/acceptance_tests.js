@@ -1749,7 +1749,60 @@
     [...new Set((inSpace.match(/\ba\.(\w+)/g) || []).map(s => s.slice(2)))]
       .forEach(k => ok(keys('atlas').includes(k), 'the atlas tool offers ' + k));
     eq(keys('tour'), [], 'the tour takes no arguments');
-    eq(keys('look'), [], 'looking takes no arguments');
+    eq(keys('look'), ['at'], 'looking takes only a focus');
+  });
+
+  await T('the offer carries the shop, not prose about it', () => {
+    /* the rungs and spans in the descriptions are computed from the catalogue
+       at boot, so they cannot drift; this holds the wiring, the data holds the
+       values. An agent that does not know the rungs asks for wines between
+       them, and a band lying wholly between two rungs holds nothing. */
+    const f = TOOLBOX[0].schema.properties;
+    for (const a of A) {
+      const c = new Map(); S.wines.forEach(w => c.set(w[a], (c.get(w[a]) || 0) + 1));
+      if (c.size <= 8) [...c.entries()].forEach(([v, n]) =>
+        ok(f[a].description.includes(`${v.toFixed(2)} (${n})`), `${a} rung ${v} with its count`));
+      else ok(f[a].description.includes(`${c.size} distinct`), a + ' names its spread');
+    }
+    const kd = TOOLBOX[1].schema.properties.kind.description;
+    KINDS.forEach(k => { const sp = kindSpread(k);
+      ok(kd.includes(`${sp.oak[0].toFixed(2)}–${sp.oak[1].toFixed(2)}`), k.name + "'s own span is in the offer"); });
+  });
+
+  await T('look at a name is the hover, and it says what keeps a wine off the screen', () => {
+    const n = S.wines.filter(w => w.name.toLowerCase().includes('lynch bages')).length;
+    ok(n >= 2, 'the shop holds more than one Lynch Bages, which is the point');
+    const out = inhabit.call('look', { at: 'lynch bages' });
+    ok(out.includes(`${n} wines carry`), 'every carrier answers, counted');
+    ok(/weight \d\.\d\d/.test(out) && /maturity \d\.\d\d/.test(out), 'with its numbers');
+    /* a wine outside a band names the band; the two switches name themselves */
+    const wasB = hold.weight ? [...hold.weight] : [0, 1];
+    inhabit.call('move', { hold: { weight: [0, 0.1] } });
+    ok(/outside his band/.test(inhabit.call('look', { at: 'lynch bages' })), 'the shut-out names the band');
+    inhabit.call('move', { hold: { weight: wasB } });
+    const his = S.wines.find(w => OWNED.has(w.id));
+    el('ho').checked = true; el('ho').dispatchEvent(new Event('change'));
+    ok(/already-bought switch/.test(inhabit.call('look', { at: his.name })), 'the hidden say who hides them');
+  });
+
+  await T('look at a word answers with its field, and a miss speaks', () => {
+    const t = ATLAS.D.terms.find(x => x.w === 'cedar');
+    const out = inhabit.call('look', { at: 'cedar' });
+    ok(out.includes(`${t.in.length} wines`), "the count is the shop's own");
+    ok(/middle \d\.\d\d/.test(out), 'and where they stand');
+    ok(/Nothing in the shop carries "zzzz"/.test(inhabit.call('look', { at: 'zzzz' })), 'a miss says so');
+  });
+
+  await T('a name nothing carries speaks from every hand that takes one', () => {
+    /* silence is the original disease: it said "turning to it" and nothing
+       turned. A miss now stands in the answer, before the observation. */
+    ok(/Nothing here is called/.test(inhabit.call('atlas', { face: 'nonesuch ridge' })), 'face');
+    ok(/No wine named/.test(inhabit.call('atlas', { point: 'nonesuch wine' })), 'point');
+    ok(/No word/.test(inhabit.call('atlas', { tick: ['nonesuchword'] })), 'tick');
+    ok(/nothing is pinned/.test(inhabit.call('page', { pin: 'nonesuch wine' })), 'pin');
+    ok(/No wine named/.test(inhabit.call('page', { like: ['nonesuch wine'] })), 'like');
+    /* and a hit stays clean: no note stands before the observation */
+    ok(inhabit.call('page', { pin: '' }).startsWith('WHAT HE SEES'), 'a release carries no note');
   });
 
   await T('every call answers with what the page then shows', () => {

@@ -91,6 +91,30 @@ control the sommelier can move and cannot read back is half a hand. His alone
 are four: his marks, Reset, the words in his own box, and who answers and with
 what key.
 
+**The offer carries the shop, not prose about it.** One rule decides what goes
+where. A fact that does not depend on the question goes as text in the tool's
+own schema, computed from the catalogue at boot so it cannot drift: each
+measure's field says the rungs the shop actually stands on with the count at
+each — body has five values, not a continuum, and an agent that does not know
+that asks for wines between them — and the `kind` control carries the span of
+his own bottles in each kind, which is his taste in it. A fact that depends on
+the question goes behind sight: `look` takes an optional `at` — a wine's name
+or part of one, or one of the shop's words — and answers at the resolution the
+reader's eye gets by hovering: the numbers, the words, whether it is his, and,
+sharpest, **what keeps it off the screen** — the band that shuts it out, named;
+the already-bought or already-marked switch; or rank past the fourteen the list
+shows. Those three absences read identically before, and the first is the
+page's own doing: pressing a kind sets bands, and every Lynch Bages in the shop
+stands outside the White kind's grip band. The same rule killed a tool that was
+half-built — a what-would-this-band-leave peek — because its answers
+reconstruct from the rungs already in the offer; a tool whose answers a static
+fact can carry is attention with no return.
+
+**And a name nothing carries speaks.** `face`, `point`, `tick`, `pin` and
+`like` all take names, and a miss used to do nothing, silently — the original
+disease. Every miss now comes back as a note standing before the observation,
+so a miss can never read as a hit.
+
 **Both panels come with it.** The words are what the view is written in and the
 sommelier can drive every control in it, so neither is left behind on the full
 screen: each becomes a drawer on the side it holds on the page, and both stand
@@ -297,7 +321,7 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **126 of 126 pass.** Run them in
+Every test name states an acceptance criterion. **130 of 130 pass.** Run them in
 a **visible** tab: a hidden one never recalculates style and never fires a
 frame, so the tests that measure the page report zeroes and the ones that wait
 on the frame clock hang rather than fail.
