@@ -102,6 +102,19 @@ button:focus-visible{outline:2px solid var(--feel);outline-offset:2px}
 /* Below the leading group: present, but genuinely lesser. */
 #names .nm.less{color:var(--ink-3)}
 #names .trk.less{height:6px;opacity:.5}
+/* A PHONE IS TALLER THAN IT IS WIDE, and a 206px rail beside the field left
+   neither half worth using. Upright, the field takes the top of the screen
+   whole and the panel stands under it, its list scrolling inside itself as it
+   always did; the globe shrinks to a corner a thumb can still take. Sized in
+   percentages of the fixed frame, not vh, so Safari's collapsing toolbar
+   cannot clip the bottom. */
+@media (max-width:700px){
+  #wrap{grid-template-columns:1fr;grid-template-rows:minmax(0,56%) minmax(0,1fr)}
+  #wrap>.col:first-child{grid-row:2}
+  #wrap>.col:last-child{grid-row:1}
+  #globe{right:10px;bottom:10px;width:150px}
+  #mini{width:148px;height:148px}
+}
 </style>
 
 <div id=wrap>
