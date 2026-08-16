@@ -6,8 +6,12 @@ let votes=JSON.parse(localStorage.getItem('cc_votes')||'{}');
 
 /* ---------- tabs ---------- */
 const TABS=['find','palate','move','pop','how','atlas'];
+/* a chart drawn while its tab was closed was drawn into no width at all, and a
+   resize observer only answers after the frame -- so the tab says so on the way in */
+let redrawPop=()=>{};
 TABS.forEach(t=>el('t-'+t).onclick=()=>{
   TABS.forEach(x=>{el('t-'+x).setAttribute('aria-selected',x===t); el('s-'+x).hidden=x!==t;});
+  if(t==='pop') redrawPop();
   /* a hidden canvas has no size, so the atlas is told when it is on screen: it
      measures itself and paints on the way in, and stops painting on the way out */
   ATLAS.show(t==='atlas');
@@ -1276,35 +1280,49 @@ const O=S.orders.filter(o=>o.weight!==undefined);
     {n:'The score they give a wine', v:T.score, u:'', c:'#8a8492', dir:'does not move', d:1},
   ];
   const LBL=['year 1','years 2–3','years 4–6','years 7–10','years 11+'];
-  const W=620, rowH=64, pad=8, x=i=>150+i*(W-150-60)/(LBL.length-1);
-  let html=`<div style="display:flex;margin:0 0 4px 0">
-    <div style="width:150px"></div>
-    ${LBL.map((l,i)=>`<div style="flex:1;text-align:center;font-size:11.5px;color:var(--ink-2)">${l}</div>`).join('')}
-  </div>
-  <div style="display:flex;align-items:center;margin-bottom:10px">
-    <div style="width:150px"></div>
-    <div style="flex:1;height:2px;background:var(--rule);position:relative">
-      <div style="position:absolute;right:-2px;top:-4px;color:var(--ink-3);font-size:12px">→</div></div>
-    <div style="margin-left:8px;font-size:11.5px;color:var(--ink-3)">time</div>
-  </div>`;
-  for(const r of ROWS){
-    const lo=Math.min(...r.v), hi=Math.max(...r.v), rg=(hi-lo)||1;
-    const y=v=>rowH-pad-((v-lo)/rg)*(rowH-2*pad);
-    const fmt=v=>r.d?v.toFixed(1):Math.round(v);
-    html+=`<div style="display:flex;align-items:center;border-top:1px solid var(--rule);padding:7px 0">
-      <div style="width:150px;padding-right:10px">
-        <div style="font-size:12.5px;font-weight:550;line-height:1.35">${r.n}</div>
-        <div style="font-size:11px;color:${r.c};font-weight:600">${r.dir}</div>
-      </div>
-      <svg viewBox="0 0 ${W-150} ${rowH}" style="flex:1;display:block">
-        <polyline points="${r.v.map((v,i)=>`${x(i)-150},${y(v)}`).join(' ')}"
-          fill="none" stroke="${r.c}" stroke-width="2.2" stroke-linejoin="round"/>
-        ${r.v.map((v,i)=>`<circle cx="${x(i)-150}" cy="${y(v)}" r="3.4" fill="${r.c}"/>
-          <text x="${x(i)-150}" y="${y(v)<rowH/2 ? y(v)+16 : y(v)-8}" text-anchor="middle"
-            font-size="11" fill="var(--ink-2)">${fmt(v)}${r.u}</text>`).join('')}
-      </svg></div>`;
+  const LW=150, rowH=64, pad=8;
+  /* THE CHART IS DRAWN AT THE WIDTH IT IS GIVEN. Its viewBox was a constant, so
+     the browser scaled the whole picture to whatever width the row had -- and on
+     a wide window that magnified every number in it three and a half times,
+     until they were drawn across the labels beside them. The plot is measured
+     first and the viewBox is that measurement, so a point moves and a numeral
+     stays 11 pixels whatever the window is. */
+  function drawPop(){
+    const host=el('popChart');
+    const plot=Math.max(340,Math.round((host.clientWidth||620)-LW));
+    const x=i=>i*(plot-60)/(LBL.length-1);
+    let html=`<div style="display:flex;margin:0 0 4px 0">
+      <div style="width:${LW}px;flex:none"></div>
+      ${LBL.map(l=>`<div style="flex:1;text-align:center;font-size:11.5px;color:var(--ink-2)">${l}</div>`).join('')}
+    </div>
+    <div style="display:flex;align-items:center;margin-bottom:10px">
+      <div style="width:${LW}px;flex:none"></div>
+      <div style="flex:1;height:2px;background:var(--rule);position:relative">
+        <div style="position:absolute;right:-2px;top:-4px;color:var(--ink-3);font-size:12px">→</div></div>
+      <div style="margin-left:8px;font-size:11.5px;color:var(--ink-3)">time</div>
+    </div>`;
+    for(const r of ROWS){
+      const lo=Math.min(...r.v), hi=Math.max(...r.v), rg=(hi-lo)||1;
+      const y=v=>rowH-pad-((v-lo)/rg)*(rowH-2*pad);
+      const fmt=v=>r.d?v.toFixed(1):Math.round(v);
+      html+=`<div style="display:flex;align-items:center;border-top:1px solid var(--rule);padding:7px 0">
+        <div style="width:${LW}px;flex:none;padding-right:10px">
+          <div style="font-size:12.5px;font-weight:550;line-height:1.35">${r.n}</div>
+          <div style="font-size:11px;color:${r.c};font-weight:600">${r.dir}</div>
+        </div>
+        <svg viewBox="0 0 ${plot} ${rowH}" width="${plot}" height="${rowH}" style="flex:1;display:block">
+          <polyline points="${r.v.map((v,i)=>`${x(i)},${y(v)}`).join(' ')}"
+            fill="none" stroke="${r.c}" stroke-width="2.2" stroke-linejoin="round"/>
+          ${r.v.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3.4" fill="${r.c}"/>
+            <text x="${x(i)}" y="${y(v)<rowH/2 ? y(v)+16 : y(v)-8}" text-anchor="middle"
+              font-size="11" fill="var(--ink-2)">${fmt(v)}${r.u}</text>`).join('')}
+        </svg></div>`;
+    }
+    host.innerHTML=html;
   }
-  el('popChart').innerHTML=html;
+  redrawPop=drawPop;
+  drawPop();
+  new ResizeObserver(()=>{if(!el('s-pop').hidden) drawPop();}).observe(el('popChart'));
 })();
 el('popStats').innerHTML=`
   <div class="stat"><div class="n">1,808</div><div class="k">people followed, each compared to their own first year</div></div>

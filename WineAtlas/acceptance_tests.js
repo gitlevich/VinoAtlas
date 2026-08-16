@@ -32,6 +32,45 @@
   };
 
   // -- boot --
+  await T('the page is the window, and every closed tab is closed', () => {
+    /* It was capped at 1400 and centred, which on a wide screen spent a quarter
+       of the glass on margin either side while the shop inside it was cramped. */
+    const wrap = document.querySelector('.wrap');
+    const box = wrap.getBoundingClientRect();
+    ok(innerWidth - box.width < 8, `the page is the window: ${Math.round(box.width)} of ${innerWidth}`);
+    eq(getComputedStyle(wrap).maxWidth, 'none', 'no cap on it');
+    /* an id selector beats section[hidden], so a tab styled by its id has to
+       say it is closed itself -- the words tab stood under every other one */
+    TABS.forEach(t => {
+      el('t-' + t).click();
+      TABS.filter(x => x !== t).forEach(x =>
+        eq(getComputedStyle(el('s-' + x)).display, 'none', `${x} is closed while ${t} is open`));
+    });
+    el('t-find').click();
+  });
+
+  await T('a chart is drawn at the width it is given, not scaled up to it', () => {
+    /* The pop chart's viewBox was a constant, so the browser scaled the whole
+       picture to whatever width the row had, and on a wide window every numeral
+       in it came out three and a half times too big, drawn over the labels. */
+    el('t-pop').click();
+    const svg = el('popChart').querySelector('svg');
+    ok(svg, 'the chart is drawn');
+    const vb = svg.getAttribute('viewBox').split(' ').map(Number);
+    const box = svg.getBoundingClientRect();
+    ok(Math.abs(vb[2] - box.width) < 2, `one unit is one pixel across: ${vb[2]} against ${Math.round(box.width)}`);
+    ok(Math.abs(vb[3] - box.height) < 2, `and down: ${vb[3]} against ${Math.round(box.height)}`);
+    /* which is what keeps the numbers the size they were written */
+    const t = svg.querySelector('text');
+    ok(Math.abs(t.getBoundingClientRect().height - 11) < 5,
+       'a numeral is drawn near its own 11 pixels, not magnified: '
+       + Math.round(t.getBoundingClientRect().height));
+    /* and it fills what it is given rather than sitting in a corner of it */
+    const room = el('popChart').clientWidth;
+    ok(box.width > room * 0.6, `it takes the room: ${Math.round(box.width)} of ${room}`);
+    el('t-find').click();
+  });
+
   await T('every tab is there, in order, with the Atlas last', () => {
     const want = ['t-find','t-palate','t-move','t-pop','t-how','t-atlas'];
     want.forEach(id => ok(el(id), id));

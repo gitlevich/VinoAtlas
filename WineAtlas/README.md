@@ -155,6 +155,24 @@ The page carries a build stamp: `const BUILD=` is a hash of its own bytes, so a
 served page can be asked which build it is holding — in the console,
 `document.documentElement.dataset.build`.
 
+## The page
+
+The page is the window. It was capped at 1400 and centred, which on a wide screen
+spent a quarter of the glass on margin either side while the shop inside it was
+cramped. Reading measure is held where reading happens and only there — the one
+tab that is all prose fills the width by standing its cards side by side, each
+column its own readable width, rather than by running a line of body text
+eighteen hundred pixels across. The Atlas takes the rest of the window's height
+too: what stands above it is measured rather than guessed at, because the lede
+rewraps with the width and no constant survives that.
+
+Two things broke on the way. A chart whose `viewBox` was a constant is scaled by
+the browser to whatever width its row has, so on a wide window every numeral in
+it came out three and a half times too big, drawn across the labels beside it;
+it is measured first now, and one unit is one pixel. And an id selector beats
+`section[hidden]`, so the tab styled by its id never closed and stood under every
+other one.
+
 ## The sommelier's setup
 
 Two houses, Anthropic and OpenAI, chosen from a dropdown that says which of them
@@ -207,7 +225,7 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **117 of 117 pass.**
+Every test name states an acceptance criterion. **119 of 119 pass.**
 
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from
 the catalogue by a second route and checks every claim the page makes about it:

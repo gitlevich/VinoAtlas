@@ -33,7 +33,20 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--ground);color:var(--ink);
   font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1400px;margin:0 auto;padding:34px 20px 60px;display:flex;flex-direction:column;gap:22px}
+/* THE PAGE IS THE WINDOW. It was capped at 1400 and centred, which on a wide
+   screen spent a quarter of the glass on margin either side while the shop
+   inside it was cramped. Reading measure is held where reading happens -- the
+   lede, the prose columns -- not by starving everything else of width. */
+.wrap{max-width:none;margin:0;padding:26px 24px 30px;display:flex;flex-direction:column;gap:20px}
+/* Reading measure is held where reading happens, and only there: a line of body
+   text eighteen hundred pixels wide is not filled space, it is space you cannot
+   read across. The charts, the lists and the shop take the whole window; the one
+   tab that is all prose fills it by standing its cards side by side instead,
+   each column its own readable width. */
+#s-how{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));
+  align-items:start;gap:16px}
+/* an id beats section[hidden], so the closed tab has to say so itself */
+#s-how[hidden]{display:none}
 h1{margin:0;font-size:clamp(23px,3vw,31px);font-weight:600;letter-spacing:-.024em;line-height:1.15}
 .lede{margin:0;font-size:15.5px;line-height:1.6;color:var(--ink-2);max-width:66ch}
 .head{display:flex;align-items:baseline;gap:12px 40px}
