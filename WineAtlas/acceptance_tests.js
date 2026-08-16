@@ -643,13 +643,35 @@
     el('askOff').hidden = true;
   });
 
-  await T('each kind is drawn from its own wines, never a mean', () => {
+  await T('each kind is shown by one of its own bottles, never by a mean', () => {
     eq(KINDS.length, 4, 'four kinds');
     eq(KINDS.reduce((n, k) => n + k.wines.length, 0), S.wines.filter(w => OWNED.has(w.id)).length,
       'every owned wine belongs to exactly one kind');
-    const card = document.querySelector('#modeBtns .kindcard');
-    const outlines = card.querySelectorAll('polygon').length - 1; // less the rim
-    eq(outlines, KINDS[0].wines.length, 'one outline per bottle, not one shape for the kind');
+    /* The card carried five-cornered outlines, one per bottle, which said "these
+       differ" and nothing a reader could name. It carries a glass now -- and the
+       glass is a REAL bottle out of that kind, the one nearest its middle,
+       because an average would be a colour no bottle has: the kind called White
+       holds 49 whites and 25 reds and their mean is neither. */
+    const lit = cv => {
+      const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+      let n = 0; for (let p = 3; p < d.length; p += 4) if (d[p] > 40) n++;
+      return n;
+    };
+    KINDS.forEach(k => {
+      const stands = kindStands(k).wine, short = k.name.split(' — ')[0];
+      ok(k.wines.includes(stands), short + ' is shown by one of its own: ' + stands.name);
+      const btn = document.querySelector(`#modeBtns .kindcard[data-m="${k.i}"]`);
+      ok(btn.title.includes(stands.name), 'and the card says which bottle it is');
+      ok(/\d+ red|\d+ white|\d+ rosé/.test(btn.title), 'and what colours the kind actually holds');
+      const cv = btn.querySelector('canvas');
+      ok(cv.width > 0 && lit(cv) > 200, short + ' has a glass drawn in it: ' + lit(cv) + ' pixels');
+    });
+    /* and how big the bowl is comes from the kind's body, which is what a
+       sommelier reaches for a bigger glass for */
+    const byBody = KINDS.slice().sort((a, b) => kindStands(a).body - kindStands(b).body);
+    const at = k => lit(document.querySelector(`#modeBtns .kindcard[data-m="${k.i}"] canvas`));
+    const light = at(byBody[0]), full = at(byBody[byBody.length - 1]);
+    ok(full > light * 1.2, `the fullest-bodied kind gets the bigger glass: ${full} against ${light}`);
   });
   await T('pressing a kind asks within that kind, not around an average', () => {
     const k = KINDS[2];

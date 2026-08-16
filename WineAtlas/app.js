@@ -78,19 +78,57 @@ function kpct(ws,a,p){const v=ws.map(w=>w[a]).sort((x,y)=>x-y);
 function kindMiddle(k){return Object.fromEntries(A.map(a=>[a,kpct(k.wines,a,0.5)]));}
 function mrpt(i,v,cx,cy,r){const ang=-Math.PI/2+i*2*Math.PI/5;
   return [(cx+Math.cos(ang)*v*r).toFixed(1),(cy+Math.sin(ang)*v*r).toFixed(1)];}
-function miniRadar(k){
-  const cx=52,cy=50,r=34;
-  const rim=`<polygon points="${A.map((a,i)=>mrpt(i,1,cx,cy,r).join(',')).join(' ')}" fill="none" stroke="var(--grid)" stroke-width="0.8"/>`;
-  const each=k.wines.map(w=>`<polygon points="${A.map((a,i)=>mrpt(i,w[a],cx,cy,r).join(',')).join(' ')}" fill="none" stroke="var(--mark)" stroke-opacity="0.22" stroke-width="0.7"/>`).join('');
-  return `<svg viewBox="0 0 104 100" aria-hidden="true">${rim}${each}</svg>`;
+/* A GLASS, NOT A GRAPH. The card carried five-cornered outlines, one per bottle,
+   which said "these differ" and nothing a reader could name. It now carries a
+   glass, drawn by the same routine that draws the shop's, poured with the colour
+   of a real bottle -- the one nearest that kind's middle. Not the kind's average
+   colour: that kind holds 49 whites and 25 reds, and their average is a colour
+   no bottle in it has. How big the bowl is comes from the kind's body, which is
+   what a sommelier reaches for a bigger glass for. */
+function kindStands(k){                       // the bottle nearest the middle
+  const mid=Object.fromEntries(A.map(a=>[a,k.wines.reduce((s,w)=>s+w[a],0)/k.wines.length]));
+  let best=null, bd=Infinity;
+  for(const w of k.wines){
+    const d=A.reduce((s,a)=>s+(w[a]-mid[a])**2,0);
+    if(d<bd){bd=d; best=w;}
+  }
+  return {wine:best, body:mid.weight};
+}
+function kindTally(k){                         // what colours it actually holds
+  const n={};
+  k.wines.forEach(w=>{const c=ATLAS.D.col[S.wines.indexOf(w)]; n[c]=(n[c]||0)+1;});
+  return ['red','white','rose'].filter(c=>n[c]).map(c=>`${n[c]} ${c==='rose'?'rosé':c}`).join(', ');
+}
+/* The Atlas is folded in at the END of this file, so nothing here may reach for
+   it while the page is being built. The glass and what it says are filled in on
+   the frame after, which is also when the canvas first has a size. */
+function paintKinds(){
+  let all=true;
+  KINDS.forEach(k=>{
+    const btn=document.querySelector(`#modeBtns .kindcard[data-m="${k.i}"]`);
+    if(!btn){all=false; return;}
+    const {wine,body}=kindStands(k);
+    if(!ATLAS.token(btn.querySelector('canvas'), S.wines.indexOf(wine), 19+11*body)) all=false;
+    btn.title=`${k.wines.length} of your bottles — ${kindTally(k)}. `
+      +`The glass is the one nearest this kind's middle: ${wine.name}. `
+      +`Pressing this asks for wines inside this kind's range.`;
+  });
+  return all;
 }
 function drawKinds(){
   el('modeBtns').innerHTML=KINDS.map(k=>
-    `<button class="btn kindcard" data-m="${k.i}" title="Every one of these ${k.wines.length} wines drawn on its own. Pressing this asks for wines inside this kind's range.">
-      ${miniRadar(k)}<span class="kn">${k.name.split(' — ')[0]}</span><span class="kc">${k.wines.length}</span>
+    `<button class="btn kindcard" data-m="${k.i}" title="${k.wines.length} of your bottles">
+      <canvas class="kglass" aria-hidden="true"></canvas><span class="kwords"><span class="kn">${k.name.split(' — ')[0]}</span><span class="kc">${k.wines.length} bottles</span></span>
     </button>`).join('');
   document.querySelectorAll('#modeBtns .btn').forEach(btn=>btn.onclick=()=>pickKind(+btn.dataset.m));
+  /* ON A TIMER, NOT ON A FRAME. Two reasons, and each one alone is enough: the
+     Atlas is folded in at the end of this file, so at first call it does not
+     exist yet; and a browser stops animation frames in a tab that is not on
+     screen, so a glass scheduled that way never appears in a tab opened in the
+     background. A timer runs in both cases. */
+  setTimeout(paintKinds,0);
 }
+addEventListener('resize',()=>paintKinds());
 let chosenKind=null;
 function pickKind(i){
   const k=KINDS[i];

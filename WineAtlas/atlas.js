@@ -34,7 +34,8 @@ const MINE = S.wines.map(w => OWNED.has(w.id));
 const ORDERS = S.wines.map(w => (S.orders || [])
   .map((o, k) => (o.ids || []).includes(w.id) ? k + 1 : 0).filter(Boolean));
 
-const cv = el('atlasCanvas'), g = cv.getContext('2d');
+const cv = el('atlasCanvas');
+let g = cv.getContext('2d');   // pointed elsewhere for the length of one call, see token()
 const mini = el('atlasMini'), mg = mini.getContext('2d');
 let W = 0, H = 0, live = false;
 
@@ -626,8 +627,8 @@ function draw() {
        and scaling it with pixels-per-radian would make it swell as you squint.
        An aroma is a thing at a distance, so it recedes by its own sharpness over
        how far off it is. */
-    const sz = sky ? 11 + 6 * it.str
-                   : Math.max(11, Math.min(22, 82 * it.str / Math.max(1.6, p.dist))) + 4;
+    const sz = sky ? 13 + 6 * it.str
+                   : Math.max(13, Math.min(23, 82 * it.str / Math.max(1.6, p.dist))) + 4;
     let a = sky ? Math.max(DARK ? 0.74 : 0.80, Math.min(1, 0.48 + 0.52 * it.str) * p.edge)
                 : Math.max(DARK ? 0.74 : 0.78, Math.min(1, 10 * it.str / p.dist) * p.edge);
     if (!sky && held && m && !held.has(m)) a *= 0.34;
@@ -733,7 +734,7 @@ function draw() {
      degrees is already past the threshold and every name appeared at rest. */
   if (FOV < OPEN * 0.84) {
     const lit = shown.filter(s => s.asked && s.R >= 5).sort((a, b) => b.R - a.R).slice(0, 40);
-    const fs = Math.max(9, Math.min(13, 10 * Math.pow(WIDE/FOV, 0.45)));
+    const fs = Math.max(11.5, Math.min(15, 12 * Math.pow(WIDE/FOV, 0.45)));
     g.font = `${fs.toFixed(1)}px ui-sans-serif,system-ui,sans-serif`;
     g.textAlign = 'left';
     for (const { m, q, R } of lit) {
@@ -1194,7 +1195,7 @@ function drawMini() {
   if (gHover) {
     const p = gHover, q = at(p.dir);
     const say = p.w + (q.w > 0 ? '' : '  ·  behind you');
-    mg.font = `600 13.5px system-ui,-apple-system,"Segoe UI",sans-serif`;
+    mg.font = `600 15px system-ui,-apple-system,"Segoe UI",sans-serif`;
     mg.textAlign = 'left'; mg.textBaseline = 'middle';
     /* No frame round it. A coloured border on a label is a second thing to read
        and it was the brightest edge on the ball; the colour belongs to the
@@ -1603,6 +1604,23 @@ function tourStep() {
   return true;
 }
 
+/* THE SAME GLASS, DRAWN SOMEWHERE ELSE. The four kind cards want one of these at
+   card size. Rather than a second glass in the codebase with its own ratios to
+   drift out of step, the one routine is pointed at another canvas for the length
+   of one call -- so a kind's glass is drawn by exactly what draws the shop's.
+   The wine is one of his own bottles, the one nearest that kind's middle: an
+   average of forty-nine whites and twenty-five reds is a colour no bottle has. */
+function token(canvas, i, R) {
+  const w = canvas.clientWidth, h = canvas.clientHeight, dpr = devicePixelRatio || 1;
+  if (!w || !h) return false;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  const t = canvas.getContext('2d');
+  t.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const was = g; g = t;
+  try { glass(w / 2, h / 2 + R * 0.34, R, i, 1, false); } finally { g = was; }
+  return true;
+}
+
 el('atlasTour').onclick = () => tour();
 
 /* WHAT HE SEES IN HERE, IN WORDS.
@@ -1658,7 +1676,7 @@ function show(on) {
 
 return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, readout, step,
          drawMini, walk, faceTo, lean, beginApproach, hoverAt, toggleGlobe, place, frame,
-         here, unit, dot, len, pour, accentAt, bundle, glass, size, theme, fill, refilter,
+         here, unit, dot, len, pour, accentAt, bundle, glass, token, size, theme, fill, refilter,
          OPEN, get onlyThese() { return onlyThese; },
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },

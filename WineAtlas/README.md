@@ -173,6 +173,25 @@ it is measured first now, and one unit is one pixel. And an id selector beats
 `section[hidden]`, so the tab styled by its id never closed and stood under every
 other one.
 
+**Set for eyes that struggle up close.** One scale over all 57 type sizes, the
+floor rising most because that is where close-up vision is felt: the smallest
+text grew about 28%, the largest about 9%, and no two steps of the hierarchy
+collapsed into one. The grey carrying most of the small text went from about 5:1
+contrast to 7:1 — at 12px a point of contrast reads like a point of size. The
+Atlas draws its labels on canvas, outside all of that, and the wine names in the
+shop were 9px: the smallest text on the page and the payload. They are 11.5–15.
+
+**A kind is shown by a glass, not a graph.** The cards carried five-cornered
+outlines, one per bottle, which said "these differ" and nothing a reader could
+name. Each now carries a glass drawn by `token()` — the same `glass()` that
+draws the shop's, pointed at the card's canvas for the length of one call, so
+there is one glass in the codebase and no second set of ratios to drift. How big
+the bowl is comes from the kind's measured body, which is what a sommelier
+reaches for a bigger glass for. The wine poured in it is a REAL bottle, the one
+nearest that kind's middle, never an average: the kind called White holds 49
+whites, 25 reds and a rosé, and their mean is a colour no bottle in it has. The
+card's hover names the bottle and gives the tally.
+
 **The top folds away.** A title and an opening paragraph, neither of which is
 the useful part of the page; folded, the title shrinks to a name beside the tabs
 and the page starts 84 pixels higher than it did. What you do inside the shop is
