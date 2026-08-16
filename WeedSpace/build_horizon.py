@@ -102,7 +102,7 @@ for i in D['items']:
 HUE = {i['w']: (i['hue'], i['lit']) for i in D['items'] if i['kind'] == 'feel'}
 # A weed is a GREEN LEAF WITH AN ACCENT. The body is green so it is recognisable
 # without being read; the edge and the stem carry the colour of the ground it
-# stands on -- the same blend of nearby feeling regions the globe paints with --
+# stands on -- the blend of the feeling regions it stands among --
 # so it still says which country it is in. Recognisable and located, which is
 # what a flat green leaf gave up and a fully-coloured mark never had.
 def _unit(v):
@@ -986,8 +986,7 @@ function draw() {
        over the canvas -- the globe especially, which parks in the corner the
        crosshair is nearest when you face something -- and a name painted under
        one is a name that was not painted. Right if there is room, otherwise
-       left. This is the globe's own rule for its labels: a label that has moved
-       a little beats a label that is not there. */
+       left. A label that has moved a little beats a label that is not there. */
     const clear = px => !panels.some(b =>
       px < b[0] + b[2] / 2 && px + tw + 10 > b[0] - b[2] / 2
       && cy - fs < b[1] + b[3] / 2 && cy + fs > b[1] - b[3] / 2);
@@ -1385,16 +1384,13 @@ document.getElementById('bClear').onclick = () => {
   draw(); readout();
 };
 /* ---- the globe -----------------------------------------------------------
-   The sphere you stand inside, seen from outside, painted solid: every patch
-   takes the colour of the nearest feeling, so the surface IS the arrangement
-   rather than a diagram of it. Your heading is always the centre of the disc,
-   which makes dragging the globe the same act as turning your head. */
+   The sphere you stand inside, seen from outside. Your heading is always the
+   centre of the disc, which makes dragging the globe the same act as turning
+   your head. */
 const globe = document.getElementById('globe');
 const mini = document.getElementById('mini'), mg = mini.getContext('2d');
 const GS = 248, GR = 113, GC = 124;
 let showMini = true;
-const gimg = mg.createImageData(GS, GS);
-const BLEND = 11;                       // lower is softer at the borders
 
 function unit(v) { const n = len(v) || 1; return [v[0]/n, v[1]/n, v[2]/n]; }
 function hsl2rgb(h, s, l) {
@@ -1406,102 +1402,170 @@ function hsl2rgb(h, s, l) {
   else if (h < 300) [r, g2, b] = [x, 0, c]; else [r, g2, b] = [c, 0, x];
   return [(r+m)*255, (g2+m)*255, (b+m)*255];
 }
-const FEELDIR = FEELS.map(f => ({ w: f.w, d: unit(f.pos), hue: f.hue, sat: f.sat, lit: f.lit,
-                                  rgb: hsl2rgb(f.hue, f.sat, f.lit) }));
+/* A feeling's colour as a light on a black ball rather than as a bar on a
+   panel: saturation up, lightness held in the band where a hue is still a hue
+   and has not gone white. */
+const vivid = (f, a, dl) => `hsla(${f.hue},${Math.min(92, f.sat + 22)}%,`
+  + `${Math.max(58, Math.min(76, f.lit + 4)) + (dl || 0)}%,${a})`;
+const ink = a => `rgba(255,255,255,${a})`;
 
+const FEELDIR = FEELS.map(f => ({ w: f.w, d: unit(f.pos), hue: f.hue, sat: f.sat, lit: f.lit }));
+let gHover = null;
+
+/* A WIREFRAME, NOT A PAINTED BALL.
+   Painted solid, the globe was a mood: thirteen regions averaged into a wash,
+   and nothing on it could be pointed at. A wireframe says the two things a
+   globe is for. It is a SPHERE -- the meridians crowd at the silhouette and the
+   parallels bow, which no flat disc does -- and it has a FRONT AND A BACK, so a
+   feeling behind you can be shown as being behind you rather than left off.
+   Colour is carried by the thirteen circles alone; the cage stays neutral, and
+   the names come on hover so they are not in the way of the thing they name. */
 function drawMini() {
   if (!showMini) return;
-  const F = frame(), fwd = unit(F.f);
+  const F = frame(), fwd = unit(F.f), gr = unit(F.r), gu = unit(F.u);
   /* the disc is centred on where you look, so up on the globe is up in the world */
-  const gr = unit(F.r), gu = unit(F.u);
-  const px = gimg.data;
-  for (let j = 0; j < GS; j++) {
-    const v = (GC - j) / GR;
-    for (let i = 0; i < GS; i++) {
-      const u = (i - GC) / GR, k = (j * GS + i) * 4;
-      const rr = u*u + v*v;
-      if (rr > 1) { px[k+3] = 0; continue; }
-      const w = Math.sqrt(1 - rr);
-      const d0 = gr[0]*u + gu[0]*v + fwd[0]*w;
-      const d1 = gr[1]*u + gu[1]*v + fwd[1]*w;
-      const d2 = gr[2]*u + gu[2]*v + fwd[2]*w;
-      /* a place is not one feeling or another at a hard line; weight every
-         region by how nearly you face it, so borders shade into each other */
-      let bs = -2;
-      for (let q = 0; q < FEELDIR.length; q++) {
-        const e = FEELDIR[q].d, sdot = d0*e[0] + d1*e[1] + d2*e[2];
-        FEELDIR[q].t = sdot;
-        if (sdot > bs) bs = sdot;
-      }
-      let r = 0, g2 = 0, b2 = 0, tot = 0;
-      for (let q = 0; q < FEELDIR.length; q++) {
-        const wq = Math.exp((FEELDIR[q].t - bs) * BLEND);
-        if (wq < 0.012) continue;
-        const c = FEELDIR[q].rgb;
-        r += c[0]*wq; g2 += c[1]*wq; b2 += c[2]*wq; tot += wq;
-      }
-      const edge = Math.cos(FOV / 2);
-      const vis = w >= edge ? 1 : Math.max(0, 1 - (edge - w) / 0.10);
-      /* Measured against the world beside it: the globe painted at mean
-         luminance 0.297 over 65% of its panel, the world at 0.026 over 3.5% of
-         its own -- an eleven-fold outlier sitting in the corner of a nearly
-         black field. It is a reference, not the subject. Halved, and the near
-         face no longer runs to full strength. */
-      const shade = 0.52 * (0.30 + 0.58 * w) * (0.40 + 0.60 * vis) / tot;
-      px[k] = r * shade; px[k+1] = g2 * shade; px[k+2] = b2 * shade;
-      px[k+3] = 255;
-    }
-  }
+  const at = p => ({ x: GC + dot(p, gr)*GR, y: GC - dot(p, gu)*GR, w: dot(p, fwd) });
   mg.clearRect(0, 0, GS, GS);
-  mg.putImageData(gimg, 0, 0);
 
-  /* Every region on the near face keeps its name. A name that would land on
-     another is pushed outward along its own radius until it is clear and given
-     a leader back to its ground, because a label that blinks out as you turn is
-     worse than one that has moved a little. */
-  mg.textAlign = 'center'; mg.textBaseline = 'middle';
-  const FS = 12.5;
-  mg.font = `600 ${FS}px system-ui,-apple-system,"Segoe UI",sans-serif`;
-  const cand = [];
-  for (const f of FEELDIR) {
-    f.gHit = null;
-    const c = f.d[0]*fwd[0] + f.d[1]*fwd[1] + f.d[2]*fwd[2];
-    if (c <= 0.04) continue;                        // genuinely round the back
-    cand.push({ f, c,
-      ax: GC + (f.d[0]*gr[0] + f.d[1]*gr[1] + f.d[2]*gr[2]) * GR,
-      ay: GC - (f.d[0]*gu[0] + f.d[1]*gu[1] + f.d[2]*gu[2]) * GR });
+  /* the ball itself: a faint disc so the cage reads as a surface and not as
+     wire floating in nothing */
+  const bg = mg.createRadialGradient(GC - GR*0.34, GC - GR*0.38, GR*0.05, GC, GC, GR);
+  bg.addColorStop(0,    'rgba(255,255,255,.10)');
+  bg.addColorStop(0.62, 'rgba(255,255,255,.035)');
+  bg.addColorStop(1,    'rgba(255,255,255,.005)');
+  mg.fillStyle = bg;
+  mg.beginPath(); mg.arc(GC, GC, GR, 0, 6.2832); mg.fill();
+  /* a hint of a limb, so the cage is stretched over something */
+  const lb = mg.createRadialGradient(GC, GC, GR*0.72, GC, GC, GR);
+  lb.addColorStop(0, 'rgba(0,0,0,0)');
+  lb.addColorStop(1, 'rgba(0,0,0,.55)');
+  mg.fillStyle = lb;
+  mg.beginPath(); mg.arc(GC, GC, GR, 0, 6.2832); mg.fill();
+
+  /* meridians and parallels, drawn all the way round: the half facing you is
+     plain, the half behind you is faint, and that difference IS the sphere */
+  const curve = (pts, strong) => {
+    for (let k = 0; k + 1 < pts.length; k++) {
+      const a = pts[k], b = pts[k+1], front = (a.w + b.w) > 0;
+      mg.strokeStyle = ink(front ? (strong ? 0.66 : 0.42) : (strong ? 0.20 : 0.12));
+      mg.lineWidth = front ? (strong ? 1.5 : 1) : (strong ? 1.1 : 0.85);
+      mg.beginPath(); mg.moveTo(a.x, a.y); mg.lineTo(b.x, b.y); mg.stroke();
+    }
+  };
+  /* A meridian drawn from pole to pole covers ONE longitude, so twelve of them
+     go right the way round -- half of that leaves half the ball bare and makes
+     the cage look like something pointing one way. It is not: this is a plain
+     cage on the axis the world already has, and its equator is the horizon. */
+  for (let m = 0; m < 12; m++) {                   // meridians, every 30 degrees
+    const lon = m * Math.PI / 6, pts = [];
+    for (let t = 0; t <= 72; t++) {
+      const la = -Math.PI/2 + t * Math.PI / 72;
+      pts.push(at([Math.cos(la)*Math.cos(lon), Math.sin(la), Math.cos(la)*Math.sin(lon)]));
+    }
+    curve(pts);
   }
-  cand.sort((a, b) => b.c - a.c);
-  const put = [];
-  for (const q of cand) {
-    const tw = mg.measureText(q.f.w).width, bw = tw + 12, bh = FS + 7;
-    const x = q.ax, y = q.ay;                       // nailed to its own region
-    put.push([x, y, bw, bh]);
-    const a = Math.min(1, Math.max(0.35, (q.c - 0.04) / 0.16));
-
-    mg.fillStyle = `rgba(6,6,6,${a * 0.82})`;
-    mg.beginPath(); mg.roundRect(x - bw/2, y - bh/2, bw, bh, 5); mg.fill();
-    mg.strokeStyle = `hsla(${q.f.hue},${q.f.sat}%,${q.f.lit}%,${a * 0.85})`;
-    mg.lineWidth = 1.2;
-    mg.beginPath(); mg.roundRect(x - bw/2, y - bh/2, bw, bh, 5); mg.stroke();
-    mg.fillStyle = `rgba(255,255,255,${a})`;
-    mg.fillText(q.f.w, x, y + 0.5);
-    q.f.gHit = [x, y];
+  for (const la of [-1.0472, -0.5236, 0, 0.5236, 1.0472]) {   // parallels, every 30
+    const pts = [];
+    for (let t = 0; t <= 96; t++) {
+      const lo = t * 6.2832 / 96;
+      pts.push(at([Math.cos(la)*Math.cos(lo), Math.sin(la), Math.cos(la)*Math.sin(lo)]));
+    }
+    curve(pts, la === 0);                    // the equator IS the horizon
   }
-  mg.textBaseline = 'alphabetic';
+  mg.strokeStyle = ink(0.5); mg.lineWidth = 1.2;
+  mg.beginPath(); mg.arc(GC, GC, GR, 0, 6.2832); mg.stroke();
 
-  /* the rim of what you can see: the lit ground inside it is your field */
+  /* THE THIRTEEN CIRCLES, which are where the colour lives. Facing you: filled,
+     with a ring. Behind you: hollow, so you can see it is round the back
+     without having to turn to find out. */
+  const marks = FEELDIR.map(f => ({ f, q: at(f.d) }));
+  marks.sort((a, b) => a.q.w - b.q.w);            // the far ones first
+  for (const { f, q } of marks) {
+    const front = q.w > 0, r = front ? 6.4 : 5.4;
+    f.gHit = [q.x, q.y];
+    f.gFront = front;
+    /* EACH ONE A LITTLE SPHERE. A flat disc on a wireframe ball is a hole in
+       it; shaded, it is a thing sitting on the surface. The ones round the back
+       are the same spheres at two fifths, which is what you see of something
+       through a globe rather than in front of it. */
+    const A = front ? 1 : 0.4;
+    const gd = mg.createRadialGradient(q.x - r*0.36, q.y - r*0.42, r*0.05, q.x, q.y, r);
+    gd.addColorStop(0,   vivid(f, A, 24));
+    gd.addColorStop(0.5, vivid(f, A, 4));
+    gd.addColorStop(1,   vivid(f, A, -20));
+    mg.fillStyle = gd;
+    mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.fill();
+    mg.strokeStyle = vivid(f, A * 0.9, -26); mg.lineWidth = 1;
+    mg.beginPath(); mg.arc(q.x, q.y, r, 0, 6.2832); mg.stroke();
+    mg.fillStyle = `rgba(255,255,255,${A * 0.55})`;
+    mg.beginPath(); mg.arc(q.x - r*0.34, q.y - r*0.40, r*0.20, 0, 6.2832); mg.fill();
+  }
+
+  /* WHAT YOU CAN SEE IS A WINDOW CUT IN THE BALL, not a circle floating in the
+     middle of it. The set of bearings inside your field is a cap of the sphere,
+     and its edge is a circle lying ON the surface -- so the ground outside it
+     is veiled, which is the true statement (you are not looking there), and the
+     edge itself carries a soft band of light either side of a crisp line, the
+     way the rim of a lens does. */
+  const capR = GR * Math.sin(FOV / 2);
   mg.beginPath();
-  mg.arc(GC, GC, GR * Math.sin(FOV / 2), 0, 6.2832);
-  mg.strokeStyle = 'rgba(255,255,255,.55)'; mg.lineWidth = 1.4; mg.stroke();
+  mg.arc(GC, GC, GR, 0, 6.2832);
+  mg.arc(GC, GC, capR, 0, 6.2832, true);            // the window, left clear
+  mg.fillStyle = 'rgba(0,0,0,.44)';
+  mg.fill('evenodd');
+  const lens = mg.createRadialGradient(GC, GC, capR*0.82, GC, GC, capR*1.20);
+  lens.addColorStop(0,   ink(0));
+  lens.addColorStop(0.5, ink(0.16));
+  lens.addColorStop(1,   ink(0));
+  mg.fillStyle = lens;
+  mg.beginPath(); mg.arc(GC, GC, capR*1.20, 0, 6.2832); mg.fill();
+  mg.strokeStyle = ink(0.62); mg.lineWidth = 1.1;
+  mg.beginPath(); mg.arc(GC, GC, capR, 0, 6.2832); mg.stroke();
+
+  /* ONE NAME, AND ONLY WHERE YOU ARE POINTING. Thirteen labels nailed to a
+     postage-stamp ball covered the thing they were labelling. */
+  if (gHover) {
+    const f = gHover, q = at(f.d);
+    const say = f.w + (q.w > 0 ? '' : '  ·  behind you');
+    mg.font = `600 13.5px system-ui,-apple-system,"Segoe UI",sans-serif`;
+    mg.textAlign = 'left'; mg.textBaseline = 'middle';
+    /* No frame round it. A coloured border on a label is a second thing to read
+       and it was the brightest edge on the ball; the colour belongs to the
+       circle, so the label carries one dot of it and nothing else. */
+    const dotw = 15, tw = mg.measureText(say).width, bw = tw + dotw + 18, bh = 23;
+    const x = Math.max(4, Math.min(GS - bw - 4, q.x - bw/2));
+    const y = Math.max(bh/2 + 3, Math.min(GS - bh/2 - 3, q.y - 17));
+    mg.fillStyle = 'rgba(0,0,0,.94)';
+    mg.beginPath(); mg.roundRect(x, y - bh/2, bw, bh, 5); mg.fill();
+    mg.fillStyle = vivid(f, 1, 6);
+    mg.beginPath(); mg.arc(x + 12, y, 4.4, 0, 6.2832); mg.fill();
+    mg.fillStyle = '#fff';
+    mg.fillText(say, x + dotw + 8, y + 0.5);
+    mg.textAlign = 'center'; mg.textBaseline = 'alphabetic';
+  }
 }
+
+/* the name comes to the circle the pointer is nearest, and goes when it leaves */
+mini.addEventListener('pointermove', e => {
+  if (gDown) return;
+  const r = mini.getBoundingClientRect(), sc = GS / r.width;
+  const mx = (e.clientX - r.left) * sc, my = (e.clientY - r.top) * sc;
+  let best = null, bd = 13 * 13;
+  for (const f of FEELDIR) {
+    if (!f.gHit) continue;
+    const d = (f.gHit[0] - mx) ** 2 + (f.gHit[1] - my) ** 2;
+    if (d < bd) { bd = d; best = f; }
+  }
+  if (best !== gHover) { gHover = best; drawMini(); }
+});
+mini.addEventListener('pointerleave', () => { if (gHover) { gHover = null; drawMini(); } });
 
 /* DOUBLE-CLICK THE GLOBE TO GO THERE.
 
-   The globe paints each pixel by turning disc coordinates into a direction --
-   u and v across the face, w out of it -- so the same arithmetic run backwards
-   turns a click into the direction it was painted from. Point at a region on
-   the globe and you are turned to face it in the world, which is the whole
+   The globe puts every mark on the disc by turning a direction into disc
+   coordinates -- u and v across the face, w out of it -- so the same arithmetic
+   run backwards turns a click into the direction it was drawn from. Point
+   anywhere on the ball and you are turned to face it, which is the whole
    reason the globe is worth having: it is the only view that shows you what is
    BEHIND you, and now you can go there without hunting for it by dragging. */
 mini.addEventListener('dblclick', e => {

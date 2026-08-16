@@ -54,6 +54,39 @@ The list on the left wears the sky's colours — a smell there and the same smel
 out in the field are one thing, so it is recognised rather than read, and the
 list also shows at a glance which smells lie together and which lie apart.
 
+## The globe
+
+The corner carries the sphere you are standing inside, seen from outside, with
+your heading always at the centre of the disc — so dragging it is the same act
+as turning your head, and double-clicking a place on it turns you to face there.
+It is the only view that shows what is behind you, which is the whole reason to
+keep one.
+
+**It is a wireframe, and the cage is neutral.** Painted solid it was a mood:
+thirteen regions averaged into a wash over two thirds of its panel, eleven times
+brighter than the world beside it, and nothing on it could be pointed at. A cage
+says the two things a globe is for. It is a *sphere* — the meridians crowd at
+the silhouette and the parallels bow, which no flat disc does — and it has a
+*front and a back*, so a feeling you are turned away from is shown as being
+behind you rather than left off. Twelve meridians, right the way round; a
+meridian covers one longitude, so half of them leaves half the ball bare. The
+equator is the horizon.
+
+**The colour lives on thirteen little spheres and nowhere else.** Facing you:
+filled, ringed, lit from the upper left. Round the back: the same sphere at two
+fifths, which is what you see of something through a globe rather than in front
+of it. **The name comes on hover**, one at a time, and says when what you are
+pointing at is behind you — thirteen labels nailed to a postage-stamp ball
+covered the thing they were labelling.
+
+**What you can see is a window cut in the ball**, not a circle floating in the
+middle of it. The bearings inside your field are a cap *of* the sphere, so the
+ground outside is veiled — you are not looking there — and the edge carries a
+soft band either side of a crisp line, the way the rim of a lens does.
+
+This is the Wine Atlas globe, ported. Both spaces are the same instrument, and
+the reader who has learned one should not have to learn the other.
+
 ## A weed you already know
 
 The rest of the panel runs one way — from what is in the jar, or from the state
@@ -178,13 +211,13 @@ are not in the repo. It is deterministic: the same corpus gives a byte-identical
 .venv/bin/python -m pytest WeedSpace
 ```
 
-64 tests over the data. `test_pipeline.py` checks navdata.json against the
+72 tests over the data. `test_pipeline.py` checks navdata.json against the
 parquet — which words are admitted, where each one sits, what each strain does.
 `test_page.py` checks horizon.html against navdata.json — that direction
 survives the move into the world, that colour follows direction, that a weed
 wears the colour of the ground it stands on.
 
-The other 57 are in `acceptance_tests.js` and need the page running, because
+The other 61 are in `acceptance_tests.js` and need the page running, because
 they are about moving through it:
 
 ```bash

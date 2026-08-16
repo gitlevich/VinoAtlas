@@ -733,9 +733,120 @@
     target = null; yaw = home.yaw; pitch = home.pitch; await paint();
   });
 
-  await T('the globe paints a feeling where the world puts it', async () => {
-    /* one arrangement, two views of it: a colour on the globe has to be the
-       colour of the feeling that lies in that direction */
+  /* -- the globe is a wireframe -------------------------------------------
+     Painted solid it was a mood: thirteen regions averaged into a wash, and
+     nothing on it could be pointed at. These four hold what replaced it. */
+
+  const gpx = (x, y) => mg.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+  /* RENDERED luminance: the mini canvas is transparent and the panel behind it
+     is nearly black, so a quieter mark is quieter in ALPHA and getImageData
+     hands back the colour unpremultiplied. Reading the channels alone said a
+     circle round the back was exactly as bright as one facing you. */
+  const glum = c => (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) * (c[3] / 255);
+  const onDisc = () => {                            // where every circle landed
+    const F = frame(), gr = unit(F.r), gu = unit(F.u);
+    return FEELDIR.map(f => [GC + dot(f.d, gr) * GR, GC - dot(f.d, gu) * GR]);
+  };
+
+  await T('the cage carries no colour; the thirteen circles do', async () => {
+    /* A neutral cage is what lets a circle be pointed at. Sampled off the
+       circles, every pixel of the ball has to be grey -- if the surface has
+       taken on a hue again it is a wash and the circles are lost in it. */
+    STAND = [0, 0, 0]; yaw = 0; pitch = 0; target = null;
+    FOV = fovWant = WIDE; gHover = null;
+    await paint(); drawMini();
+    const put = onDisc();
+    let sampled = 0, worst = 0, where = '';
+    for (let a = 0; a < 360; a += 5) {
+      for (const rad of [GR * 0.2, GR * 0.45, GR * 0.7, GR * 0.92]) {
+        const x = GC + Math.cos(a * Math.PI / 180) * rad;
+        const y = GC + Math.sin(a * Math.PI / 180) * rad;
+        if (put.some(p => Math.hypot(p[0] - x, p[1] - y) < 15)) continue;
+        const c = gpx(x, y);
+        if (c[3] < 8) continue;                     // off the ball
+        const spread = Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]);
+        if (spread > worst) { worst = spread; where = a + ' deg at ' + rad.toFixed(0); }
+        sampled++;
+      }
+    }
+    ok(sampled > 150, 'only ' + sampled + ' points of the ball were sampled');
+    ok(worst <= 4, 'the cage has taken on a hue: channels differ by ' + worst + ' at ' + where);
+  });
+
+  await T('a feeling behind you is on the globe, at two fifths', async () => {
+    /* The whole reason to keep the far side: a bearing you are turned away from
+       is still a bearing, and the ball is the only view that can say so. It is
+       shown quieter, because it is behind a ball you are looking through. */
+    const f = FEELS[0], d = unit(f.pos);
+    const towards = [Math.atan2(d[2], d[0]), Math.asin(d[1])];
+    STAND = [0, 0, 0]; target = null; gHover = null;
+    yaw = towards[0]; pitch = towards[1]; await paint(); drawMini();
+    const mark = FEELDIR.find(x => x.w === f.w);
+    ok(mark.gFront, f.w + ' is not on the near face when you face it');
+    const near = glum(gpx(GC, GC));
+    yaw = towards[0] + Math.PI; pitch = -towards[1]; await paint(); drawMini();
+    ok(!mark.gFront, f.w + ' is still on the near face with your back to it');
+    const far = glum(gpx(GC, GC));
+    ok(far > 6, f.w + ' vanished when it went behind you');
+    ok(far < near * 0.65, 'a circle round the back is not quieter: ' + far.toFixed(0)
+       + ' against ' + near.toFixed(0));
+    yaw = home.yaw; pitch = home.pitch; await paint();
+  });
+
+  await T('a name comes to the circle you point at, and goes when you leave', async () => {
+    /* Thirteen labels nailed to a postage-stamp ball covered the thing they
+       were labelling. One name, and only where you are pointing -- and it has
+       to PAINT, not merely be recorded. */
+    STAND = [0, 0, 0]; yaw = 0; pitch = 0; target = null;
+    FOV = fovWant = WIDE; gHover = null;
+    await paint(); drawMini();
+    const before = mini.toDataURL();
+    const put = onDisc();
+    const i = FEELDIR.findIndex(f => f.gFront);
+    ok(i >= 0, 'nothing was on the near face to point at');
+    const r = mini.getBoundingClientRect(), s = r.width / GS;
+    const at = ev => mini.dispatchEvent(new PointerEvent(ev, {
+      clientX: r.left + put[i][0] * s, clientY: r.top + put[i][1] * s,
+      bubbles: true, pointerId: 1, isPrimary: true }));
+    at('pointermove');
+    ok(gHover === FEELDIR[i], 'pointing at ' + FEELDIR[i].w + ' named '
+       + (gHover ? gHover.w : 'nothing'));
+    ok(mini.toDataURL() !== before, 'the name was recorded but never painted');
+    mini.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true, pointerId: 1 }));
+    ok(gHover === null, 'the name stayed after the pointer left');
+    ok(mini.toDataURL() === before, 'leaving did not take the name away');
+  });
+
+  await T('what you can see is a window cut in the ball', async () => {
+    /* Not a circle floating in the middle of the disc: the ground outside your
+       field is veiled, which is the true statement -- you are not looking
+       there -- and the edge carries a rim. */
+    STAND = [0, 0, 0]; yaw = 0; pitch = 0; target = null; gHover = null;
+    FOV = fovWant = 1.0; await paint(); drawMini();
+    const capR = GR * Math.sin(FOV / 2);
+    const put = onDisc();
+    const ring = rad => {
+      let sum = 0, n = 0;
+      for (let a = 0; a < 360; a += 5) {
+        const x = GC + Math.cos(a * Math.PI / 180) * rad;
+        const y = GC + Math.sin(a * Math.PI / 180) * rad;
+        if (put.some(p => Math.hypot(p[0] - x, p[1] - y) < 15)) continue;
+        const c = gpx(x, y);
+        if (c[3] < 8) continue;
+        sum += glum(c); n++;
+      }
+      return n > 8 ? sum / n : null;
+    };
+    const inside = ring(capR * 0.6), outside = ring(capR * 1.5);
+    ok(inside !== null && outside !== null, 'too little ball either side of the rim');
+    ok(outside < inside * 0.8, 'the ground outside your field is not veiled: '
+       + outside.toFixed(1) + ' against ' + inside.toFixed(1) + ' inside');
+    FOV = fovWant = WIDE; yaw = home.yaw; pitch = home.pitch; await paint();
+  });
+
+  await T('two feelings that sit together on the ball do not clash', async () => {
+    /* one arrangement, two views of it: the circles carry all the colour the
+       globe has, so two of them side by side have to be tellable apart */
     for (const f of FEELS) {
       const near = FEELS.filter(o => o !== f)
         .filter(o => {

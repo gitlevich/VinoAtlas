@@ -67,9 +67,8 @@ def test_a_weed_is_a_green_leaf_with_the_colour_of_its_ground(page, strains, bak
     regions it stands among, so it still says which country it is in. A flat
     green leaf gave that up; a fully-coloured mark never looked like a leaf.
 
-    The accent is the same blend the globe paints with, so the two views agree
-    about a place -- and it is checked by recomputing it here rather than by
-    trusting the field.
+    The accent is the blend of the feeling regions the weed stands among, and it
+    is checked by recomputing it here rather than by trusting the field.
     """
     assert "112 + turn * e" in page, "the leaf no longer starts green at the heart"
     assert "GREEN AT THE HEART, BLEEDING OUT TO THE TERRITORY" in page
@@ -209,6 +208,63 @@ def test_the_hover_wins_the_corner_it_shares_with_the_globe(page):
     assert globe, "the globe rule moved"
     z = re.search(r"z-index:(\d+)", globe.group(0))
     assert z and int(z.group(1)) < 4, "the globe now covers the hover panel"
+
+
+def test_the_globe_is_a_wireframe_and_not_a_painted_ball(page):
+    """Painted solid it was a mood: thirteen regions averaged into a wash over
+    two thirds of its panel, eleven times brighter than the world beside it, and
+    nothing on it could be pointed at. A cage says the two things a globe is
+    for -- it is a SPHERE, and it has a front and a back.
+
+    The cage is neutral. Colour lives on the thirteen circles alone, and it is
+    the front/back difference on every line and every circle that makes the
+    thing round rather than flat.
+    """
+    assert "putImageData" not in page, "the globe is painting pixels again"
+    assert "createImageData" not in page
+    assert "const BLEND" not in page, "the per-pixel blend is back on the globe"
+
+    globe = page[page.index("/* ---- the globe"):page.index("/* DOUBLE-CLICK")]
+    # right the way round: twelve meridians covering one longitude each
+    assert "for (let m = 0; m < 12; m++)" in globe, "the cage no longer closes"
+    assert "m * Math.PI / 6" in globe
+    assert "[-1.0472, -0.5236, 0, 0.5236, 1.0472]" in globe, "the parallels moved"
+    assert "la === 0" in globe, "the equator is no longer the horizon"
+    # front and back, on the wire and on the circles
+    assert "(a.w + b.w) > 0" in globe, "the cage lost its far side"
+    assert "front = q.w > 0" in globe
+    assert "front ? 1 : 0.4" in globe, "a feeling behind you is no longer shown behind you"
+    assert "front ? 6.4 : 5.4" in globe
+    assert "a.q.w - b.q.w" in globe, "the far circles are no longer drawn first"
+    # the cage carries no colour of its own
+    cage = globe[globe.index("const curve"):globe.index("THE THIRTEEN CIRCLES")]
+    assert "hsl" not in cage, "the cage has taken on a colour"
+    assert "vivid" not in cage
+
+
+def test_the_field_of_view_is_a_window_cut_in_the_ball(page):
+    """A dashed circle floating in the middle of the disc says nothing about
+    where it lies. The set of bearings inside your field is a cap OF the sphere:
+    the ground outside it is veiled -- you are not looking there -- and its edge
+    carries a lens rim."""
+    globe = page[page.index("/* ---- the globe"):page.index("/* DOUBLE-CLICK")]
+    assert "GR * Math.sin(FOV / 2)" in globe, "the window no longer tracks the field"
+    assert "mg.arc(GC, GC, capR, 0, 6.2832, true)" in globe, "nothing is cut out"
+    assert "fill('evenodd')" in globe, "the ground outside your field is not veiled"
+    assert "capR*0.82, GC, GC, capR*1.20" in globe, "the lens rim is gone"
+
+
+def test_a_name_on_the_globe_comes_on_hover_and_says_when_it_is_behind_you(page):
+    """Thirteen labels nailed to a postage-stamp ball covered the thing they
+    were labelling. One name, where you are pointing -- and because the ball
+    shows what is behind you, the name has to say so when it is."""
+    globe = page[page.index("/* ---- the globe"):page.index("/* the name comes")]
+    assert "if (gHover)" in globe, "the globe names nothing"
+    assert "'  ·  behind you'" in globe, "a name round the back does not say so"
+    assert "roundRect(x, y - bh/2, bw, bh, 5)" in globe, "the plate is gone"
+    assert "mg.arc(x + 12, y, 4.4" in globe, "the label lost its one dot of colour"
+    assert "let gHover = null" in page
+    assert "pointerleave" in page, "the name never leaves"
 
 
 def test_the_hover_no_longer_names_a_single_winner(page):
@@ -355,7 +411,6 @@ def test_commitment_is_carried_by_the_mark_not_by_how_close_it_lands(page, strai
     assert "13 * t.lean / q.dist" in page, "brightness no longer tracks commitment"
     assert "Math.max(0.72," in page, "the weed brightness floor was lowered again"
     assert "20 / q.dist" not in page, "the old proximity-is-importance rule is back"
-    assert "0.52 * (0.30" in page, "the globe is blazing against the field again"
 
     def R(t):
         return max(1.6, 70 * t["lean"] / t["dist"])
