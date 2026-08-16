@@ -267,7 +267,7 @@ def _favicon_bytes(box=32, pad=0.5):
     return canvas.png()
 
 
-PAGE = """<title>From Where You Stand</title>
+PAGE = """<title>Weed Space</title>
 <link rel=icon href="icon.png" sizes="32x32">
 <link rel=icon type="image/svg+xml" href="__ICON__">
 <style>
