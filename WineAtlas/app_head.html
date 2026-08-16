@@ -301,7 +301,13 @@ input[type=search]{width:100%;font:inherit;font-size:14.5px;padding:8px 10px;bor
 #ask{position:relative;display:block;width:100%;min-height:96px;background:transparent;border:0;outline:0;
   color:transparent;caret-color:var(--ink);resize:vertical}
 .msgswrap{position:relative}
-#ask::placeholder{color:var(--ink-3)}
+/* A PROPOSAL IS FAINT. The example in the box is not something the reader
+   typed, and at full placeholder strength it read exactly as if he had; the
+   fold-away help lines compete with real content the same way. Both stand
+   back until pointed at. */
+#ask::placeholder,#q::placeholder,#key::placeholder{color:var(--ink-3);opacity:.5}
+details>summary.note{opacity:.65;transition:opacity .12s}
+details>summary.note:hover,details[open]>summary.note{opacity:1}
 .tk-ref{color:var(--mark)}
 .tk-inv{color:var(--rise)}
 .tk-aff{color:var(--good)}

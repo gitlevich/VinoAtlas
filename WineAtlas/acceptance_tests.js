@@ -114,6 +114,17 @@
     }
   });
 
+  await T('a proposal is faint; typed words are not', () => {
+    /* The example in the ask box is not something the reader typed, and at full
+       placeholder strength it read exactly as if he had. The fold-away help
+       lines compete with real content the same way; both stand back. */
+    for (const id of ['ask', 'q', 'key'])
+      ok(parseFloat(getComputedStyle(el(id), '::placeholder').opacity) <= 0.55,
+         id + ' offers its example faintly');
+    const s = document.querySelector('details:not([open])>summary.note');
+    if (s) ok(parseFloat(getComputedStyle(s).opacity) <= 0.7, 'a closed help line stands back');
+  });
+
   await T('the top folds away, because it is not the useful part', () => {
     /* Title and opening paragraph. Folded, the title shrinks to a name beside
        the tabs and the page starts higher. The Atlas measures what stands above
@@ -1523,9 +1534,9 @@
     el('t-atlas').click();
   });
 
-  await T('a word lights the wines described that way and quiets the rest', () => {
+  await T('a word lights the wines described that way and dims the rest', () => {
     el('atlasClear').click();
-    ok(!AT.onlyThese, 'nothing asked for, nothing quieted');
+    ok(!AT.onlyThese, 'nothing asked for, nothing dimmed');
     AT.STAND = [0, 0, 0]; AT.yaw = Math.PI; AT.pitch = 0; AT.draw();
     const before = AT.WMARK.filter(m => m.node).map(m => m.node[3]);
     const bright = before.filter(a => a > 0.4).length;
@@ -1534,13 +1545,13 @@
     AT.draw();
     const seen = AT.WMARK.filter(m => m.node);
     const lit = seen.filter(m => AT.onlyThese.has(m.i));
-    const quiet = seen.filter(m => !AT.onlyThese.has(m.i));
-    ok(lit.length && quiet.length, 'both kinds are in view');
+    const dimmed = seen.filter(m => !AT.onlyThese.has(m.i));
+    ok(lit.length && dimmed.length, 'both kinds are in view');
     const avg = xs => xs.reduce((s, m) => s + m.node[3], 0) / xs.length;
-    ok(avg(lit) > avg(quiet) * 2, `lit ${avg(lit).toFixed(2)} against quiet ${avg(quiet).toFixed(2)}`);
-    /* the rest go quiet, they do not go away: a shop you cannot see past is
+    ok(avg(lit) > avg(dimmed) * 2, `lit ${avg(lit).toFixed(2)} against dimmed ${avg(dimmed).toFixed(2)}`);
+    /* the rest dim, they do not go away: a shop you cannot see past is
        still the shop, and walking still carries you among them */
-    ok(quiet.every(m => m.node[3] > 0.1), 'nothing fades to nothing');
+    ok(dimmed.every(m => m.node[3] > 0.1), 'nothing fades to nothing');
     ok(AT.WMARK.filter(m => m.node).length > bright * 0.5, 'the shop is still there');
     el('atlasClear').click();
     ok(!AT.onlyThese, 'clear puts the whole shop back');
@@ -1565,7 +1576,7 @@
     /* asked for nothing, the shop comes back lit rather than going dark */
     row('citrus').click();
     ok(AT.askedNothing, 'cedar and citrus name nothing together');
-    eq(AT.onlyThese, null, 'so nothing is quieted');
+    eq(AT.onlyThese, null, 'so nothing is dimmed');
     ok(/no wine in the shop/.test(el('atlasFacing').textContent), 'and it says so');
     el('atlasClear').click();
     eq(count('citrus'), AT.TERMS.find(t => t.w === 'citrus').n, 'clear puts the counts back');
@@ -1624,7 +1635,7 @@
   await T('nothing in the atlas says a word the page has banned', () => {
     const words = [...el('atlasWords').children].map(r => r.textContent.toLowerCase()).join(' ');
     const copy = el('s-atlas').innerText.toLowerCase();
-    for (const bad of ['dark fruit', 'heaviness', 'readiness', 'shipment', 'sigil', 'invariant', 'percentile'])
+    for (const bad of ['dark fruit', 'heaviness', 'readiness', 'shipment', 'sigil', 'invariant', 'percentile', 'quiet'])
       ok(!words.includes(bad) && !copy.includes(bad), bad);
     for (const p of AT.POLES) ok(Object.values(S.ends).some(e => e.includes(p.w)), p.w + ' is his word');
   });
@@ -1809,7 +1820,7 @@
     let added = chat.slice(before);
     ok(!added.some(m => m.text === 'Done.'), 'no invented word');
     let n = added.find(m => m.role === 'notice');
-    ok(n && /pressed look/.test(n.text) && /no words/.test(n.text),
+    ok(n && /worked its controls/.test(n.text) && /look/.test(n.text) && /no words/.test(n.text),
        'the silence is named, with the moves made: ' + (n && n.text));
     /* and a turn that neither moved nor spoke says that instead */
     replies = [{ content: [{ type: 'thinking', thinking: 'hm' }], usage: {} }]; i = 0;

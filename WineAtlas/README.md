@@ -154,8 +154,8 @@ answer it. The view **opens at 74°** rather than the 120° a head takes in, whi
 is two and a half times fewer marks at once and a quarter more size on each — and
 size is where the colour of the wine lives. **Fill the screen** (top left, or F)
 puts the same shop in the whole window. And **ticking a word lights the wines
-described that way and quiets the rest**: cedar leaves 173 lit out of 1,652. The
-quiet ones do not go away — a shop you cannot see past is still the shop.
+described that way and dims the rest**: cedar leaves 173 lit out of 1,652. The
+dim ones do not go away — a shop you cannot see past is still the shop.
 
 **What is not drawn.** The five measures were once arcs across the sky, each
 carrying its own name, all five crossing where the middle of the shop is. True,

@@ -301,7 +301,13 @@ input[type=search]{width:100%;font:inherit;font-size:14.5px;padding:8px 10px;bor
 #ask{position:relative;display:block;width:100%;min-height:96px;background:transparent;border:0;outline:0;
   color:transparent;caret-color:var(--ink);resize:vertical}
 .msgswrap{position:relative}
-#ask::placeholder{color:var(--ink-3)}
+/* A PROPOSAL IS FAINT. The example in the box is not something the reader
+   typed, and at full placeholder strength it read exactly as if he had; the
+   fold-away help lines compete with real content the same way. Both stand
+   back until pointed at. */
+#ask::placeholder,#q::placeholder,#key::placeholder{color:var(--ink-3);opacity:.5}
+details>summary.note{opacity:.65;transition:opacity .12s}
+details>summary.note:hover,details[open]>summary.note{opacity:1}
 .tk-ref{color:var(--mark)}
 .tk-inv{color:var(--rise)}
 .tk-aff{color:var(--good)}
@@ -794,11 +800,11 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
             <code class="tk-inv">!oak 0.2..0.6</code><span>a requirement: the range a quality must stay
               inside for a wine to fit your taste. ..0.3 and 0.7.. leave a side open; numbers run 0 to 1.
               Sending one narrows that range on the left.</span>
-            <code>cherry, oaky…</code><span>words the lens has measured are read right here and colored by
+            <code>cherry, oaky…</code><span>words this app has measured are read right here and colored by
               the quality they move — the reading shows under the box as you type.</span>
             <code>plain words</code><span>anything else is sent to Anthropic or OpenAI — whichever you set
               up behind the gear — and their answer moves the wine your taste indicates.</span>
-            <code class="tk-op">and or not</code><span>act only beside pointed things — in plain talk they
+            <code class="tk-op">and or not</code><span>act only beside picked wines and named qualities — in plain talk they
               are just words.</span>
             <code class="tk-op">"…"</code><span>quotes keep a phrase literal.</span>
           </div>
@@ -812,7 +818,7 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
       list and how you buy, and it moves the page as you speak. Here it is disabled: this is a preview, and
       a preview may not reach Anthropic or OpenAI. To use it:
       <ol style="margin:8px 0 0;padding-left:20px">
-        <li>Open the page itself at <a href="https://agent.farm/WineAtlas/">agent.farm/WineAtlas</a>.</li>
+        <li>Open the page itself at <a href="https://agent.farm/VinoAtlas/wine/">agent.farm/VinoAtlas/wine</a>.</li>
         <li>Press the gear at the top of this panel.</li>
         <li>Paste your own Anthropic or OpenAI key.</li>
       </ol>
@@ -893,7 +899,7 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
               <path d="M15 6l-6 6 6 6"/></svg>
           </button>
         </div>
-        <p class="note">Tick one and you are turned to the wines it describes.</p>
+        <p class="note">Tick one to face the wines it describes — only they stay lit.</p>
         <div class="awhead"><span>word</span><span>wines</span></div>
         <div class="awlist" id="atlasWords"></div>
         <div class="awfoot">
@@ -961,7 +967,7 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
             <dt>Read a bottle</dt><dd>point at it</dd>
             <dt>Go to something named</dt><dd>click the name and you are carried toward it</dd>
             <dt>Leave only some wines lit</dt><dd>tick a word on the left; the rest of the
-              shop goes quiet but stays where it is</dd>
+              shop dims but stays where it is</dd>
             <dt>Fill the screen</dt><dd>the arrows at the top left, or <b>F</b>.
               <b>Esc</b> comes back.</dd>
             <dt>Read this again</dt><dd><b>H</b>, or the question mark at the top
@@ -1326,7 +1332,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='8d8a28d7';
+const BUILD='fb62a671';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -1578,9 +1584,9 @@ function sigilSay(sp){
 }
 const BUILT_FRAMING=`You are a very good sommelier, and you live inside Cellar Compass, a tool built for one person: a wine expert who has bought 232 different wines over ten orders from Royal Wine Merchants, a shop whose list holds 1,652 wines. The tool read his buying history and the shop's written descriptions, and it places every wine on five measures -- the only qualities of wine that trained tasting panels have been shown to rank the same way. Sourness, bitterness, greenness, minerality and most aroma-wheel words failed that test and stand deliberately outside the tool's language; your expertise must speak through the five that passed. Nobody tasted these wines: each wine's numbers come from its written description, and its place in that five-measure space is what the tool knows of it. What you know of a wine beyond its place is your own sommelier's knowledge -- use it freely to interpret his wishes, but when it disagrees with a wine's measured numbers, the numbers win, because the numbers are what he is testing. He is here to test them: he says what he wants, the tool shows the closest wines it can find, and he marks its suggestions right or wrong. He knows wine deeply; so do you; the tool is the one on trial.
 
-Your part is exact. You translate his words into moves of the tool's five measures: the point they stand at, and the bands that limit them. The shop's whole list stands in your view below -- every wine with its grape, its region and its measured numbers. You still act only through the measures: the tool surfaces the wines nearest the point, inside every band. But you move with the list in sight, so move knowingly -- and in "say" you may name what a move will surface. Change only the measures his words ask for; leave the rest where they stand. When he points at a wine, start from that wine's measured numbers, not from your own beliefs about it.
+Your part is exact. You translate his words into moves of the tool's five measures: the point they stand at, and the bands that limit them. The shop's whole list stands in your view below -- every wine with its grape, its region and its measured numbers. You still act only through the measures: the tool surfaces the wines nearest the point, inside every band. But you move with the list in sight, so move knowingly -- and you may say what a move will surface. Change only the measures his words ask for; leave the rest where they stand. When he points at a wine, start from that wine's measured numbers, not from your own beliefs about it.
 
-You are also his guide to this tool. He may ask what something is, where to look, or to be walked through it; when he does, take him there with "act" -- open the section, name the part -- and explain it in plain words, one thought at a time. Whatever you move wears a fading ring where it sits, so he can see what you just did; you may refer to that.
+You are also his guide to this tool. He may ask what something is, where to look, or to be walked through it; when he does, take him there with the page's own controls -- open the section, bring the part into view -- and explain it in plain words, one thought at a time. Whatever you move wears a fading ring where it sits, so he can see what you just did; you may refer to that.
 
 Grape, region and price are not measures the distance uses; you can read them in the list, so when he asks by them, steer the measures toward the wines that carry them and say what you are doing. If his words reach neither a measure nor the list, say so rather than guessing. Every answer you send is applied at once: he watches the point, the bands and the wine list move as you speak, and whatever you moved wears a fading ring where it sits. Before each of your answers you are shown WHAT HE SEES RIGHT NOW -- the open section, the point, the bands, how many wines survive, the closest ones by name, what is held on his radar, how many he has marked. Read it: it is the result of what you last did. Name what actually came up rather than guessing at it. Speak plainly and briefly, to an expert.`;
 function framing(){return (agent.prompt&&agent.prompt.trim())||BUILT_FRAMING;}
@@ -2052,7 +2058,7 @@ async function send(){
   if(sp.hasPlain&&!KEY()){ // do not consume the message: it stays in the box
     el('setup').hidden=false;
     el('setupBtn').classList.add('on'); el('setupBtn').setAttribute('aria-expanded','true');
-    addMsg('notice','Plain words are sent to '+(HOUSE()==='openai'?'OpenAI':'Anthropic')+', and no key is saved for '+(HOUSE()==='openai'?'OpenAI':'Anthropic')+' yet. Open the gear, paste one -- each house keeps its own -- then press Send again; your message is still in the box.');
+    addMsg('notice','Plain words are sent to '+(HOUSE()==='openai'?'OpenAI':'Anthropic')+', and no key is saved for '+(HOUSE()==='openai'?'OpenAI':'Anthropic')+' yet. Open the gear, paste one -- Anthropic and OpenAI each keep their own -- then press Send again; your message is still in the box.');
     return;}
   addMsg('user',text);
   askEl.value=''; drawSpell(); menEl.hidden=true;
@@ -2106,10 +2112,10 @@ async function send(){
        say a move that was not made. A silent turn is reported as what it was,
        by the tool, in the tool's voice. */
     if(!spoke) addMsg('notice', made.length
-      ?'The sommelier pressed '+made.join(', ')+' and sent no words. What that changed is on the screen; whatever it moved wears a ring.'
+      ?'The sommelier worked its controls ('+made.join(', ')+') and sent no words. What that changed is on the screen; whatever it moved wears a ring.'
       :'The sommelier sent no words and made no move. Nothing changed. Ask again, differently.');
   }catch(err){
-    addMsg('notice','That did not go through. '+err.message+'\nThe key and the model are behind the gear; each house keeps its own key.');
+    addMsg('notice','That did not go through. '+err.message+'\nThe key and the model are behind the gear; Anthropic and OpenAI each keep their own key.');
   }
   el('askNote').textContent='';
 }
