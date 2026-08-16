@@ -15,7 +15,7 @@
   const near = (a, b, m) => { if (Math.abs(a - b) > 1e-9) throw new Error((m||'') + ' got ' + a + ' want ' + b); };
   const ask = el('ask');
   const type = t => { ask.focus(); ask.value = t; ask.setSelectionRange(t.length, t.length); ask.dispatchEvent(new Event('input')); };
-  const snap = { v: localStorage.getItem('cc_votes'), a: localStorage.getItem('cc_agent'), c: localStorage.getItem('cc_chat'), s: localStorage.getItem('cc_spend') };
+  const snap = { v: localStorage.getItem('cc_votes'), a: localStorage.getItem('cc_agent'), c: localStorage.getItem('cc_chat'), s: localStorage.getItem('cc_spend'), w: localStorage.getItem('cc_cols') };
   const realConfirm = window.confirm; window.confirm = () => true;
 
   /* WHAT NAMING A VALUE OWES, now that taste is a range and the middle is only
@@ -78,6 +78,59 @@
     const room = el('popChart').clientWidth;
     ok(box.width > room * 0.6, `it takes the room: ${Math.round(box.width)} of ${room}`);
     el('t-find').click();
+  });
+
+  await T('the panels open equal, either side of the shop', () => {
+    /* They held 280 and 330, which were not chosen so much as written down in
+       that order. Equal, on both grids that have a shop between two panels. */
+    localStorage.removeItem('cc_cols');
+    document.querySelectorAll('.three,.atlas').forEach(g => {
+      g.style.removeProperty('--colL'); g.style.removeProperty('--colR');
+    });
+    const w = n => Math.round(n.getBoundingClientRect().width);
+    el('t-find').click();
+    eq(w(el('axes').closest('.card')), w(document.querySelector('.chat')),
+       'on the Find tab the two panels match');
+    el('t-atlas').click();
+    eq(w(document.querySelector('.atlas-side')), w(document.querySelector('.chat')),
+       'and in the Atlas');
+    el('t-find').click();
+  });
+
+  await T('a panel is as wide as the reader drags it, and stays there', () => {
+    const w = n => Math.round(n.getBoundingClientRect().width);
+    const taste = el('axes').closest('.card'), chat = document.querySelector('.chat');
+    const g = n => n.querySelector('.colgrip');
+    ok(g(taste) && g(chat) && g(document.querySelector('.atlas-side')),
+       'every panel beside the shop carries one');
+    /* the grip that already existed is the corner glyph on a box you drag
+       taller -- a different thing, and it kept its own size */
+    const old = [...document.querySelectorAll('.grip')];
+    ok(old.length && old.every(x => !x.classList.contains('colgrip')), 'the two are not one class');
+    ok(old.every(x => x.getBoundingClientRect().height < 20), 'and the old one is still a glyph');
+    /* arrow keys move it, because a divider a mouse can move a keyboard must */
+    const was = w(taste);
+    const nudge = (n, key) => { for (let i = 0; i < n; i++)
+      g(taste).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })); };
+    nudge(3, 'ArrowRight');
+    eq(w(taste), was + 30, 'ten pixels a press');
+    eq(JSON.parse(localStorage.getItem('cc_cols')).findL, was + 30, 'and it is remembered');
+    /* and it stops rather than swallowing the shop or vanishing */
+    nudge(200, 'ArrowRight'); ok(w(taste) <= 640, 'it stops before it eats the shop: ' + w(taste));
+    nudge(400, 'ArrowLeft');  ok(w(taste) >= 180, 'and before it disappears: ' + w(taste));
+    nudge(60, 'ArrowRight');
+    /* THE SOMMELIER IS ONE ELEMENT IN TWO GRIDS, so its grip has to ask which it
+       is standing in at the moment it is dragged, not be told once */
+    const push = n => { for (let i = 0; i < n; i++)
+      g(chat).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })); };
+    el('t-find').click(); push(2); const inFind = w(chat);
+    el('t-atlas').click(); push(6); const inAtlas = w(chat);
+    ok(inAtlas !== inFind, 'the two are set apart: ' + inFind + ' and ' + inAtlas);
+    el('t-find').click();
+    eq(w(chat), inFind, 'and each grid keeps its own');
+    const kept = JSON.parse(localStorage.getItem('cc_cols'));
+    eq(kept.findR, inFind, 'written down for the Find tab');
+    eq(kept.atlasR, inAtlas, 'and for the Atlas');
   });
 
   await T('every tab is there, in order, with the Atlas last', () => {
@@ -1745,7 +1798,7 @@
 
   // restore
   window.confirm = realConfirm;
-  for (const [k, v] of [['cc_votes', snap.v], ['cc_agent', snap.a], ['cc_chat', snap.c], ['cc_spend', snap.s]])
+  for (const [k, v] of [['cc_votes', snap.v], ['cc_agent', snap.a], ['cc_chat', snap.c], ['cc_spend', snap.s], ['cc_cols', snap.w]])
     v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v);
   /* the conversation is restored in the live array too, not only in the store it
      was saved to. Restoring one and not the other made the suite pass once and

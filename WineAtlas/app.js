@@ -1341,6 +1341,63 @@ el('howAxes').innerHTML=A.map(a=>`<div style="margin-bottom:14px">
 
 openOnLargestKind();
 
+/* ---- panels the reader sizes ---------------------------------------------
+   The two panels either side of the shop opened at 280 and 330, which were not
+   chosen so much as written down in that order. They open equal now, and the
+   reader moves them: a grip standing in the gap between a panel and the shop,
+   dragged or nudged with the arrow keys, remembered per grid.
+
+   The sommelier is ONE element that moves between the Find tab's grid and the
+   Atlas's, so its grip asks which grid it is standing in at the moment it is
+   dragged rather than being told once. */
+const COL_MIN=180, COL_MAX=640;
+const COLS=JSON.parse(localStorage.getItem('cc_cols')||'{}');
+const gridOf=n=>n.closest('.three,.atlas');
+const colKey=(grid,edge)=>(grid.classList.contains('atlas')?'atlas':'find')+edge;
+function applyCols(){
+  document.querySelectorAll('.three,.atlas').forEach(g=>{
+    for(const edge of ['L','R']){
+      const w=COLS[colKey(g,edge)];
+      if(w) g.style.setProperty('--col'+edge,w+'px');
+    }
+  });
+}
+function colgrip(panel,edge){                    // edge: 'right' on a left-hand panel
+  const h=document.createElement('button');
+  h.type='button'; h.className='colgrip '+edge; h.tabIndex=0;
+  h.setAttribute('aria-label','Drag to set how wide this panel is');
+  panel.appendChild(h);
+  const set=w=>{
+    const g=gridOf(panel); if(!g) return;
+    const v=Math.round(Math.max(COL_MIN,Math.min(COL_MAX,w)));
+    g.style.setProperty(edge==='right'?'--colL':'--colR',v+'px');
+    COLS[colKey(g,edge==='right'?'L':'R')]=v;
+    localStorage.setItem('cc_cols',JSON.stringify(COLS));
+  };
+  let x0=0,w0=0;
+  h.addEventListener('pointerdown',e=>{
+    x0=e.clientX; w0=panel.getBoundingClientRect().width;
+    h.setPointerCapture(e.pointerId); h.classList.add('drag');
+    e.preventDefault(); e.stopPropagation();});
+  h.addEventListener('pointermove',e=>{
+    if(!h.hasPointerCapture(e.pointerId)) return;
+    set(w0+(edge==='right'?e.clientX-x0:x0-e.clientX)); e.stopPropagation();});
+  const done=e=>{h.classList.remove('drag');
+    if(h.hasPointerCapture(e.pointerId)) h.releasePointerCapture(e.pointerId); e.stopPropagation();};
+  h.addEventListener('pointerup',done); h.addEventListener('pointercancel',done);
+  h.addEventListener('keydown',e=>{
+    if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight') return;
+    const step=(e.shiftKey?40:10)*(e.key==='ArrowRight'?1:-1);
+    set(panel.getBoundingClientRect().width+(edge==='right'?step:-step));
+    e.preventDefault(); e.stopPropagation();});
+  h.addEventListener('click',e=>e.stopPropagation());
+  return h;
+}
+applyCols();
+colgrip(el('axes').closest('.card'),'right');           // the taste card, on the Find tab
+colgrip(document.querySelector('.atlas-side'),'right'); // the words, in the Atlas
+colgrip(document.querySelector('.chat'),'left');        // the sommelier, in whichever it stands
+
 /* ---- inhabiting this page from outside ------------------------------------
    The sommelier that lives in the panel and a driver standing outside the page
    are the same kind of visitor: both want to know what is on the screen and to

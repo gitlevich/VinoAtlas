@@ -72,7 +72,33 @@ section{display:flex;flex-direction:column;gap:16px}
 .panel-reset svg{width:15px;height:15px;display:block}
 .two{display:grid;grid-template-columns:330px 1fr;gap:18px;align-items:start}
 @media(max-width:880px){.two{grid-template-columns:1fr}}
-.three{display:grid;grid-template-columns:280px minmax(0,1fr) 330px;gap:14px;align-items:start}
+/* THE COLUMN GRIP -- not .grip, which was already the little corner glyph on the
+   boxes you can drag taller. A hand's width of the gap, invisible until the pointer is near it,
+   then a hairline; red is not its colour and it deletes nothing. Arrow keys move
+   it too, because a divider a mouse can move a keyboard must be able to move. */
+/* the grip hangs off its panel's edge, so the panel is its containing block --
+   in the stylesheet and scoped to the grid, because an inline position here beat
+   the rule that lifts the same panel onto the full screen as a drawer */
+.three>.card,.three>.chat,.atlas>.atlas-side,.atlas>.chat{position:relative}
+.colgrip{position:absolute;top:0;bottom:0;width:14px;z-index:4;cursor:col-resize;
+  background:none;border:0;padding:0;touch-action:none;-webkit-appearance:none}
+.colgrip.right{right:-14px}
+.colgrip.left{left:-14px}
+.colgrip::after{content:"";position:absolute;left:50%;top:10px;bottom:10px;width:2px;
+  transform:translateX(-50%);border-radius:2px;background:transparent;transition:background .12s}
+.colgrip:hover::after,.colgrip.drag::after{background:var(--ink-3)}
+.colgrip:focus-visible::after{background:var(--mark)}
+/* nothing to divide once a panel is a drawer over the shop, or the columns are
+   stacked at a narrow window */
+.atlas-view.big .colgrip{display:none}
+@media(max-width:1250px){.colgrip{display:none}}
+
+/* THE TWO PANELS ARE THE SAME WIDTH, AND EITHER CAN BE DRAGGED. They held 280
+   and 330 for no reason but the order they were written in. Now they open equal
+   and the reader sets them: a grip in the gap between a panel and the shop,
+   remembered per grid. */
+.three{display:grid;grid-template-columns:var(--colL,320px) minmax(0,1fr) var(--colR,320px);
+  gap:14px;align-items:start}
 /* the list scrolls inside itself, so your taste never leaves the screen */
 #out{max-height:calc(100vh - 300px);min-height:260px;overflow-y:auto;overscroll-behavior:contain}
 @media(min-width:1251px){.three>div:first-child{position:sticky;top:14px}}
@@ -295,7 +321,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
    copied -- every word is somewhere you look or something you tick -- and
    dragging is the main gesture, so a drag that selects the list behind it would
    turn half the panel blue. */
-.atlas{display:grid;grid-template-columns:236px minmax(0,1fr) 330px;gap:14px;
+.atlas{display:grid;grid-template-columns:var(--colL,320px) minmax(0,1fr) var(--colR,320px);gap:14px;
   align-items:stretch;-webkit-user-select:none;user-select:none}
 /* either side folds away, so the shop can have the width without going full
    screen for it */
@@ -309,8 +335,8 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 #atlasWordsTab,.atlas-side{grid-column:1}
 .atlas-view{grid-column:2}
 .chat,#atlasChatTab{grid-column:3}
-.atlas.nowords{grid-template-columns:26px minmax(0,1fr) 330px;column-gap:8px}
-.atlas.nochat{grid-template-columns:236px minmax(0,1fr) 26px;column-gap:8px}
+.atlas.nowords{grid-template-columns:26px minmax(0,1fr) var(--colR,320px);column-gap:8px}
+.atlas.nochat{grid-template-columns:var(--colL,320px) minmax(0,1fr) 26px;column-gap:8px}
 .atlas.nowords.nochat{grid-template-columns:26px minmax(0,1fr) 26px;column-gap:8px}
 .atlas.nowords>.atlas-side{display:none}
 .atlas.nochat>.chat{display:none}

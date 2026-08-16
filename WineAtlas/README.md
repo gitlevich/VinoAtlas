@@ -173,6 +173,14 @@ it is measured first now, and one unit is one pixel. And an id selector beats
 `section[hidden]`, so the tab styled by its id never closed and stood under every
 other one.
 
+**The panels are equal, and the reader sets them.** They opened at 280 and 330,
+which were not chosen so much as written down in that order. Both grids that
+have a shop between two panels now open equal, and a grip stands in the gap
+either side: drag it, or nudge it with the arrow keys, and the width is
+remembered per grid. The sommelier is one element that moves between the Find
+tab's grid and the Atlas's, so its grip asks which grid it is standing in at the
+moment it is dragged — each keeps its own width.
+
 ## The sommelier's setup
 
 Two houses, Anthropic and OpenAI, chosen from a dropdown that says which of them
@@ -225,7 +233,7 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **119 of 119 pass.**
+Every test name states an acceptance criterion. **121 of 121 pass.**
 
 The Atlas also has a pipeline suite, which rebuilds the whole arrangement from
 the catalogue by a second route and checks every claim the page makes about it:
