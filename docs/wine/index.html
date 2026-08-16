@@ -3,7 +3,7 @@
 :root{
   color-scheme:light;
   --ground:#f6f6f7; --panel:#fff; --raise:#fafafb;
-  --ink:#151517; --ink-rgb:21,21,23; --ink-2:#4a4a50; --ink-3:#82828a;
+  --ink:#151517; --ink-rgb:21,21,23; --ink-2:#4a4a50; --ink-3:#6e6e77;
   --rule:#e3e3e5; --track:#e8e8ea; --grid:#dcdcdf;
   --mark:#6b4bc0; --mark-rgb:107,75,192; --me:#0a7d8f; --me-rgb:10,125,143; --mark-2:#8c6fe0; --rise:#a8641f; --rise-rgb:168,100,31; --good:#1d7a52; --bad:#a33b3b; --bad-rgb:163,59,59;
  
@@ -13,7 +13,7 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;
   --ground:#000; --panel:#0d0d0d; --raise:#161616;
-  --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#808080;
+  --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#949494;
   --rule:#242424; --track:#282828; --grid:#2e2e2e;
   --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a; --bad-rgb:224,122,122;
  
@@ -23,7 +23,7 @@
 :root[data-theme="dark"]{
   color-scheme:dark;
   --ground:#000; --panel:#0d0d0d; --raise:#161616;
-  --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#808080;
+  --ink:#f2f2f2; --ink-rgb:242,242,242; --ink-2:#b5b5b5; --ink-3:#949494;
   --rule:#242424; --track:#282828; --grid:#2e2e2e;
   --mark:#a48cff; --mark-rgb:164,140,255; --me:#22c9dc; --me-rgb:34,201,220; --mark-2:#8c6fe0; --rise:#e2a35a; --rise-rgb:226,163,90; --good:#4dc08a; --bad:#e07a7a; --bad-rgb:224,122,122;
  
@@ -50,8 +50,8 @@ body{margin:0;background:var(--ground);color:var(--ink);
 /* THE TOP IS NOT THE USEFUL PART OF THE PAGE, so it is small and it folds away.
    Folded, the title shrinks to a name beside the tabs and the opening is gone;
    the chevron is the same one every panel here folds by. */
-h1{margin:0;font-size:clamp(19px,2.1vw,25px);font-weight:600;letter-spacing:-.024em;line-height:1.15}
-.lede{margin:0;font-size:13.5px;line-height:1.55;color:var(--ink-2);max-width:150ch}
+h1{margin:0;font-size:clamp(21px,2.2vw,27px);font-weight:600;letter-spacing:-.024em;line-height:1.15}
+.lede{margin:0;font-size:15px;line-height:1.55;color:var(--ink-2);max-width:150ch}
 .head{display:flex;align-items:baseline;gap:10px 32px}
 .head h1{flex:none}
 .head .lede{flex:1;min-width:0}
@@ -62,11 +62,11 @@ h1{margin:0;font-size:clamp(19px,2.1vw,25px);font-weight:600;letter-spacing:-.02
 .headfold:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 .headfold svg{width:15px;height:15px;display:block;transition:transform .12s}
 .head.folded .lede{display:none}
-.head.folded h1{font-size:17px}
+.head.folded h1{font-size:19px}
 .head.folded .headfold svg{transform:rotate(180deg)}
 @media(max-width:880px){.head{flex-direction:column;align-items:flex-start;gap:10px}}
 nav{display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--rule);padding-bottom:0}
-nav button{font:inherit;font-size:13.5px;font-weight:500;padding:9px 15px;border:0;border-bottom:2px solid transparent;
+nav button{font:inherit;font-size:15px;font-weight:500;padding:9px 15px;border:0;border-bottom:2px solid transparent;
   background:none;color:var(--ink-3);cursor:pointer;transition:.13s}
 nav button:hover{color:var(--ink)}
 nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--mark)}
@@ -74,7 +74,7 @@ nav button:focus-visible{outline:2px solid var(--mark);outline-offset:-2px}
 section[hidden]{display:none}
 section{display:flex;flex-direction:column;gap:16px}
 .card{background:var(--panel);border:1px solid var(--rule);border-radius:13px;padding:18px;box-shadow:var(--shadow)}
-.card h2{margin:0 0 14px;font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.card h2{margin:0 0 14px;font-size:13px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
 /* reset belongs beside the thing it resets, so each panel carries its own */
 .panelhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 14px}
 .panelhead h2{margin:0}
@@ -131,7 +131,7 @@ section{display:flex;flex-direction:column;gap:16px}
 #radar .rpt{fill:var(--me);fill-opacity:.45;stroke:var(--ink);stroke-opacity:.8}
 #radar .rw{fill:var(--rise);fill-opacity:.2;stroke:var(--rise)}
 #radar .rwd{fill:var(--rise)}
-.rleg{display:flex;justify-content:center;flex-wrap:wrap;gap:7px 16px;font-size:11px;
+.rleg{display:flex;justify-content:center;flex-wrap:wrap;gap:7px 16px;font-size:12.5px;
   line-height:1.5;color:var(--ink-3);margin-top:14px}
 .rleg i{display:inline-block;width:13px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
 .rleg i.fill{height:9px;border:1px dashed var(--ink);border-radius:2px;background:rgba(var(--me-rgb),.5)}
@@ -163,12 +163,12 @@ section{display:flex;flex-direction:column;gap:16px}
 .setrow{display:flex;align-items:center;gap:9px;margin-bottom:8px}
 .setrow[hidden]{display:none}
 .setrow:last-of-type{margin-bottom:0}
-.setlbl{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);width:64px;flex:none}
-.setrow select,.setrow input{font:inherit;font-size:12.5px;padding:6px 9px;border-radius:7px;
+.setlbl{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);width:64px;flex:none}
+.setrow select,.setrow input{font:inherit;font-size:14px;padding:6px 9px;border-radius:7px;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink);flex:1;min-width:0}
 .setcol{margin:10px 0 8px}
 .setcol .setlbl{display:block;margin-bottom:5px}
-.setcol textarea{width:100%;box-sizing:border-box;font:inherit;font-size:12.5px;line-height:1.5;padding:7px 9px;
+.setcol textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14px;line-height:1.5;padding:7px 9px;
   border-radius:7px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);resize:vertical}
 .keywrap{position:relative;display:flex;flex:1;min-width:0}
 .keywrap input{width:100%;padding-right:28px}
@@ -177,7 +177,7 @@ section{display:flex;flex-direction:column;gap:16px}
    else -- and a second click while armed deletes. Moving away, or Escape,
    forgives. Nothing here deletes on one click. */
 .keyclear{position:absolute;right:3px;top:50%;transform:translateY(-50%);width:22px;height:22px;
-  border:0;border-radius:6px;background:none;color:var(--ink-3);font-size:15px;line-height:1;
+  border:0;border-radius:6px;background:none;color:var(--ink-3);font-size:16px;line-height:1;
   cursor:pointer;transition:color .12s,background .12s}
 .keyclear:hover{color:var(--ink);background:var(--rule)}
 .keyclear.armed,.keyclear.armed:hover{color:var(--bad);background:rgba(var(--bad-rgb),.16)}
@@ -190,7 +190,7 @@ section{display:flex;flex-direction:column;gap:16px}
 #msgs::-webkit-resizer,#ask::-webkit-resizer{background:transparent}
 .grip{position:absolute;right:2px;bottom:2px;width:11px;height:11px;pointer-events:none;color:var(--ink-3);opacity:.45}
 .grip svg{width:11px;height:11px;display:block}
-.mu,.ma,.mn{font-size:13px;line-height:1.5;padding:8px 11px;border-radius:11px;max-width:92%;overflow-wrap:break-word;white-space:pre-wrap}
+.mu,.ma,.mn{font-size:14.5px;line-height:1.5;padding:8px 11px;border-radius:11px;max-width:92%;overflow-wrap:break-word;white-space:pre-wrap}
 .mu{align-self:flex-end;background:rgba(var(--mark-rgb),.16);
   border:1px solid rgba(var(--mark-rgb),.3)}
 .ma{align-self:flex-start;background:var(--raise);border:1px solid var(--rule);color:var(--ink-2)}
@@ -201,12 +201,12 @@ section{display:flex;flex-direction:column;gap:16px}
 .mu:hover .mcopy,.ma:hover .mcopy,.mn:hover .mx{opacity:1}
 .mcopy:hover,.mx:hover{background:var(--rule);color:var(--ink)}
 .mcopy svg{width:12px;height:12px}
-.mx{font-size:13px;line-height:1}
+.mx{font-size:14.5px;line-height:1}
 .ax{margin-bottom:19px}
 .ax:last-child{margin-bottom:0}
 .axtop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
-.axname{font-size:14px;font-weight:550}
-.axval{font-size:11.5px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace}
+.axname{font-size:15.5px;font-weight:550}
+.axval{font-size:13px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace}
 /* two-headed slider, ported from SigilAtlas band-widget: the band is the
    invariant, the thin marker the point ranking centres on */
 /* built to survive being rendered at a smaller scale: a thin band with a faint
@@ -231,23 +231,28 @@ section{display:flex;flex-direction:column;gap:16px}
   border-radius:3px;background:var(--mark);border:1px solid var(--panel);box-sizing:border-box}
 .bmark{position:absolute;top:1px;width:3px;height:30px;margin-left:-1.5px;border-radius:1.5px;
   background:var(--ink);box-shadow:0 0 0 1px var(--panel);pointer-events:none}
-.ends{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.07em;
+.ends{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.07em;
   text-transform:uppercase;color:var(--ink-3);margin-top:1px}
-.help{font-size:12.5px;color:var(--ink-3);line-height:1.55;margin:16px 0 8px;
+.help{font-size:14px;color:var(--ink-3);line-height:1.55;margin:16px 0 8px;
   padding-top:13px;border-top:1px solid var(--rule)}
-.btn{font:inherit;font-size:12.5px;padding:7px 12px;border-radius:8px;border:1px solid var(--rule);
+.btn{font:inherit;font-size:14px;padding:7px 12px;border-radius:8px;border:1px solid var(--rule);
   background:var(--raise);color:var(--ink-2);cursor:pointer;transition:.13s}
 .btn:hover{color:var(--ink);border-color:var(--mark)}
 .btn.on{background:var(--mark);border-color:var(--mark);color:#fff}
 .btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
 /* each kind drawn from its own wines -- one faint outline per bottle, no mean */
-.pick{margin:0 0 8px;font-size:11.5px;font-weight:600;letter-spacing:.09em;
+.pick{margin:0 0 8px;font-size:13px;font-weight:600;letter-spacing:.09em;
   text-transform:uppercase;color:var(--ink-3)}
-#modeBtns{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:0}
-.kindcard{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 3px 6px;text-align:center}
-.kindcard svg{width:100%;max-width:46px;display:block}
-.kindcard .kn{font-size:9.5px;font-weight:600;color:var(--ink);line-height:1.2}
-.kindcard .kc{font-size:9px;color:var(--ink-3)}
+/* TWO BY TWO, NOT FOUR ACROSS. Four in a 320-pixel column left each card 72
+   pixels, which put "Medium-bodied red" on three lines and the glass at the size
+   of a full stop. Half as many across is twice the width for the name and room
+   for the glass to be looked at. */
+#modeBtns{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:0}
+.kindcard{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:9px;padding:7px 9px;text-align:left}
+.kindcard .kglass{width:44px;height:48px;flex:none;display:block}
+.kindcard .kwords{display:flex;flex-direction:column;min-width:0}
+.kindcard .kn{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.2}
+.kindcard .kc{font-size:12.5px;color:var(--ink-3)}
 .kindcard.on{border-color:var(--mark);background:rgba(var(--mark-rgb),.12)}
 .kindcard.on .kn{color:var(--ink)}
 .howto{margin-top:14px;padding-top:13px;border-top:1px solid var(--rule)}
@@ -259,9 +264,9 @@ section{display:flex;flex-direction:column;gap:16px}
 .row:hover{background:rgba(var(--mark-rgb),.06)}
 .row.sel{background:rgba(var(--mark-rgb),.12)}
 .row:last-child{border-bottom:0}
-.nm{font-size:14px;font-weight:550;line-height:1.3}
-.meta{font-size:12px;color:var(--ink-3);margin-top:2px}
-.why{font-size:12px;color:var(--ink-2);margin-top:4px}
+.nm{font-size:15.5px;font-weight:550;line-height:1.3}
+.meta{font-size:13.5px;color:var(--ink-3);margin-top:2px}
+.why{font-size:13.5px;color:var(--ink-2);margin-top:4px}
 .bars{display:flex;gap:3px;align-items:flex-end;height:26px;cursor:help}
 .barkey{display:flex;gap:3px;align-items:flex-end;height:18px;margin-left:auto}
 .barkey i{width:6px;border-radius:2px;background:var(--ink-3);opacity:.45;display:block}
@@ -276,11 +281,11 @@ section{display:flex;flex-direction:column;gap:16px}
 .vote button.no.on{border-color:var(--bad);background:var(--bad);color:#fff}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px}
 .stat{background:var(--panel);border:1px solid var(--rule);border-radius:11px;padding:13px 14px}
-.stat .n{font-size:22px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.stat .k{font-size:12px;color:var(--ink-3);margin-top:4px;line-height:1.45}
+.stat .n{font-size:24px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .k{font-size:13.5px;color:var(--ink-3);margin-top:4px;line-height:1.45}
 svg{display:block;width:100%;height:auto;overflow:visible}
-.note{font-size:12.5px;color:var(--ink-3);line-height:1.6;margin:0}
-input[type=search]{width:100%;font:inherit;font-size:13px;padding:8px 10px;border-radius:8px;
+.note{font-size:14px;color:var(--ink-3);line-height:1.6;margin:0}
+input[type=search]{width:100%;font:inherit;font-size:14.5px;padding:8px 10px;border-radius:8px;
   border:1px solid var(--rule);background:var(--raise);color:var(--ink)}
 .spellbox{position:relative;background:var(--raise);border:1px solid var(--rule);border-radius:8px;padding:4px}
 .spellbox:focus-within{border-color:var(--mark)}
@@ -290,7 +295,7 @@ input[type=search]{width:100%;font:inherit;font-size:13px;padding:8px 10px;borde
 .askfield{position:relative}
 .askactions{position:absolute;right:4px;bottom:2px;display:inline-flex;align-items:center;gap:8px}
 #spend{font-variant-numeric:tabular-nums;white-space:nowrap}
-#hl,#ask{font-family:inherit;font-size:13.5px;line-height:1.5;padding:9px 11px 34px;
+#hl,#ask{font-family:inherit;font-size:15px;line-height:1.5;padding:9px 11px 34px;
   white-space:pre-wrap;word-wrap:break-word;box-sizing:border-box}
 #hl{position:absolute;inset:0;color:var(--ink);pointer-events:none;overflow:hidden}
 #ask{position:relative;display:block;width:100%;min-height:96px;background:transparent;border:0;outline:0;
@@ -304,26 +309,26 @@ input[type=search]{width:100%;font:inherit;font-size:13px;padding:8px 10px;borde
 .tk-quote{color:var(--ink-2)}
 .spellcard .tk-ref,.spellcard .tk-inv,.spellcard .tk-aff{font-weight:600}
 .tk-err{text-decoration:underline wavy var(--bad);text-decoration-thickness:1px;text-underline-offset:3px}
-.spellcard{margin-top:9px;display:grid;grid-template-columns:auto 1fr;gap:7px 13px;font-size:12.5px;align-items:baseline}
-.spellcard code{font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:nowrap}
+.spellcard{margin-top:9px;display:grid;grid-template-columns:auto 1fr;gap:7px 13px;font-size:14px;align-items:baseline}
+.spellcard code{font-family:ui-monospace,Menlo,monospace;font-size:13.5px;white-space:nowrap}
 .spellcard span{color:var(--ink-3);line-height:1.55}
 .mention{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:6;background:var(--panel);
   border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);max-height:250px;overflow:auto}
-.mention .m{padding:8px 11px;cursor:pointer;font-size:13px;line-height:1.35}
-.mention .m .mm{font-size:11.5px;color:var(--ink-3)}
+.mention .m{padding:8px 11px;cursor:pointer;font-size:14.5px;line-height:1.35}
+.mention .m .mm{font-size:13px;color:var(--ink-3)}
 .mention .m.sel{background:var(--mark)}
 .mention .m.sel,.mention .m.sel .mm{color:#fff}
 #keyRow{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
-#keyRow select,#keyRow input{font:inherit;font-size:12.5px;padding:7px 9px;border-radius:8px;
+#keyRow select,#keyRow input{font:inherit;font-size:14px;padding:7px 9px;border-radius:8px;
   border:1px solid var(--rule);background:var(--raise);color:var(--ink)}
 #keyRow input{flex:1;min-width:170px}
-.chip{font-size:12px;padding:5px 9px;border-radius:14px;border:1px solid var(--rule);background:var(--raise);
+.chip{font-size:13.5px;padding:5px 9px;border-radius:14px;border:1px solid var(--rule);background:var(--raise);
   color:var(--ink-2);cursor:pointer;display:inline-block;margin:3px 3px 0 0}
 .chip:hover{border-color:var(--mark);color:var(--ink)}
 .chip.on{background:var(--mark);border-color:var(--mark);color:#fff}
-table{width:100%;border-collapse:collapse;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
 th,td{text-align:left;padding:7px 8px 7px 0;border-bottom:1px solid var(--rule)}
-th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:600}
+th{font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:600}
 th.num{text-align:right}
 td.num{text-align:right;font-variant-numeric:tabular-nums}
 
@@ -359,7 +364,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .atlas-rail:hover{color:var(--ink);border-color:var(--ink-3)}
 .atlas-rail:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 .atlas-rail svg{width:13px;height:13px;flex:none}
-.atlas-rail b{writing-mode:vertical-rl;font-size:9.5px;font-weight:600;letter-spacing:.10em;
+.atlas-rail b{writing-mode:vertical-rl;font-size:11.5px;font-weight:600;letter-spacing:.10em;
   text-transform:uppercase}
 /* SYMMETRICAL. Each panel's chevron sits on its INNER edge, pointing outward:
    the words' at the right of its head, the sommelier's at the left of its own,
@@ -395,16 +400,16 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
    of fifty-four of them above it puts the shop below the fold */
 .atlas-side{display:flex;flex-direction:column;min-height:0}
 .atlas-side .note{margin:0 0 12px}
-.awhead{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.08em;
+.awhead{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--ink-3);font-weight:600;
   padding:0 6px 6px;border-bottom:1px solid var(--rule)}
 .awlist{flex:1;min-height:120px;max-height:clamp(300px,50vh,560px);overflow-y:auto;
   overscroll-behavior:contain;padding:6px 0}
 .aw{display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:5px;
-  cursor:pointer;font-size:12.5px;color:var(--ink-2);line-height:1.65}
+  cursor:pointer;font-size:14px;color:var(--ink-2);line-height:1.65}
 .aw:hover{background:var(--raise)}
 .aw i{width:10px;height:10px;border-radius:3px;border:1.5px solid var(--ink-3);flex:none}
-.aw em{margin-left:auto;font-style:normal;font-size:11px;color:var(--ink-3);
+.aw em{margin-left:auto;font-style:normal;font-size:12.5px;color:var(--ink-3);
   font-variant-numeric:tabular-nums}
 .aw[aria-checked="yes"]{background:var(--raise);font-weight:600}
 /* a word that would leave nothing: still tickable, plainly pointless */
@@ -432,10 +437,10 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 #atlasCanvas.drag{cursor:grabbing}
 #atlasFacing{position:absolute;left:0;right:0;bottom:14px;text-align:center;pointer-events:none;
   padding:0 252px 0 26px;transition:padding .2s}#atlasFacing.wide{padding:0 26px}
-#atlasFacing .lead{color:var(--ink-3);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase}
-#atlasFacing .set{font-size:14.5px;margin-top:3px;line-height:1.55}
+#atlasFacing .lead{color:var(--ink-3);font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+#atlasFacing .set{font-size:16px;margin-top:3px;line-height:1.55}
 #atlasFacing .set.dim{color:var(--ink-3)}
-#atlasFacing .odds{color:var(--ink-3);font-size:12px;margin-top:6px;
+#atlasFacing .odds{color:var(--ink-3);font-size:13.5px;margin-top:6px;
   font-variant-numeric:tabular-nums}
 /* how close you are looking, as a thing you can grab. It reads the field of
    view, so anything that changes it -- pinch, double-click, step back -- moves
@@ -463,7 +468,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 #atlasGbar{height:20px;display:flex;align-items:center;justify-content:flex-end;
   padding:0 3px 0 8px;cursor:grab;background:var(--raise);border-bottom:1px solid var(--rule)}
 #atlasGbar.drag{cursor:grabbing}
-#atlasGx{background:none;border:0;color:var(--ink-3);font:inherit;font-size:14px;line-height:1;
+#atlasGx{background:none;border:0;color:var(--ink-3);font:inherit;font-size:15.5px;line-height:1;
   padding:1px 5px;cursor:pointer;border-radius:4px}
 #atlasGx:hover{color:var(--ink);background:var(--track)}
 #atlasGx:focus-visible{outline:2px solid var(--mark);outline-offset:1px}
@@ -473,20 +478,20 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
    to win against a panel you left open */
 #atlasName{position:absolute;left:0;top:0;width:236px;z-index:4;display:none;
   background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:10px 11px;
-  font-size:12px;color:var(--ink-2);pointer-events:none;box-shadow:0 6px 22px rgba(0,0,0,.28)}
-#atlasName b{display:block;color:var(--ink);font-size:12.5px;line-height:1.35}
+  font-size:13.5px;color:var(--ink-2);pointer-events:none;box-shadow:0 6px 22px rgba(0,0,0,.28)}
+#atlasName b{display:block;color:var(--ink);font-size:14px;line-height:1.35}
 #atlasName .kind{display:flex;align-items:center;gap:6px;margin-top:4px;
-  font-size:11.5px;color:var(--ink-2);font-weight:600}
+  font-size:13px;color:var(--ink-2);font-weight:600}
 #atlasName .kind i{width:10px;height:10px;border-radius:50%;flex:none;
   box-shadow:0 0 0 1px rgba(var(--ink-rgb),.25)}
-#atlasName .sub{color:var(--ink-3);font-size:11px;margin-top:3px;line-height:1.4}
-#atlasName .yours{color:var(--mark);font-size:11px;margin-top:4px;font-weight:600}
+#atlasName .sub{color:var(--ink-3);font-size:12.5px;margin-top:3px;line-height:1.4}
+#atlasName .yours{color:var(--mark);font-size:12.5px;margin-top:4px;font-weight:600}
 #atlasName .mbars{display:grid;grid-template-columns:52px auto auto;gap:4px 8px;
   align-items:center;margin-top:8px}
 #atlasName .mtrk{height:7px;background:var(--track);border-radius:2px;overflow:hidden}
 #atlasName .mtrk i{display:block;height:100%;border-radius:2px}
-#atlasName .mnm{font-size:11px;color:var(--ink-2);white-space:nowrap}
-#atlasName .mend{font-size:10.5px;color:var(--ink-3);white-space:nowrap;text-align:right}
+#atlasName .mnm{font-size:12.5px;color:var(--ink-2);white-space:nowrap}
+#atlasName .mend{font-size:12px;color:var(--ink-3);white-space:nowrap;text-align:right}
 /* offered, not buried: the one thing the sommelier can do in this space that
    nobody would think to ask for */
 #atlasOffer{margin-bottom:10px}
@@ -499,7 +504,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
    is wide, and the words button was pinned at a fixed offset on top of its tail */
 .atlas-bar{position:absolute;left:12px;top:12px;z-index:5;display:flex;align-items:center;gap:8px}
 .atlas-grow{display:flex;align-items:center;
-  gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;font:inherit;font-size:11.5px;
+  gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
   transition:opacity .12s,color .12s}
 .atlas-grow:hover{opacity:1;color:var(--ink)}
@@ -513,7 +518,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
    toggles stand side by side in the one bar, and each panel keeps the side it
    holds on the page. */
 .atlas-tab{display:none;align-items:center;
-  gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;font:inherit;font-size:11.5px;
+  gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
   transition:opacity .12s,color .12s}
 .atlas-view.big .atlas-tab{display:flex}
@@ -580,7 +585,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
    it lands on rather than moving it */
 .atlas-view.big #atlasHelp{right:12px;top:50px;z-index:8}
 .atlas-ask{position:absolute;right:12px;top:12px;z-index:5;width:26px;height:26px;padding:0;
-  border-radius:50%;cursor:pointer;font:inherit;font-size:12px;font-weight:600;
+  border-radius:50%;cursor:pointer;font:inherit;font-size:13.5px;font-weight:600;
   border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);opacity:.72;
   transition:opacity .12s,color .12s}
 .atlas-ask:hover{opacity:1;color:var(--ink)}
@@ -590,11 +595,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   max-height:calc(100% - 60px);overflow-y:auto;padding:14px 16px 16px;border-radius:10px;
   background:var(--panel);border:1px solid var(--rule);box-shadow:0 10px 34px rgba(0,0,0,.45)}
 #atlasHelp[hidden]{display:none}
-#atlasHelp>b{display:block;font-size:13px;color:var(--ink);margin-bottom:6px}
-#atlasHelp p{margin:0 0 12px;font-size:12px;line-height:1.55;color:var(--ink-3)}
+#atlasHelp>b{display:block;font-size:14.5px;color:var(--ink);margin-bottom:6px}
+#atlasHelp p{margin:0 0 12px;font-size:13.5px;line-height:1.55;color:var(--ink-3)}
 #atlasHelp dl{margin:0;display:grid;grid-template-columns:auto;gap:9px 0}
-#atlasHelp dt{font-size:12.5px;font-weight:600;color:var(--ink)}
-#atlasHelp dd{margin:1px 0 0;font-size:12px;line-height:1.5;color:var(--ink-3)}
+#atlasHelp dt{font-size:14px;font-weight:600;color:var(--ink)}
+#atlasHelp dd{margin:1px 0 0;font-size:13.5px;line-height:1.5;color:var(--ink-3)}
 #atlasHelp dd b{color:var(--ink-2)}
 .atlas-view.big{position:fixed;inset:0;z-index:70;height:auto;border-radius:0;border:0}
 .atlas-view.big .atlas-grow .out{display:none}
@@ -666,7 +671,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         <div id="radar"></div>
         <div class="capwrap">
         <div class="rleg">
-          <span><i class="fill"></i>the wine you are looking for</span>
+          <span><i class="fill"></i>the wine your taste indicates</span>
           <span><i style="border-color:var(--rise)"></i>the wine you are pointing at</span>
         </div>
         <div id="radarName" class="note"></div>
@@ -746,7 +751,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
         <p class="note" id="setupStatus" style="margin-top:6px"></p>
         <p class="help" style="margin:8px 0 0;padding-top:8px">The prompt is the framing the model is given,
         shown as it really is — edit it to change its manner; clear it to return to the built-in. The five
-        measures, the ranges you accept, the wine you are asking for, anything you pointed at, and the required
+        measures, the ranges you accept, the wine your taste indicates, anything you pointed at, and the required
         answer shape are always appended after it. Plain words are sent, with those numbers, to whichever of
         Anthropic or OpenAI you picked above — nothing else is sent. Your key is saved in this browser only,
         stays across visits, and goes only to them.</p>
@@ -792,7 +797,7 @@ placeholder="like @ but younger, no oak — @ picks a wine from the list, ! hold
             <code>cherry, oaky…</code><span>words the lens has measured are read right here and colored by
               the quality they move — the reading shows under the box as you type.</span>
             <code>plain words</code><span>anything else is sent to Anthropic or OpenAI — whichever you set
-              up behind the gear — and their answer moves the wine you are asking for.</span>
+              up behind the gear — and their answer moves the wine your taste indicates.</span>
             <code class="tk-op">and or not</code><span>act only beside pointed things — in plain talk they
               are just words.</span>
             <code class="tk-op">"…"</code><span>quotes keep a phrase literal.</span>
@@ -1061,19 +1066,57 @@ function kpct(ws,a,p){const v=ws.map(w=>w[a]).sort((x,y)=>x-y);
 function kindMiddle(k){return Object.fromEntries(A.map(a=>[a,kpct(k.wines,a,0.5)]));}
 function mrpt(i,v,cx,cy,r){const ang=-Math.PI/2+i*2*Math.PI/5;
   return [(cx+Math.cos(ang)*v*r).toFixed(1),(cy+Math.sin(ang)*v*r).toFixed(1)];}
-function miniRadar(k){
-  const cx=52,cy=50,r=34;
-  const rim=`<polygon points="${A.map((a,i)=>mrpt(i,1,cx,cy,r).join(',')).join(' ')}" fill="none" stroke="var(--grid)" stroke-width="0.8"/>`;
-  const each=k.wines.map(w=>`<polygon points="${A.map((a,i)=>mrpt(i,w[a],cx,cy,r).join(',')).join(' ')}" fill="none" stroke="var(--mark)" stroke-opacity="0.22" stroke-width="0.7"/>`).join('');
-  return `<svg viewBox="0 0 104 100" aria-hidden="true">${rim}${each}</svg>`;
+/* A GLASS, NOT A GRAPH. The card carried five-cornered outlines, one per bottle,
+   which said "these differ" and nothing a reader could name. It now carries a
+   glass, drawn by the same routine that draws the shop's, poured with the colour
+   of a real bottle -- the one nearest that kind's middle. Not the kind's average
+   colour: that kind holds 49 whites and 25 reds, and their average is a colour
+   no bottle in it has. How big the bowl is comes from the kind's body, which is
+   what a sommelier reaches for a bigger glass for. */
+function kindStands(k){                       // the bottle nearest the middle
+  const mid=Object.fromEntries(A.map(a=>[a,k.wines.reduce((s,w)=>s+w[a],0)/k.wines.length]));
+  let best=null, bd=Infinity;
+  for(const w of k.wines){
+    const d=A.reduce((s,a)=>s+(w[a]-mid[a])**2,0);
+    if(d<bd){bd=d; best=w;}
+  }
+  return {wine:best, body:mid.weight};
+}
+function kindTally(k){                         // what colours it actually holds
+  const n={};
+  k.wines.forEach(w=>{const c=ATLAS.D.col[S.wines.indexOf(w)]; n[c]=(n[c]||0)+1;});
+  return ['red','white','rose'].filter(c=>n[c]).map(c=>`${n[c]} ${c==='rose'?'rosé':c}`).join(', ');
+}
+/* The Atlas is folded in at the END of this file, so nothing here may reach for
+   it while the page is being built. The glass and what it says are filled in on
+   the frame after, which is also when the canvas first has a size. */
+function paintKinds(){
+  let all=true;
+  KINDS.forEach(k=>{
+    const btn=document.querySelector(`#modeBtns .kindcard[data-m="${k.i}"]`);
+    if(!btn){all=false; return;}
+    const {wine,body}=kindStands(k);
+    if(!ATLAS.token(btn.querySelector('canvas'), S.wines.indexOf(wine), 19+11*body)) all=false;
+    btn.title=`${k.wines.length} of your bottles — ${kindTally(k)}. `
+      +`The glass is the one nearest this kind's middle: ${wine.name}. `
+      +`Pressing this asks for wines inside this kind's range.`;
+  });
+  return all;
 }
 function drawKinds(){
   el('modeBtns').innerHTML=KINDS.map(k=>
-    `<button class="btn kindcard" data-m="${k.i}" title="Every one of these ${k.wines.length} wines drawn on its own. Pressing this asks for wines inside this kind's range.">
-      ${miniRadar(k)}<span class="kn">${k.name.split(' — ')[0]}</span><span class="kc">${k.wines.length}</span>
+    `<button class="btn kindcard" data-m="${k.i}" title="${k.wines.length} of your bottles">
+      <canvas class="kglass" aria-hidden="true"></canvas><span class="kwords"><span class="kn">${k.name.split(' — ')[0]}</span><span class="kc">${k.wines.length} bottles</span></span>
     </button>`).join('');
   document.querySelectorAll('#modeBtns .btn').forEach(btn=>btn.onclick=()=>pickKind(+btn.dataset.m));
+  /* ON A TIMER, NOT ON A FRAME. Two reasons, and each one alone is enough: the
+     Atlas is folded in at the end of this file, so at first call it does not
+     exist yet; and a browser stops animation frames in a tab that is not on
+     screen, so a glass scheduled that way never appears in a tab opened in the
+     background. A timer runs in both cases. */
+  setTimeout(paintKinds,0);
 }
+addEventListener('resize',()=>paintKinds());
 let chosenKind=null;
 function pickKind(i){
   const k=KINDS[i];
@@ -1109,7 +1152,7 @@ function drawRadar(){
     // the corner states its own number, so the drawing can be checked at a glance
     return `<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="middle" font-size="10.5" font-weight="600" fill="${S.colors[a]}">${S.short[a]} <tspan fill-opacity="0.62" font-weight="500">${point[a].toFixed(2)}</tspan></text>`;}).join('');
   // figure and ground: the world is neutral; YOUR PROFILE -- the dashed shape,
-  // the wine you are asking for -- is filled. Inside it is you.
+  // the wine your taste indicates -- is filled. Inside it is you.
   const outside=`<polygon class="rout" points="${rpts(A.map(()=>1)).join(' ')}"/>`;
   const path=v=>'M'+rpts(v).join(' L')+' Z';
   const pt=`<path class="rpt" d="${path(A.map(a=>band[a][1]))} ${path(A.map(a=>band[a][0]))}"
@@ -1132,7 +1175,7 @@ function radarWine(w){
   if(more.length) bits.push('more '+more.join(', '));
   if(less.length) bits.push('less '+less.join(', '));
   el('radarName').textContent=w.name.slice(0,40)+
-    (bits.length?' — '+bits.join('; ')+' than you asked':' — just what you asked for');
+    (bits.length?' — '+bits.join('; ')+' than your taste indicates':' — just what your taste indicates');
 }
 /* the range IS the taste; the centre is its middle, derived, never separate */
 function recentre(a){point[a]=(band[a][0]+band[a][1])/2;}
@@ -1225,7 +1268,7 @@ function why(w){
   const dir=S.compare[far[0]][w[far[0]]>point[far[0]]?1:0];
   const tint=(a,t)=>`<span style="color:${S.colors[a]}">${t}</span>`;
   const word=dir.replace(/\s+than$/,'');
-  return `same ${tint(near,S.labels[near].toLowerCase())}, slightly ${tint(far[0],word)} than you asked`;
+  return `same ${tint(near,S.labels[near].toLowerCase())}, slightly ${tint(far[0],word)} than your taste indicates`;
 }
 function render(){
   let pool=S.wines;
@@ -1284,7 +1327,7 @@ el('q').oninput=e=>{const q=e.target.value.trim().toLowerCase();
 /* ---------- ask: SigilML (@ reference, # affordance, ! invariant) ---------- */
 /* stamped by the build with a hash of these bytes, so any copy can be asked
    which build it is -- the answer to "is this page stale?" */
-const BUILD='a558f66c';
+const BUILD='16556e27';
 /* not shown: the page that works says nothing about itself. Kept where a loaded
    page can still be asked which build it is holding. */
 document.documentElement.dataset.build=BUILD;
@@ -1587,15 +1630,36 @@ ${ATLAS.seen()}`;
    each of the ten orders. Built at send time, since the Atlas words come from
    the Atlas and it is assembled after this. */
 const KINDNAME=k=>k.name.split(/[—-]/)[0].trim();
+/* HOW OFTEN HE BOUGHT EACH WINE. "The wine I bought the most" is a count
+   across his ten orders, and nothing computed it: the only source was the
+   orders written out as prose, and counting by attention over that fails
+   silently. A fact of his orders is question-independent, so it is computed
+   here and written into the offer -- the same rule as the rungs. */
+function boughtCount(){
+  const n=new Map();
+  S.orders.forEach(o=>(o.ids||[]).forEach(id=>n.set(id,(n.get(id)||0)+1)));
+  return n;
+}
+function boughtIn(id){
+  return S.orders.filter(o=>o.ids&&o.ids.includes(id)).map(o=>o.n);
+}
+function repeatsText(){
+  const top=[...boughtCount().entries()].filter(([,n])=>n>1)
+    .sort((a,b)=>b[1]-a[1]).slice(0,12)
+    .map(([id,n])=>{const w=S.wines.find(x=>x.id===id);return w?`${w.name} (${n})`:null;})
+    .filter(Boolean);
+  return top.length?`What he came back for -- bought more than once, most often first: ${top.join('; ')}.`:'';
+}
 function catalogText(){
   const words=[], kind={};
   try{ for(const t of ATLAS.D.terms) for(const i of t.in) (words[i]=words[i]||[]).push(t.w); }catch(_){}
   KINDS.forEach(k=>k.wines.forEach(w=>{kind[w.id]=KINDNAME(k);}));
+  const bought=boughtCount();
   return S.wines.map((w,i)=>
     `${w.name} | ${w.vintage?Math.round(w.vintage):'NV'} | `
     +`${[w.variety,w.region].filter(Boolean).join(', ')||'-'} | `
     +A.map(a=>w[a].toFixed(2)).join(' ')
-    +(OWNED.has(w.id)?' | HIS, '+(kind[w.id]||'unsorted'):'')
+    +(OWNED.has(w.id)?' | HIS'+((bought.get(w.id)||0)>1?' ×'+bought.get(w.id):'')+', '+(kind[w.id]||'unsorted'):'')
     +(words[i]&&words[i].length?' | '+words[i].join(' '):'')).join('\n');
 }
 function ordersText(){
@@ -1626,10 +1690,11 @@ The user may name a measure with #weight #grip #oak #fruit #age; "more #oak" mea
 
 YOUR HANDS. The tools sent with this message are the page's own controls, and calling one is his hand on it: it happens at once, on his screen, and whatever you move wears a fading ring where it sits. The five: move asks by numbers; page presses the page's own controls by name; atlas moves him inside the shop; tour walks his ten orders; look sees -- the page whole, or with "at" one wine or one word up close. Everything he can do you can do, but for four things that are his: marking a wine right or wrong -- his marks are the measurement, and you must never cast one; Reset; the words in his own box; and who answers and with what key.
 Never say a move instead of making it. If you are about to write that you are turning the Atlas, or setting a measure, or opening a section, call the tool in that same turn; a sentence about a move that was not called is a lie to him. Every call answers with what the page shows afterwards. Read that answer before you speak, and name the wines that actually came up rather than the ones you expected. When you are asked something you can only settle by looking, call "look" first -- with "at" when it is one wine or one word you need -- and answer from what it says. Before you steer toward a named wine, look at it: its measured numbers are what the tool will search by, not your memory of it.
-Then reply in plain sentences -- short, to an expert, never JSON. The only measure names allowed in speech are: body, tannin grip, oak, fruit character, age. The tools call age "maturity"; in speech it is always age. The interface calls the point "the wine you are asking for" -- use that phrase when you refer to it, never "the point".
+Then reply in plain sentences -- short, to an expert, never JSON. The only measure names allowed in speech are: body, tannin grip, oak, fruit character, age. The tools call age "maturity"; in speech it is always age. The interface calls the point "the wine your taste indicates" -- use that phrase when you refer to it, never "the point". It is called that because it starts as the span of his own bottles and only moves when he or you move it; it is never a guess at what he is after.
 
 His ten orders, oldest to newest, with what was actually in each:
 ${ordersText()}
+${repeatsText()}
 
 The shop's list -- every wine the tool can surface, as:
 name | vintage | grape, region | ${A.join(' ')} | HIS if it is on his account | the words the shop's notes use for it:
@@ -1756,7 +1821,7 @@ const rungs=a=>{
 };
 const TOOLBOX=[
 {name:'move',
- description:'The one tool that takes numbers: it sets where the five measures stand, and the bands that hard-limit the list. Use it when his words name a quality, a direction or a comparison -- "lighter", "more oak", "like that but younger", "nothing past its peak". Send only the measures his words move; the rest stay. The point orders the list by nearness; a band excludes -- a wine outside any band is never shown, however near. Each measure\'s field says where the shop\'s wines actually stand; read it before choosing a number.',
+ description:'The one tool that takes numbers: it sets where the five measures stand, and the bands that hard-limit the list. Use it when his words name a quality, a direction or a comparison -- "lighter", "more oak", "like that but younger", "nothing past its peak". Send only the measures his words move; the rest stay. The wine his taste indicates orders the list by nearness; a band excludes -- a wine outside any band is never shown, however near. Each measure\'s field says where the shop\'s wines actually stand; read it before choosing a number.',
  schema:{type:'object',properties:{
    weight:axSchema(`${S.labels.weight}: 0 = ${S.ends.weight[0]}, 1 = ${S.ends.weight[1]}. ${rungs('weight')}`),
    grip:axSchema(`${S.labels.grip}: 0 = ${S.ends.grip[0]}, 1 = ${S.ends.grip[1]}. ${rungs('grip')}`),
@@ -1772,12 +1837,12 @@ const TOOLBOX=[
    kind:{type:'integer',minimum:0,maximum:3,description:'Press one of his four buying kinds. Pressing one sets the bands to the span of his own bottles in that kind -- his taste in it, nothing averaged: '
      +KINDS.map((k,i)=>{const sp=kindSpread(k);return `${i} = ${k.name} (${k.wines.length} of his: `
        +A.map(a=>`${a} ${sp[a][0].toFixed(2)}–${sp[a][1].toFixed(2)}`).join(', ')+')';}).join('; ')},
-   heading:{type:'boolean',description:'Set the wine he is asking for to where his buying is heading.'},
+   heading:{type:'boolean',description:'Set the wine his taste indicates to where his buying is heading.'},
    hideOwned:{type:'boolean',description:'Hide wines he has already bought.'},
    hideVoted:{type:'boolean',description:'Hide wines he has already marked.'},
    pin:{type:'string',description:"Hold a named wine's shape on his radar, against his own. An empty string releases it."},
    show:{type:'string',enum:SHOWPARTS,description:'Bring one part of the page into view and ring it. sigil = the whole taste card; measures = the five band sliders; shape = the five-cornered drawing of his taste; list = the wines found; ask = this sommelier panel; kinds = his four buying kinds; filters = the two hiding switches; marks = the button that downloads his marks.'},
-   like:{type:'array',items:{type:'string'},description:'Exact wine names. Replaces the wines chosen by name and sets the wine he is asking for to the middle of them, exactly as if he had named them himself.'},
+   like:{type:'array',items:{type:'string'},description:'Exact wine names. Replaces the wines chosen by name and sets the wine his taste indicates to the middle of them, exactly as if he had named them himself.'},
    writeTaste:{type:'boolean',description:'Measure the bands his own buying stays inside and write them into his box, for him to correct and send.'},
    find:{type:'string',description:'Type into the shop\'s name box, under "Or a wine you like". Two letters or more and the wines whose names carry them are offered; the answer names what it matched. An empty string clears it.'},
    opening:{type:'boolean',description:'Unfold the title and opening paragraph at the top, or fold them away. Folded, the page starts higher and the title stands as a name beside the tabs.'},
@@ -1806,9 +1871,9 @@ const TOOLBOX=[
  description:'Walk him through his ten orders inside the Atlas, oldest to newest, standing him at each and saying what moved between it and the last. Offer this when he asks how his buying has changed, or how to read the Atlas.',
  schema:{type:'object',properties:{}}},
 {name:'look',
- description:'See without touching. Alone: the whole page -- the open section, where the wine he is asking for stands, the bands, the wines on his screen now, what he has marked, where he stands in the Atlas; every other tool answers with this too. With "at": one thing up close, at the resolution his eye gets by hovering it.',
+ description:'See without touching. Alone: the whole page -- the open section, where the wine his taste indicates stands, the bands, the wines on his screen now, what he has marked, where he stands in the Atlas; every other tool answers with this too. With "at": one thing up close, at the resolution his eye gets by hovering it.',
  schema:{type:'object',properties:{
-   at:{type:'string',description:'A wine\'s name or part of one, or one of the shop\'s aroma words. Every wine carrying the name answers: its five numbers, the shop\'s words for it, whether it is his -- and whether it stands on his screen now, or what keeps it off: the band that shuts it out (named), the already-bought or already-marked switch, or rank past the 14 the list shows. A word answers with how many wines carry it, how many of those are his, and where they stand on the five measures. A name nothing carries says so.'}}}}];
+   at:{type:'string',description:'A wine\'s name or part of one, or one of the shop\'s aroma words. Every wine carrying the name answers: its five numbers, the shop\'s words for it, whether it is his -- with how often he bought it and in which orders -- and whether it stands on his screen now, or what keeps it off: the band that shuts it out (named), the already-bought or already-marked switch, or rank past the 14 the list shows. A word answers with how many wines carry it, how many of those are his, and where they stand on the five measures. A name nothing carries says so.'}}}}];
 const clamp01=v=>Math.max(0,Math.min(1,v));
 /* THE EYE UP CLOSE. look({at}) is the agent's hover: the reader holds his
    pointer over a row and gets the wine's shape and numbers; the agent had to
@@ -1835,12 +1900,15 @@ function lookAt(s){
       return r<=14?`on his screen now, No. ${r} of the 14 shown`
         :`inside every band, but standing ${r} of ${pool.length} by nearness and the list shows 14`;
     };
-    const shown=hits.slice(0,8).map(({w,i})=>
-      `${w.name} | ${w.vintage?Math.round(w.vintage):'NV'} | ${[w.variety,w.region].filter(Boolean).join(', ')||'-'} | `
+    const bought=boughtCount();
+    const shown=hits.slice(0,8).map(({w,i})=>{
+      const n=bought.get(w.id)||0, ords=boughtIn(w.id);
+      return `${w.name} | ${w.vintage?Math.round(w.vintage):'NV'} | ${[w.variety,w.region].filter(Boolean).join(', ')||'-'} | `
       +A.map(a=>`${a} ${w[a].toFixed(2)}`).join(', ')
-      +(OWNED.has(w.id)?` | HIS, ${kind[w.id]||'unsorted'}`:'')
+      +(OWNED.has(w.id)?` | HIS, ${kind[w.id]||'unsorted'}`
+        +(n>1?`, bought ${n} times (orders ${[...new Set(ords)].join(', ')})`:ords.length?`, from order ${ords[0]}`:''):'')
       +(words[i]&&words[i].length?` | the shop's words: ${words[i].join(' ')}`:'')
-      +` | ${stand(w)}`);
+      +` | ${stand(w)}`;});
     return (hits.length===1?`One wine carries "${s}":`:`${hits.length} wines carry "${s}"${hits.length>8?', the first 8':''}:`)
       +'\n'+shown.join('\n');
   }
@@ -1934,21 +2002,30 @@ async function refusal(r){
 }
 async function callAgent(sys,msgs){
   if(agent.vendor==='openai'){
-    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
+    /* the Responses API: chat/completions refuses function tools outright on
+       the reasoning models ("use /v1/responses" says the refusal, and it is
+       right). Tools ride flat, the framing rides as instructions, the turn
+       comes back as output items, and the reasoning items go back with the
+       next round -- stateless, so nothing is stored on their side. */
+    const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+KEY()},
-      body:JSON.stringify({model:MODEL()||DEFAULT_MODEL.openai,
-        tools:TOOLBOX.map(t=>({type:'function',function:{name:t.name,description:t.description,parameters:t.schema}})),
-        messages:[{role:'system',content:sys.stat+'\n\n'+sys.dyn},...msgs]})});
+      body:JSON.stringify({model:MODEL()||DEFAULT_MODEL.openai,store:false,
+        include:['reasoning.encrypted_content'],
+        instructions:sys.stat+'\n\n'+sys.dyn,
+        tools:TOOLBOX.map(t=>({type:'function',name:t.name,description:t.description,parameters:t.schema})),
+        input:msgs})});
     if(!r.ok) throw await refusal(r);
-    const d=await r.json(), m=d.choices&&d.choices[0]&&d.choices[0].message;
-    if(!m) throw new Error('empty answer from the model');
-    const calls=(m.tool_calls||[]).map(c=>{
-      let input={}; try{input=JSON.parse(c.function.arguments||'{}');}catch(_){}
-      return {id:c.id,name:c.function.name,input};});
-    return {say:typeof m.content==='string'&&m.content?[m.content]:[],calls,turn:m,
-      follow:rs=>rs.map(x=>({role:'tool',tool_call_id:x.id,content:x.out})),
+    const d=await r.json(), items=d.output||[];
+    if(!items.length) throw new Error('empty answer from the model');
+    const calls=items.filter(x=>x.type==='function_call').map(c=>{
+      let input={}; try{input=JSON.parse(c.arguments||'{}');}catch(_){}
+      return {id:c.call_id,name:c.name,input};});
+    return {say:items.filter(x=>x.type==='message')
+        .flatMap(m=>(m.content||[]).filter(c=>c.type==='output_text').map(c=>c.text)),
+      calls,turn:items,
+      follow:rs=>rs.map(x=>({type:'function_call_output',call_id:x.id,output:x.out})),
       usage:{model:MODEL()||DEFAULT_MODEL.openai,
-        tin:d.usage?.prompt_tokens||0,tout:d.usage?.completion_tokens||0}};
+        tin:d.usage?.input_tokens||0,tout:d.usage?.output_tokens||0}};
   }
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':KEY(),
@@ -2000,6 +2077,7 @@ async function send(){
   try{
     const sys=lensSystem(sp);
     let msgs=chatMessages(), spoke=false, round=0;
+    const made=[];                       // every control it pressed, in order
     for(;round<ROUNDS;round++){
       const res=await callAgent(sys,msgs);
       if(res.usage) addSpend(res.usage);
@@ -2014,6 +2092,7 @@ async function send(){
       const out=[];
       for(const c of res.calls){
         const was=nowAt();
+        made.push(c.name);
         let said; try{said=runTool(c.name,c.input);}
         catch(e){said='That control did not take: '+e.message;}
         ringMoved(was);
@@ -2022,7 +2101,14 @@ async function send(){
       msgs=msgs.concat(res.turn,res.follow(out));
     }
     if(round>=ROUNDS) addMsg('notice','It kept working and was stopped after '+ROUNDS+' moves. Ask again, more narrowly.');
-    if(!spoke) addMsg('assistant','Done.');
+    /* THE PAGE NEVER SAYS A WORD FOR IT. It used to write "Done." into the
+       sommelier's own bubble when the model fell silent -- the page itself
+       saying a completion nobody performed, in the one voice that must never
+       say a move that was not made. A silent turn is reported as what it was,
+       by the tool, in the tool's voice. */
+    if(!spoke) addMsg('notice', made.length
+      ?'The sommelier pressed '+made.join(', ')+' and sent no words. What that changed is on the screen; whatever it moved wears a ring.'
+      :'The sommelier sent no words and made no move. Nothing changed. Ask again, differently.');
   }catch(err){
     addMsg('notice','That did not go through. '+err.message+'\nThe key and the model are behind the gear; each house keeps its own key.');
   }
@@ -2668,7 +2754,8 @@ const MINE = S.wines.map(w => OWNED.has(w.id));
 const ORDERS = S.wines.map(w => (S.orders || [])
   .map((o, k) => (o.ids || []).includes(w.id) ? k + 1 : 0).filter(Boolean));
 
-const cv = el('atlasCanvas'), g = cv.getContext('2d');
+const cv = el('atlasCanvas');
+let g = cv.getContext('2d');   // pointed elsewhere for the length of one call, see token()
 const mini = el('atlasMini'), mg = mini.getContext('2d');
 let W = 0, H = 0, live = false;
 
@@ -3260,8 +3347,8 @@ function draw() {
        and scaling it with pixels-per-radian would make it swell as you squint.
        An aroma is a thing at a distance, so it recedes by its own sharpness over
        how far off it is. */
-    const sz = sky ? 11 + 6 * it.str
-                   : Math.max(11, Math.min(22, 82 * it.str / Math.max(1.6, p.dist))) + 4;
+    const sz = sky ? 13 + 6 * it.str
+                   : Math.max(13, Math.min(23, 82 * it.str / Math.max(1.6, p.dist))) + 4;
     let a = sky ? Math.max(DARK ? 0.74 : 0.80, Math.min(1, 0.48 + 0.52 * it.str) * p.edge)
                 : Math.max(DARK ? 0.74 : 0.78, Math.min(1, 10 * it.str / p.dist) * p.edge);
     if (!sky && held && m && !held.has(m)) a *= 0.34;
@@ -3367,7 +3454,7 @@ function draw() {
      degrees is already past the threshold and every name appeared at rest. */
   if (FOV < OPEN * 0.84) {
     const lit = shown.filter(s => s.asked && s.R >= 5).sort((a, b) => b.R - a.R).slice(0, 40);
-    const fs = Math.max(9, Math.min(13, 10 * Math.pow(WIDE/FOV, 0.45)));
+    const fs = Math.max(11.5, Math.min(15, 12 * Math.pow(WIDE/FOV, 0.45)));
     g.font = `${fs.toFixed(1)}px ui-sans-serif,system-ui,sans-serif`;
     g.textAlign = 'left';
     for (const { m, q, R } of lit) {
@@ -3828,7 +3915,7 @@ function drawMini() {
   if (gHover) {
     const p = gHover, q = at(p.dir);
     const say = p.w + (q.w > 0 ? '' : '  ·  behind you');
-    mg.font = `600 13.5px system-ui,-apple-system,"Segoe UI",sans-serif`;
+    mg.font = `600 15px system-ui,-apple-system,"Segoe UI",sans-serif`;
     mg.textAlign = 'left'; mg.textBaseline = 'middle';
     /* No frame round it. A coloured border on a label is a second thing to read
        and it was the brightest edge on the ball; the colour belongs to the
@@ -4248,6 +4335,23 @@ function tourStep() {
   return true;
 }
 
+/* THE SAME GLASS, DRAWN SOMEWHERE ELSE. The four kind cards want one of these at
+   card size. Rather than a second glass in the codebase with its own ratios to
+   drift out of step, the one routine is pointed at another canvas for the length
+   of one call -- so a kind's glass is drawn by exactly what draws the shop's.
+   The wine is one of his own bottles, the one nearest that kind's middle: an
+   average of forty-nine whites and twenty-five reds is a colour no bottle has. */
+function token(canvas, i, R) {
+  const w = canvas.clientWidth, h = canvas.clientHeight, dpr = devicePixelRatio || 1;
+  if (!w || !h) return false;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  const t = canvas.getContext('2d');
+  t.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const was = g; g = t;
+  try { glass(w / 2, h / 2 + R * 0.34, R, i, 1, false); } finally { g = was; }
+  return true;
+}
+
 el('atlasTour').onclick = () => tour();
 
 /* WHAT HE SEES IN HERE, IN WORDS.
@@ -4303,7 +4407,7 @@ function show(on) {
 
 return { D, POLES, TERMS, MARKS, WMARK, TMARK, MINE, state, show, refit, draw, readout, step,
          drawMini, walk, faceTo, lean, beginApproach, hoverAt, toggleGlobe, place, frame,
-         here, unit, dot, len, pour, accentAt, bundle, glass, size, theme, fill, refilter,
+         here, unit, dot, len, pour, accentAt, bundle, glass, token, size, theme, fill, refilter,
          OPEN, get onlyThese() { return onlyThese; },
          get yaw() { return yaw; }, set yaw(v) { yaw = v; target = null; },
          get pitch() { return pitch; }, set pitch(v) { pitch = v; target = null; },

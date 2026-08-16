@@ -1793,6 +1793,53 @@
     ok(/Nothing in the shop carries "zzzz"/.test(inhabit.call('look', { at: 'zzzz' })), 'a miss says so');
   });
 
+  await T('a silent turn is reported as silence, and the page never says a word for it', async () => {
+    /* He asked to be shown the wine he bought most; the model went quiet; the
+       page wrote "Done." into the sommelier's own bubble -- the page itself
+       saying a completion nobody performed. The page has no words of its own
+       in that voice any more: silence is reported by the tool, as what it was. */
+    const realFetch = window.fetch, wasAgent = { ...agent };
+    agent.vendor = 'anthropic'; agent.keys = { anthropic: 'x' };
+    let replies = [
+      { content: [{ type: 'tool_use', id: 'q1', name: 'look', input: {} }], usage: {} },
+      { content: [{ type: 'thinking', thinking: 'hm' }], usage: {} }];
+    let i = 0; window.fetch = async () => ({ ok: true, json: async () => replies[i++] });
+    let before = chat.length;
+    type('show me the wine I bought the most'); await send();
+    let added = chat.slice(before);
+    ok(!added.some(m => m.text === 'Done.'), 'no invented word');
+    let n = added.find(m => m.role === 'notice');
+    ok(n && /pressed look/.test(n.text) && /no words/.test(n.text),
+       'the silence is named, with the moves made: ' + (n && n.text));
+    /* and a turn that neither moved nor spoke says that instead */
+    replies = [{ content: [{ type: 'thinking', thinking: 'hm' }], usage: {} }]; i = 0;
+    before = chat.length;
+    type('and again'); await send();
+    added = chat.slice(before);
+    n = added.find(m => m.role === 'notice');
+    ok(n && /no move/.test(n.text) && /Nothing changed/.test(n.text), 'nothing dressed as something');
+    window.fetch = realFetch; Object.assign(agent, wasAgent);
+  });
+
+  await T('what he came back for is computed, in the offer and in the eye', () => {
+    /* "the wine I bought the most" is a count across his orders; it was
+       nowhere, and counting by attention over ten orders of prose fails
+       silently. A fact of his orders is question-independent, so it is
+       computed: the orders block names what he bought more than once, the
+       shop's list marks his repeats, and look-at says which orders. */
+    const count = new Map();
+    S.orders.forEach(o => (o.ids || []).forEach(id => count.set(id, (count.get(id) || 0) + 1)));
+    const [topId, topN] = [...count.entries()].sort((a, b) => b[1] - a[1])[0];
+    const top = S.wines.find(w => w.id === topId);
+    ok(topN >= 2, 'he did come back for something');
+    const stat = lensSystem(parseSpell('hello')).stat;
+    ok(stat.includes('bought more than once'), 'the orders block carries the repeats');
+    ok(stat.includes(`${top.name} (${topN})`), 'most often first, counted');
+    ok(catalogText().includes(`HIS ×${topN}`), "the shop's list marks his repeats");
+    const out = inhabit.call('look', { at: top.name.toLowerCase() });
+    ok(new RegExp(`bought ${topN} times \\(orders `).test(out), 'and the eye says which orders: ' + out.split('\n')[1]);
+  });
+
   await T('a name nothing carries speaks from every hand that takes one', () => {
     /* silence is the original disease: it said "turning to it" and nothing
        turned. A miss now stands in the answer, before the observation. */
@@ -1923,32 +1970,37 @@
   });
 
   await T('either house is asked in its own words, and says why when it refuses', async () => {
-    /* Two vendors, two shapes for the same loop. OpenAI was shipped without a
-       test and the first report from it was "HTTP 400", which is a refusal with
-       the reason thrown away: a model that cannot take tools, a context
-       overrun and a wrong key all read alike and none can be acted on. */
+    /* Two vendors, two shapes for the same loop. OpenAI is asked through
+       /v1/responses now: its chat/completions refused function tools outright
+       on the reasoning models -- "use /v1/responses", said the refusal, and it
+       was right. Flat tools, input items, function_call_output back. */
     const realFetch = window.fetch, wasAgent = { ...agent }, sent = [];
     const reply = [
-      { choices: [{ message: { role: 'assistant', content: 'Turning you to it.',
-          tool_calls: [{ id: 'c1', type: 'function',
-            function: { name: 'atlas', arguments: '{"face":"heavily oaked"}' } }] } }],
+      { output: [
+          { type: 'reasoning', id: 'r1', summary: [] },
+          { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'Turning you to it.' }] },
+          { type: 'function_call', id: 'fc1', call_id: 'c1', name: 'atlas', arguments: '{"face":"heavily oaked"}' }],
         usage: {} },
-      { choices: [{ message: { role: 'assistant', content: 'Oak, straight ahead.' } }], usage: {} }];
+      { output: [
+          { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'Oak, straight ahead.' }] }],
+        usage: {} }];
     window.fetch = async (u, o) => ({ ok: true, json: async () => (sent.push({ u, b: JSON.parse(o.body) }), reply[sent.length - 1]) });
-    agent.vendor = 'openai'; agent.keys = { openai: 'x' }; agent.models = { openai: 'gpt-4o' };
+    agent.vendor = 'openai'; agent.keys = { openai: 'x' }; agent.models = { openai: 'gpt-5.6-terra' };
     type('turn me to the oaked wines'); await send();
 
-    ok(/openai\.com/.test(sent[0].u), 'asked OpenAI');
+    ok(/openai\.com\/v1\/responses/.test(sent[0].u), 'asked OpenAI at /v1/responses, where the tools are taken');
     eq(sent[0].b.tools.map(t => t.type), TOOLBOX.map(() => 'function'), 'in its own shape');
-    eq(sent[0].b.tools.map(t => t.function.name), TOOLBOX.map(t => t.name), 'the same controls');
-    ok(sent[0].b.tools.every(t => t.function.parameters.type === 'object'), 'each with its schema');
-    ok(!('response_format' in sent[0].b), 'and no longer asked for a blob of JSON');
+    eq(sent[0].b.tools.map(t => t.name), TOOLBOX.map(t => t.name), 'the same controls, flat as this API wants them');
+    ok(sent[0].b.tools.every(t => t.parameters.type === 'object'), 'each with its schema');
+    ok(typeof sent[0].b.instructions === 'string' && sent[0].b.instructions.includes('YOUR HANDS'), 'the framing rides as instructions');
+    ok(sent[0].b.store === false, 'and nothing is stored on their side');
     eq(sent.length, 2, 'it called, was answered, and came back to speak');
-    const back = sent[1].b.messages.slice(-1)[0];
-    eq(back.role, 'tool', 'the page answered as a tool result');
-    eq(back.tool_call_id, 'c1', 'the call it was answering');
-    ok(back.content.startsWith('WHAT HE SEES RIGHT NOW'), 'with what it then showed');
-    ok(sent[1].b.messages.some(m => m.tool_calls), 'the call it made went back with it');
+    const back = sent[1].b.input.slice(-1)[0];
+    eq(back.type, 'function_call_output', 'the page answered as a call output');
+    eq(back.call_id, 'c1', 'the call it was answering');
+    ok(back.output.startsWith('WHAT HE SEES RIGHT NOW'), 'with what it then showed');
+    ok(sent[1].b.input.some(m => m.type === 'function_call'), 'the call it made went back with it');
+    ok(sent[1].b.input.some(m => m.type === 'reasoning'), 'and so did the thinking, for the models that need it back');
 
     /* and a refusal says what the other end said */
     window.fetch = async () => ({ ok: false, status: 400,

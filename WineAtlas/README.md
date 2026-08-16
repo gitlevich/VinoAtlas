@@ -115,6 +115,21 @@ fact can carry is attention with no return.
 disease. Every miss now comes back as a note standing before the observation,
 so a miss can never read as a hit.
 
+**The page never says a word for it.** When the model fell silent, the page
+wrote "Done." into the sommelier's own bubble — the page itself asserting a
+completion nobody performed, in the one voice that must never say a move that
+was not made. He asked to be shown the wine he bought most; nothing moved;
+"Done." A silent turn is now reported by the tool, in the tool's voice, as
+what it was: which controls were pressed and that no words came, or that
+nothing moved at all.
+
+**What he came back for is computed.** "The wine I bought the most" is a count
+across his ten orders, and it was nowhere — the only source was the orders as
+prose, and counting by attention over that fails silently. The orders block
+now names what he bought more than once, most often first; the shop's list
+marks his repeats (`HIS ×5`); and `look at` a wine of his says how often and
+in which orders.
+
 **Both panels come with it.** The words are what the view is written in and the
 sommelier can drive every control in it, so neither is left behind on the full
 screen: each becomes a drawer on the side it holds on the page, and both stand
@@ -263,7 +278,13 @@ moment it is dragged — each keeps its own width.
 ## The sommelier's setup
 
 Two houses, Anthropic and OpenAI, chosen from a dropdown that says which of them
-already holds a key. **Each keeps its own key and its own model**; switching
+already holds a key. OpenAI is asked through **`/v1/responses`** — its
+chat/completions refused function tools outright on the reasoning models ("use
+/v1/responses", said the refusal, and it was right): tools ride flat, the
+framing rides as instructions, reasoning items go back with the next round, and
+nothing is stored on their side (`store: false`). Verified live against
+gpt-5.6-terra: the call comes back, the observation goes in, the sentence comes
+out. **Each keeps its own key and its own model**; switching
 between them switches between two saved settings and touches neither. There was
 one slot for both, and pasting an OpenAI key to try ChatGPT wrote over the
 Anthropic one — which reads as neither of them working.
@@ -321,7 +342,7 @@ Serve the repo root and evaluate `acceptance_tests.js` in the page:
     # open http://127.0.0.1:8471/cellar_compass_standalone.html, then in its console:
     fetch('/WineAtlas/acceptance_tests.js').then(r => r.text()).then(src => eval(src))
 
-Every test name states an acceptance criterion. **130 of 130 pass.** Run them in
+Every test name states an acceptance criterion. **132 of 132 pass.** Run them in
 a **visible** tab: a hidden one never recalculates style and never fires a
 frame, so the tests that measure the page report zeroes and the ones that wait
 on the frame clock hang rather than fail.

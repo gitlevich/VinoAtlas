@@ -642,15 +642,36 @@ ${ATLAS.seen()}`;
    each of the ten orders. Built at send time, since the Atlas words come from
    the Atlas and it is assembled after this. */
 const KINDNAME=k=>k.name.split(/[—-]/)[0].trim();
+/* HOW OFTEN HE BOUGHT EACH WINE. "The wine I bought the most" is a count
+   across his ten orders, and nothing computed it: the only source was the
+   orders written out as prose, and counting by attention over that fails
+   silently. A fact of his orders is question-independent, so it is computed
+   here and written into the offer -- the same rule as the rungs. */
+function boughtCount(){
+  const n=new Map();
+  S.orders.forEach(o=>(o.ids||[]).forEach(id=>n.set(id,(n.get(id)||0)+1)));
+  return n;
+}
+function boughtIn(id){
+  return S.orders.filter(o=>o.ids&&o.ids.includes(id)).map(o=>o.n);
+}
+function repeatsText(){
+  const top=[...boughtCount().entries()].filter(([,n])=>n>1)
+    .sort((a,b)=>b[1]-a[1]).slice(0,12)
+    .map(([id,n])=>{const w=S.wines.find(x=>x.id===id);return w?`${w.name} (${n})`:null;})
+    .filter(Boolean);
+  return top.length?`What he came back for -- bought more than once, most often first: ${top.join('; ')}.`:'';
+}
 function catalogText(){
   const words=[], kind={};
   try{ for(const t of ATLAS.D.terms) for(const i of t.in) (words[i]=words[i]||[]).push(t.w); }catch(_){}
   KINDS.forEach(k=>k.wines.forEach(w=>{kind[w.id]=KINDNAME(k);}));
+  const bought=boughtCount();
   return S.wines.map((w,i)=>
     `${w.name} | ${w.vintage?Math.round(w.vintage):'NV'} | `
     +`${[w.variety,w.region].filter(Boolean).join(', ')||'-'} | `
     +A.map(a=>w[a].toFixed(2)).join(' ')
-    +(OWNED.has(w.id)?' | HIS, '+(kind[w.id]||'unsorted'):'')
+    +(OWNED.has(w.id)?' | HIS'+((bought.get(w.id)||0)>1?' ×'+bought.get(w.id):'')+', '+(kind[w.id]||'unsorted'):'')
     +(words[i]&&words[i].length?' | '+words[i].join(' '):'')).join('\n');
 }
 function ordersText(){
@@ -685,6 +706,7 @@ Then reply in plain sentences -- short, to an expert, never JSON. The only measu
 
 His ten orders, oldest to newest, with what was actually in each:
 ${ordersText()}
+${repeatsText()}
 
 The shop's list -- every wine the tool can surface, as:
 name | vintage | grape, region | ${A.join(' ')} | HIS if it is on his account | the words the shop's notes use for it:
@@ -863,7 +885,7 @@ const TOOLBOX=[
 {name:'look',
  description:'See without touching. Alone: the whole page -- the open section, where the wine his taste indicates stands, the bands, the wines on his screen now, what he has marked, where he stands in the Atlas; every other tool answers with this too. With "at": one thing up close, at the resolution his eye gets by hovering it.',
  schema:{type:'object',properties:{
-   at:{type:'string',description:'A wine\'s name or part of one, or one of the shop\'s aroma words. Every wine carrying the name answers: its five numbers, the shop\'s words for it, whether it is his -- and whether it stands on his screen now, or what keeps it off: the band that shuts it out (named), the already-bought or already-marked switch, or rank past the 14 the list shows. A word answers with how many wines carry it, how many of those are his, and where they stand on the five measures. A name nothing carries says so.'}}}}];
+   at:{type:'string',description:'A wine\'s name or part of one, or one of the shop\'s aroma words. Every wine carrying the name answers: its five numbers, the shop\'s words for it, whether it is his -- with how often he bought it and in which orders -- and whether it stands on his screen now, or what keeps it off: the band that shuts it out (named), the already-bought or already-marked switch, or rank past the 14 the list shows. A word answers with how many wines carry it, how many of those are his, and where they stand on the five measures. A name nothing carries says so.'}}}}];
 const clamp01=v=>Math.max(0,Math.min(1,v));
 /* THE EYE UP CLOSE. look({at}) is the agent's hover: the reader holds his
    pointer over a row and gets the wine's shape and numbers; the agent had to
@@ -890,12 +912,15 @@ function lookAt(s){
       return r<=14?`on his screen now, No. ${r} of the 14 shown`
         :`inside every band, but standing ${r} of ${pool.length} by nearness and the list shows 14`;
     };
-    const shown=hits.slice(0,8).map(({w,i})=>
-      `${w.name} | ${w.vintage?Math.round(w.vintage):'NV'} | ${[w.variety,w.region].filter(Boolean).join(', ')||'-'} | `
+    const bought=boughtCount();
+    const shown=hits.slice(0,8).map(({w,i})=>{
+      const n=bought.get(w.id)||0, ords=boughtIn(w.id);
+      return `${w.name} | ${w.vintage?Math.round(w.vintage):'NV'} | ${[w.variety,w.region].filter(Boolean).join(', ')||'-'} | `
       +A.map(a=>`${a} ${w[a].toFixed(2)}`).join(', ')
-      +(OWNED.has(w.id)?` | HIS, ${kind[w.id]||'unsorted'}`:'')
+      +(OWNED.has(w.id)?` | HIS, ${kind[w.id]||'unsorted'}`
+        +(n>1?`, bought ${n} times (orders ${[...new Set(ords)].join(', ')})`:ords.length?`, from order ${ords[0]}`:''):'')
       +(words[i]&&words[i].length?` | the shop's words: ${words[i].join(' ')}`:'')
-      +` | ${stand(w)}`);
+      +` | ${stand(w)}`;});
     return (hits.length===1?`One wine carries "${s}":`:`${hits.length} wines carry "${s}"${hits.length>8?', the first 8':''}:`)
       +'\n'+shown.join('\n');
   }
@@ -989,21 +1014,30 @@ async function refusal(r){
 }
 async function callAgent(sys,msgs){
   if(agent.vendor==='openai'){
-    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
+    /* the Responses API: chat/completions refuses function tools outright on
+       the reasoning models ("use /v1/responses" says the refusal, and it is
+       right). Tools ride flat, the framing rides as instructions, the turn
+       comes back as output items, and the reasoning items go back with the
+       next round -- stateless, so nothing is stored on their side. */
+    const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+KEY()},
-      body:JSON.stringify({model:MODEL()||DEFAULT_MODEL.openai,
-        tools:TOOLBOX.map(t=>({type:'function',function:{name:t.name,description:t.description,parameters:t.schema}})),
-        messages:[{role:'system',content:sys.stat+'\n\n'+sys.dyn},...msgs]})});
+      body:JSON.stringify({model:MODEL()||DEFAULT_MODEL.openai,store:false,
+        include:['reasoning.encrypted_content'],
+        instructions:sys.stat+'\n\n'+sys.dyn,
+        tools:TOOLBOX.map(t=>({type:'function',name:t.name,description:t.description,parameters:t.schema})),
+        input:msgs})});
     if(!r.ok) throw await refusal(r);
-    const d=await r.json(), m=d.choices&&d.choices[0]&&d.choices[0].message;
-    if(!m) throw new Error('empty answer from the model');
-    const calls=(m.tool_calls||[]).map(c=>{
-      let input={}; try{input=JSON.parse(c.function.arguments||'{}');}catch(_){}
-      return {id:c.id,name:c.function.name,input};});
-    return {say:typeof m.content==='string'&&m.content?[m.content]:[],calls,turn:m,
-      follow:rs=>rs.map(x=>({role:'tool',tool_call_id:x.id,content:x.out})),
+    const d=await r.json(), items=d.output||[];
+    if(!items.length) throw new Error('empty answer from the model');
+    const calls=items.filter(x=>x.type==='function_call').map(c=>{
+      let input={}; try{input=JSON.parse(c.arguments||'{}');}catch(_){}
+      return {id:c.call_id,name:c.name,input};});
+    return {say:items.filter(x=>x.type==='message')
+        .flatMap(m=>(m.content||[]).filter(c=>c.type==='output_text').map(c=>c.text)),
+      calls,turn:items,
+      follow:rs=>rs.map(x=>({type:'function_call_output',call_id:x.id,output:x.out})),
       usage:{model:MODEL()||DEFAULT_MODEL.openai,
-        tin:d.usage?.prompt_tokens||0,tout:d.usage?.completion_tokens||0}};
+        tin:d.usage?.input_tokens||0,tout:d.usage?.output_tokens||0}};
   }
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':KEY(),
@@ -1055,6 +1089,7 @@ async function send(){
   try{
     const sys=lensSystem(sp);
     let msgs=chatMessages(), spoke=false, round=0;
+    const made=[];                       // every control it pressed, in order
     for(;round<ROUNDS;round++){
       const res=await callAgent(sys,msgs);
       if(res.usage) addSpend(res.usage);
@@ -1069,6 +1104,7 @@ async function send(){
       const out=[];
       for(const c of res.calls){
         const was=nowAt();
+        made.push(c.name);
         let said; try{said=runTool(c.name,c.input);}
         catch(e){said='That control did not take: '+e.message;}
         ringMoved(was);
@@ -1077,7 +1113,14 @@ async function send(){
       msgs=msgs.concat(res.turn,res.follow(out));
     }
     if(round>=ROUNDS) addMsg('notice','It kept working and was stopped after '+ROUNDS+' moves. Ask again, more narrowly.');
-    if(!spoke) addMsg('assistant','Done.');
+    /* THE PAGE NEVER SAYS A WORD FOR IT. It used to write "Done." into the
+       sommelier's own bubble when the model fell silent -- the page itself
+       saying a completion nobody performed, in the one voice that must never
+       say a move that was not made. A silent turn is reported as what it was,
+       by the tool, in the tool's voice. */
+    if(!spoke) addMsg('notice', made.length
+      ?'The sommelier pressed '+made.join(', ')+' and sent no words. What that changed is on the screen; whatever it moved wears a ring.'
+      :'The sommelier sent no words and made no move. Nothing changed. Ask again, differently.');
   }catch(err){
     addMsg('notice','That did not go through. '+err.message+'\nThe key and the model are behind the gear; each house keeps its own key.');
   }
